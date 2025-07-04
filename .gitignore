@@ -1,3 +1,3 @@
-./.cache
-./build
-./compile_commands.json
+.cache
+build
+compile_commands.json
