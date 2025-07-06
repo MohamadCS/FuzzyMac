@@ -6,13 +6,15 @@
 #include "wx/panel.h"
 #include "wx/stattext.h"
 
-class SearchResultPanel : public wxPanel {
+class ResultEntry : public wxPanel {
 public:
-    SearchResultPanel(State* state,wxWindow* parent, const std::string& value); 
+    ResultEntry(State* state,wxWindow* parent, const std::string& value); 
+    std::string getValue() const;
 private:
     State* _state;
     std::string _value;
     wxStaticText* _value_static_text;
+
 
     void onPaint(wxPaintEvent&);
 

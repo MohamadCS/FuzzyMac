@@ -6,10 +6,10 @@
 
 
 
-class App : public wxApp {
-public:
+struct App : public wxApp {
     bool OnInit() override;
-private:
-    State _state;
+    State state;
 };
+
+
 
