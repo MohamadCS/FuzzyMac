@@ -1,4 +1,4 @@
-#include "../include/App/SearchResultPanel.hpp"
+#include "../include/App/ResultEntry.hpp"
 #include "wx/colour.h"
 #include "wx/dcclient.h"
 #include "wx/event.h"
@@ -6,7 +6,7 @@
 #include "wx/panel.h"
 #include "wx/sizer.h"
 
-SearchResultPanel::SearchResultPanel(State* state, wxWindow* parent, const std::string& value)
+ResultEntry::ResultEntry(State* state, wxWindow* parent, const std::string& value)
     : _state(state),
       wxPanel(parent),
       _value(value) {
@@ -23,10 +23,14 @@ SearchResultPanel::SearchResultPanel(State* state, wxWindow* parent, const std::
     GetSizer()->Add(_value_static_text, wxSizerFlags().CenterVertical());
     _value_static_text->SetFont(_state->font);
 
-    Bind(wxEVT_PAINT, &SearchResultPanel::onPaint, this);
+    Bind(wxEVT_PAINT, &ResultEntry::onPaint, this);
 }
 
-void SearchResultPanel::onPaint(wxPaintEvent&) {
+std::string ResultEntry::getValue() const {
+    return _value_static_text->GetLabel().ToStdString();
+}
+
+void ResultEntry::onPaint(wxPaintEvent&) {
     wxPaintDC dc(this);
     dc.SetBrush(*wxTRANSPARENT_BRUSH);
     dc.SetPen(*wxTRANSPARENT_PEN);
