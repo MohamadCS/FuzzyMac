@@ -6,28 +6,27 @@
 #include "wx/panel.h"
 #include "wx/sizer.h"
 
-ResultEntry::ResultEntry(State* state, wxWindow* parent, const std::string& value)
-    : _state(state),
-      wxPanel(parent),
-      _value(value) {
+ResultEntry::ResultEntry(State* state, wxWindow* parent, const wxString& value)
+    : state(state),
+      wxPanel(parent) {
 
     SetSizer(new wxBoxSizer(wxHORIZONTAL));
 
-    SetBackgroundColour(_state->color_scheme.result_bg);
-    SetForegroundColour(_state->color_scheme.result_fg);
+    SetBackgroundColour(state->color_scheme.result_bg);
+    SetForegroundColour(state->color_scheme.result_fg);
 
     SetMinSize(wxSize(100, 50));
 
-    _value_static_text = new wxStaticText(this, wxID_ANY, value, wxDefaultPosition, wxDefaultSize);
+    value_static_text = new wxStaticText(this, wxID_ANY, value, wxDefaultPosition, wxDefaultSize);
 
-    GetSizer()->Add(_value_static_text, wxSizerFlags().CenterVertical());
-    _value_static_text->SetFont(_state->font);
+    GetSizer()->Add(value_static_text, wxSizerFlags().CenterVertical());
+    value_static_text->SetFont(state->font);
 
     Bind(wxEVT_PAINT, &ResultEntry::onPaint, this);
 }
 
 std::string ResultEntry::getValue() const {
-    return _value_static_text->GetLabel().ToStdString();
+    return value_static_text->GetLabel().ToStdString();
 }
 
 void ResultEntry::onPaint(wxPaintEvent&) {

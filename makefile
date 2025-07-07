@@ -13,7 +13,7 @@ CPP_SOURCES = $(wildcard $(SRC_DIR)/*.cpp)
 OBJECTS = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(CPP_SOURCES))
 
 
-TARGET=prog
+TARGET=FuzzyMac
 
 
 all: clean $(BUILD_DIR)/$(TARGET)
