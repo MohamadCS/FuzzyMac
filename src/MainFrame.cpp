@@ -17,7 +17,8 @@
 #include <vector>
 
 MainFrame::MainFrame(State* state, const std::string& title)
-    : wxFrame(nullptr, wxID_ANY, title, wxDefaultPosition, wxDefaultSize, wxFRAME_SHAPED),
+    : wxFrame(nullptr, wxID_ANY, title, wxDefaultPosition, wxDefaultSize,
+              wxFRAME_SHAPED | wxNO_BORDER | wxBG_STYLE_TRANSPARENT),
       state(state),
       selected_idx(0) {
 
@@ -29,8 +30,13 @@ MainFrame::MainFrame(State* state, const std::string& title)
 }
 
 void MainFrame::createWidgets() {
-    main_panel = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize);
+    frame_panel = new wxPanel(this);
+    main_panel = new wxPanel(frame_panel);
+
+    frame_panel->SetSizer(new wxBoxSizer(wxVERTICAL));
     main_panel->SetSizer(new wxBoxSizer(wxVERTICAL));
+
+    frame_panel->GetSizer()->Add(main_panel, wxSizerFlags().Expand().Border(wxALL, state->border_width));
 
     search_query_text_ctrl =
         new wxTextCtrl(main_panel, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER | wxBORDER_NONE);
@@ -52,6 +58,12 @@ void MainFrame::applyConfig() {
     search_query_text_ctrl->SetForegroundColour(state->color_scheme.searchbar_fg);
     search_query_text_ctrl->SetBackgroundColour(state->color_scheme.searchbar_bg);
 
+    main_panel->SetForegroundColour(state->color_scheme.results_panel_fg);
+    main_panel->SetBackgroundColour(state->color_scheme.results_panel_bg);
+
+    frame_panel->SetForegroundColour(state->color_scheme.border_fg);
+    frame_panel->SetBackgroundColour(state->color_scheme.border_bg);
+
     auto font = state->font;
     font.SetPointSize(state->query_font_size);
     search_query_text_ctrl->SetFont(font);
@@ -70,11 +82,11 @@ void MainFrame::unselect(int i) {
 void MainFrame::fillData() {
     results_vec = {};
     for (auto& file : state->entries) {
-        auto* entry = new ResultEntry(state, this->results_panel, file.ToStdString());
+        auto* entry = new ResultEntry(state, this->results_panel, file);
         results_panel->GetSizer()->Add(entry, wxSizerFlags(0).Expand().Border(wxLEFT | wxRIGHT, 0));
         results_vec.push_back(entry);
     }
-    if(results_vec.size() > 1) {
+    if (results_vec.size() > 1) {
         select(0);
     }
 }
@@ -89,13 +101,12 @@ void MainFrame::createBindings() {
     search_query_text_ctrl->Bind(wxEVT_KEY_DOWN, &MainFrame::onKeyDown, this);
 
     search_query_text_ctrl->Bind(wxEVT_TEXT, [this](wxCommandEvent&) {
-
         std::vector<std::pair<int, int>> final{};
         this->selected_idx = 0;
 
         // calcluate scores
 
-        std::string query = this->search_query_text_ctrl->GetValue().MakeLower().ToStdString();
+        wxString query = this->search_query_text_ctrl->GetValue().MakeLower();
 
         auto files_ = this->state->entries;
         for (int i = 0; i < files_.size(); ++i) {
@@ -115,12 +126,12 @@ void MainFrame::createBindings() {
 
         // Add entries to the final result
         for (auto& [file_idx, _] : final) {
-            auto* entry = new ResultEntry(state, this->results_panel, state->entries[file_idx].ToStdString());
+            auto* entry = new ResultEntry(state, this->results_panel, state->entries[file_idx]);
             results_panel->GetSizer()->Add(entry, wxSizerFlags(0).Expand().Border(wxLEFT | wxRIGHT, 0));
             results_vec.push_back(entry);
         }
 
-        if(results_vec.size() >= 1) {
+        if (results_vec.size() >= 1) {
             select(0);
         }
 
@@ -134,7 +145,7 @@ void MainFrame::createBindings() {
 // TODO: ORGANIZE this miss.
 void MainFrame::onKeyDown(wxKeyEvent& event) {
     auto modifiers = event.GetModifiers();
-    if ((modifiers & wxMOD_RAW_CONTROL) && event.GetKeyCode() == 'C') {
+    if ((modifiers & wxMOD_RAW_CONTROL) && event.GetKeyCode() == 'C' || event.GetKeyCode() == WXK_ESCAPE) {
         wxTheApp->Exit();
     } else if ((modifiers & wxMOD_RAW_CONTROL) && event.GetKeyCode() == 'N') {
         if (results_vec.empty() || selected_idx == results_vec.size() - 1) {
@@ -165,12 +176,10 @@ void MainFrame::onKeyDown(wxKeyEvent& event) {
         event.Skip();
     }
 
-
     if (results_panel->GetVirtualSize().GetHeight() > results_panel->GetClientSize().GetHeight()) {
         results_panel->SetScrollRate(0, results_vec[0]->GetSize().GetHeight());
         results_panel->Scroll(0, selected_idx);
     }
-
 
     results_panel->Layout();
     results_panel->Refresh();

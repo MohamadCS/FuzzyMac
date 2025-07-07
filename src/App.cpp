@@ -5,6 +5,7 @@
 
 #include "wx/app.h"
 #include "wx/utils.h"
+#include <wx/snglinst.h>
 #include <string>
 
 wxIMPLEMENT_APP(App);
@@ -42,6 +43,14 @@ static void processInput(wxArrayString& vec) {
 bool App::OnInit() {
     AppCli cli;
     auto status = cli.run(argc, argv);
+
+    wxSingleInstanceChecker* checker  = new wxSingleInstanceChecker;
+
+    if(checker->IsAnotherRunning()) {
+        delete checker;
+        checker = nullptr;
+        return false;
+    }
 
     loadConfig(state);
     processInput(state.entries);

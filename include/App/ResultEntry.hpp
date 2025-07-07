@@ -8,12 +8,11 @@
 
 class ResultEntry : public wxPanel {
 public:
-    ResultEntry(State* state,wxWindow* parent, const std::string& value); 
+    ResultEntry(State* state,wxWindow* parent, const wxString& value); 
     std::string getValue() const;
 private:
-    State* _state;
-    std::string _value;
-    wxStaticText* _value_static_text;
+    State* state;
+    wxStaticText* value_static_text;
 
 
     void onPaint(wxPaintEvent&);

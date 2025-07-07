@@ -1,8 +1,7 @@
 #pragma once
 
 #include "wx/string.h"
-#include <string>
 
-int fuzzyScore(const wxString& cand, const std::string& query);
+int fuzzyScore(const wxString& cand, const wxString& query);
 
 

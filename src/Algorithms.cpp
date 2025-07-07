@@ -1,5 +1,4 @@
 #include "../include/App/Algorithms.hpp"
-#include "wx/arrstr.h"
 #include <algorithm>
 #include <cctype>
 
@@ -15,7 +14,7 @@ static char flipChar(char c) {
     }
 }
 
-static int prefixScore(const wxString& cand,const std::string& query) {
+static int prefixScore(const wxString& cand,const wxString& query) {
     const auto N = std::min(cand.size(), query.size());
 
     int score = 0;
@@ -30,7 +29,7 @@ static int prefixScore(const wxString& cand,const std::string& query) {
     return score;
 }
 
-int fuzzyScore(const wxString& cand, const std::string& query) {
+int fuzzyScore(const wxString& cand, const wxString& query) {
     int score = 0;
     std::size_t pos = 0;
 

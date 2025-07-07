@@ -1,10 +1,13 @@
 #pragma once
 
+#include "ResultEntry.hpp"
 #include "State.hpp"
+#include "wx/dcclient.h"
+#include "wx/gdicmn.h"
 #include <wx/frame.h>
 #include <wx/scrolwin.h>
-#include "ResultEntry.hpp"
 #include <wx/textctrl.h>
+
 
 class MainFrame : public wxFrame {
 public:
@@ -14,6 +17,7 @@ private:
     State* state;
     std::size_t selected_idx;
 
+    wxPanel* frame_panel;
     wxPanel* main_panel;
     std::vector<ResultEntry*> results_vec;
     wxTextCtrl* search_query_text_ctrl;
@@ -28,5 +32,4 @@ private:
 
     void select(int i);
     void unselect(int i);
-
 };
