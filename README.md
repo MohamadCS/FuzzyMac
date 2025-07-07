@@ -15,6 +15,17 @@ The program has two modes:
 Still didn't create a custom config file support.
 
 ## Compiling from source
+
+### cmake
+For compiling both versions 
+```
+mkdir build
+cd build
+cmake ..
+cmake --build .
+```
+
+### make
 For now it requires wxWidgets in order to compile:
 
 - For compiling the GUI version.
