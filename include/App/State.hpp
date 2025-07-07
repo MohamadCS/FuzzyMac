@@ -3,6 +3,14 @@
 #include "wx/colour.h"
 #include "wx/font.h"
 
+
+#ifndef CLI_TOOL
+constexpr bool is_cli = false;
+#else 
+constexpr bool is_cli = true;
+#endif
+
+
 struct ColorScheme {
     wxColor searchbar_fg = wxColor(87, 82, 121);
     wxColor searchbar_bg = wxColor(242, 233, 222);
@@ -17,7 +25,6 @@ struct ColorScheme {
 };
 
 struct State {
-    wxArrayString entries;
     ColorScheme color_scheme;
     wxFont font = wxFont(wxFontInfo(14).FaceName("JetBrainsMono Nerd Font"));
     int results_font_size = 14;

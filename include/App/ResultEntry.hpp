@@ -12,8 +12,8 @@ public:
     std::string getValue() const;
 private:
     State* state;
+    std::string value;
     wxStaticText* value_static_text;
-
 
     void onPaint(wxPaintEvent&);
 

@@ -5,10 +5,12 @@
 #include "wx/gdicmn.h"
 #include "wx/panel.h"
 #include "wx/sizer.h"
+#include <filesystem>
 
 ResultEntry::ResultEntry(State* state, wxWindow* parent, const wxString& value)
     : state(state),
-      wxPanel(parent) {
+      wxPanel(parent),
+      value(value) {
 
     SetSizer(new wxBoxSizer(wxHORIZONTAL));
 
@@ -17,7 +19,9 @@ ResultEntry::ResultEntry(State* state, wxWindow* parent, const wxString& value)
 
     SetMinSize(wxSize(100, 50));
 
-    value_static_text = new wxStaticText(this, wxID_ANY, value, wxDefaultPosition, wxDefaultSize);
+    std::string display_value = std::filesystem::path(value.ToStdString()).filename().string();
+
+    value_static_text = new wxStaticText(this, wxID_ANY, display_value, wxDefaultPosition, wxDefaultSize);
 
     GetSizer()->Add(value_static_text, wxSizerFlags().CenterVertical());
     value_static_text->SetFont(state->font);
@@ -26,7 +30,7 @@ ResultEntry::ResultEntry(State* state, wxWindow* parent, const wxString& value)
 }
 
 std::string ResultEntry::getValue() const {
-    return value_static_text->GetLabel().ToStdString();
+    return value;
 }
 
 void ResultEntry::onPaint(wxPaintEvent&) {

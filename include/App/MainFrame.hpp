@@ -2,14 +2,14 @@
 
 #include "ResultEntry.hpp"
 #include "State.hpp"
+#include "wx/arrstr.h"
 #include <wx/frame.h>
 #include <wx/scrolwin.h>
 #include <wx/textctrl.h>
 
-
 class MainFrame : public wxFrame {
 public:
-    MainFrame(State* state, const std::string& title, bool is_cli);
+    MainFrame(State* state, const std::string& title,wxArrayString&& arr);
     void wakeup() {
         search_query_text_ctrl->SetFocus();
     }
@@ -17,11 +17,13 @@ public:
 private:
     State* state;
     std::size_t selected_idx;
-    bool is_cli;
 
     wxPanel* frame_panel;
     wxPanel* main_panel;
-    std::vector<ResultEntry*> results_vec;
+
+    wxArrayString entries; // Contains the raw entries 
+    std::vector<ResultEntry*> result_entries;
+
     wxTextCtrl* search_query_text_ctrl;
     wxScrolled<wxPanel>* results_panel;
 
@@ -30,6 +32,8 @@ private:
     void applyConfig();
     void createBindings();
     void fillData();
+    void fillDataCustom();
+    void fillFileSearchData();
     void onKeyDown(wxKeyEvent& event);
 
     void select(int i);
