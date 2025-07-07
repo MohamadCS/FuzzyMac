@@ -16,7 +16,6 @@
 #include "wx/textctrl.h"
 #include "wx/utils.h"
 #include <algorithm>
-#include <filesystem>
 #include <unistd.h>
 
 #include "wx/toplevel.h"
