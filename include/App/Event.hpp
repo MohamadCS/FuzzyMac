@@ -1,3 +1,6 @@
+#pragma once
+
+
 #include <wx/event.h>
 
 wxDECLARE_EVENT(EVT_TEST,wxCommandEvent);
