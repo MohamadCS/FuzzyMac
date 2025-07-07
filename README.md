@@ -7,7 +7,7 @@ A GUI fuzzy finder for macOS(Very early release, most likely will not function p
 ## Overview
 
 The program has two modes:
-- CLI mode: Pipe an input to the cli tool and it will output the selected appliction, mutliple instances allowed.
+- CLI mode: Pipe an input to the cli tool and it will output the selected entry, mutliple instances allowed.
 - Application Mode: Runs in background, and supports app launching only.
 
 ## Config
@@ -29,6 +29,14 @@ make
 make CLI=1
 
 ```
+
+
+## TODOs
+
+- [] convert to `cmake` and make it work on any mac.
+- [] make it customizable.
+- [] Create custom text input, just like using similar concepts like my vimz app. 
+- [] Clean the missy code. 
 
 
 
