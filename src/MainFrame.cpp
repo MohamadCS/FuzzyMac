@@ -16,17 +16,24 @@
 #include <unistd.h>
 #include <vector>
 
-MainFrame::MainFrame(State* state, const std::string& title)
+#include "wx/toplevel.h"
+
+
+MainFrame::MainFrame(State* state, const std::string& title, bool is_cli)
     : wxFrame(nullptr, wxID_ANY, title, wxDefaultPosition, wxDefaultSize,
-              wxFRAME_SHAPED | wxNO_BORDER | wxBG_STYLE_TRANSPARENT),
+              wxFRAME_SHAPED | wxNO_BORDER | wxFRAME_NO_TASKBAR),
       state(state),
-      selected_idx(0) {
+      selected_idx(0),
+      is_cli(is_cli) {
+
 
     createWidgets();
     placeWidgets();
     createBindings();
     applyConfig();
     fillData();
+
+    search_query_text_ctrl->SetFocus();
 }
 
 void MainFrame::createWidgets() {
@@ -49,6 +56,7 @@ void MainFrame::placeWidgets() {
     Center();
     main_panel->GetSizer()->Add(search_query_text_ctrl, wxSizerFlags(0).Expand());
     main_panel->GetSizer()->Add(results_panel, wxSizerFlags(1).Expand());
+    SetWindowStyleFlag(wxSTAY_ON_TOP);
 }
 
 void MainFrame::applyConfig() {
@@ -98,7 +106,10 @@ void MainFrame::createBindings() {
      * any entry with a score of less than 0 will be discarded.
      * */
 
+
+
     search_query_text_ctrl->Bind(wxEVT_KEY_DOWN, &MainFrame::onKeyDown, this);
+
 
     search_query_text_ctrl->Bind(wxEVT_TEXT, [this](wxCommandEvent&) {
         std::vector<std::pair<int, int>> final{};
@@ -145,8 +156,12 @@ void MainFrame::createBindings() {
 // TODO: ORGANIZE this miss.
 void MainFrame::onKeyDown(wxKeyEvent& event) {
     auto modifiers = event.GetModifiers();
-    if ((modifiers & wxMOD_RAW_CONTROL) && event.GetKeyCode() == 'C' || event.GetKeyCode() == WXK_ESCAPE) {
+    if ((modifiers & wxMOD_RAW_CONTROL) && event.GetKeyCode() == 'C') {
+#ifdef CLI_TOOL
         wxTheApp->Exit();
+#else
+        wxTheApp->Exit();
+#endif
     } else if ((modifiers & wxMOD_RAW_CONTROL) && event.GetKeyCode() == 'N') {
         if (results_vec.empty() || selected_idx == results_vec.size() - 1) {
             return;
