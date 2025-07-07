@@ -1,5 +1,7 @@
 # Fuzzy Mac
 
+THIS PROJECT WILL ONLY WORK ON MY COMPUTER(for now) UNLESS YOU CHANGE THE MAKEFILE.
+
 A GUI fuzzy finder for macOS(Very early release, most likely will not function properly).
 
 ## Overview
