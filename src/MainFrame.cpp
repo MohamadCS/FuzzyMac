@@ -1,8 +1,10 @@
 #include "../include/App/MainFrame.hpp"
 #include "../include/App/Algorithms.hpp"
+#include "../include/App/MacNativeHandler.hpp"
 #include "../include/App/ResultEntry.hpp"
 
 #include "wx/app.h"
+#include "wx/arrstr.h"
 #include "wx/colour.h"
 #include "wx/event.h"
 #include "wx/gdicmn.h"
@@ -12,20 +14,19 @@
 #include "wx/scrolwin.h"
 #include "wx/sizer.h"
 #include "wx/textctrl.h"
+#include "wx/utils.h"
 #include <algorithm>
+#include <filesystem>
 #include <unistd.h>
-#include <vector>
 
 #include "wx/toplevel.h"
 
-
-MainFrame::MainFrame(State* state, const std::string& title, bool is_cli)
+MainFrame::MainFrame(State* state, const std::string& title, wxArrayString&& arr)
     : wxFrame(nullptr, wxID_ANY, title, wxDefaultPosition, wxDefaultSize,
               wxFRAME_SHAPED | wxNO_BORDER | wxFRAME_NO_TASKBAR),
       state(state),
       selected_idx(0),
-      is_cli(is_cli) {
-
+      entries(std::move(arr)) {
 
     createWidgets();
     placeWidgets();
@@ -78,25 +79,13 @@ void MainFrame::applyConfig() {
 }
 
 void MainFrame::select(int i) {
-    results_vec[i]->SetBackgroundColour(state->color_scheme.selected_result_bg);
-    results_vec[i]->SetForegroundColour(this->state->color_scheme.selected_result_fg);
+    result_entries[i]->SetBackgroundColour(state->color_scheme.selected_result_bg);
+    result_entries[i]->SetForegroundColour(this->state->color_scheme.selected_result_fg);
 }
 
 void MainFrame::unselect(int i) {
-    results_vec[i]->SetBackgroundColour(state->color_scheme.result_bg);
-    results_vec[i]->SetForegroundColour(state->color_scheme.result_fg);
-}
-
-void MainFrame::fillData() {
-    results_vec = {};
-    for (auto& file : state->entries) {
-        auto* entry = new ResultEntry(state, this->results_panel, file);
-        results_panel->GetSizer()->Add(entry, wxSizerFlags(0).Expand().Border(wxLEFT | wxRIGHT, 0));
-        results_vec.push_back(entry);
-    }
-    if (results_vec.size() > 1) {
-        select(0);
-    }
+    result_entries[i]->SetBackgroundColour(state->color_scheme.result_bg);
+    result_entries[i]->SetForegroundColour(state->color_scheme.result_fg);
 }
 
 void MainFrame::createBindings() {
@@ -106,47 +95,27 @@ void MainFrame::createBindings() {
      * any entry with a score of less than 0 will be discarded.
      * */
 
-
-
     search_query_text_ctrl->Bind(wxEVT_KEY_DOWN, &MainFrame::onKeyDown, this);
 
-
     search_query_text_ctrl->Bind(wxEVT_TEXT, [this](wxCommandEvent&) {
-        std::vector<std::pair<int, int>> final{};
-        this->selected_idx = 0;
+        results_panel->GetSizer()->Clear(true);
+        result_entries = {};
 
-        // calcluate scores
-
-        wxString query = this->search_query_text_ctrl->GetValue().MakeLower();
-
-        auto files_ = this->state->entries;
-        for (int i = 0; i < files_.size(); ++i) {
-            files_[i].MakeLower();
-            int score = fuzzyScore(files_[i], query);
-            if (score >= 0) {
-                final.push_back({i, score});
+        if constexpr (is_cli) {
+            fillDataCustom();
+        } else {
+            const wxString& query = this->search_query_text_ctrl->GetValue();
+            if (query.size() >= 2 && query[0] == ' ') {
+                fillFileSearchData();
+            } else {
+                fillDataCustom();
             }
         }
 
-        // sort in descending order according to score
-        std::sort(final.begin(), final.end(), [](const auto& lhs, const auto& rhs) { return lhs.second > rhs.second; });
-
-        // clear last results
-        this->results_panel->GetSizer()->Clear(true);
-        results_vec = {};
-
-        // Add entries to the final result
-        for (auto& [file_idx, _] : final) {
-            auto* entry = new ResultEntry(state, this->results_panel, state->entries[file_idx]);
-            results_panel->GetSizer()->Add(entry, wxSizerFlags(0).Expand().Border(wxLEFT | wxRIGHT, 0));
-            results_vec.push_back(entry);
-        }
-
-        if (results_vec.size() >= 1) {
+        if (result_entries.size() >= 1) {
             select(0);
         }
 
-        // // refresh
         results_panel->Layout();
         results_panel->GetSizer()->Layout();
         results_panel->FitInside(); // automatically calc the virtual size
@@ -156,14 +125,17 @@ void MainFrame::createBindings() {
 // TODO: ORGANIZE this miss.
 void MainFrame::onKeyDown(wxKeyEvent& event) {
     auto modifiers = event.GetModifiers();
-    if ((modifiers & wxMOD_RAW_CONTROL) && event.GetKeyCode() == 'C') {
-#ifdef CLI_TOOL
-        wxTheApp->Exit();
-#else
-        wxTheApp->Exit();
-#endif
+    if (event.GetKeyCode() == WXK_ESCAPE) {
+
+        if constexpr (is_cli) {
+            wxTheApp->Exit();
+        } else {
+            DeactivateApp();
+            Hide();
+        }
+
     } else if ((modifiers & wxMOD_RAW_CONTROL) && event.GetKeyCode() == 'N') {
-        if (results_vec.empty() || selected_idx == results_vec.size() - 1) {
+        if (result_entries.empty() || selected_idx == result_entries.size() - 1) {
             return;
         } else {
             auto next = selected_idx + 1;
@@ -172,7 +144,7 @@ void MainFrame::onKeyDown(wxKeyEvent& event) {
             selected_idx++;
         }
     } else if ((modifiers & wxMOD_RAW_CONTROL) && event.GetKeyCode() == 'P') {
-        if (results_vec.empty() || selected_idx == 0) {
+        if (result_entries.empty() || selected_idx == 0) {
             return;
         } else {
             auto prev = selected_idx - 1;
@@ -184,18 +156,79 @@ void MainFrame::onKeyDown(wxKeyEvent& event) {
         }
 
     } else if (event.GetKeyCode() == WXK_RETURN) {
-        std::string out = results_vec.empty() ? "" : results_vec[selected_idx]->getValue();
-        std::cout << out;
-        wxTheApp->Exit();
+
+        if constexpr (is_cli) {
+            std::string out = result_entries.empty() ? "" : result_entries[selected_idx]->getValue();
+            std::cout << out;
+            wxTheApp->Exit();
+        } else {
+            wxExecute(
+                std::format("open \"{}\"", result_entries[selected_idx]->getValue())); // get the original original
+            DeactivateApp();
+            Hide();
+        }
     } else {
         event.Skip();
     }
 
     if (results_panel->GetVirtualSize().GetHeight() > results_panel->GetClientSize().GetHeight()) {
-        results_panel->SetScrollRate(0, results_vec[0]->GetSize().GetHeight());
+        results_panel->SetScrollRate(0, result_entries[0]->GetSize().GetHeight());
         results_panel->Scroll(0, selected_idx);
     }
 
     results_panel->Layout();
     results_panel->Refresh();
+}
+
+void MainFrame::fillData() {
+    result_entries = {};
+    int i = 0;
+    for (auto& file : entries) {
+        auto* entry = new ResultEntry(state, this->results_panel, file);
+        results_panel->GetSizer()->Add(entry, wxSizerFlags(0).Expand().Border(wxLEFT | wxRIGHT, 0));
+        result_entries.push_back(entry);
+    }
+}
+
+void MainFrame::fillDataCustom() {
+
+    const wxString& query = search_query_text_ctrl->GetValue().MakeLower();
+
+    std::vector<std::pair<int, int>> final{};
+    selected_idx = 0;
+
+    auto files_ = entries;
+    // add files with score >= 0
+    for (int i = 0; i < files_.size(); ++i) {
+        files_[i].MakeLower();
+        int score = fuzzyScore(files_[i], query);
+        if (score >= 0) {
+            final.push_back({i, score});
+        }
+    }
+
+    // sort in descending order according to score
+    std::sort(final.begin(), final.end(), [](const auto& lhs, const auto& rhs) { return lhs.second > rhs.second; });
+
+    // Add entries to the final result
+    for (auto& [file_idx, _] : final) {
+        auto* entry = new ResultEntry(state, results_panel, entries[file_idx]);
+        results_panel->GetSizer()->Add(entry, wxSizerFlags(0).Expand().Border(wxLEFT | wxRIGHT, 0));
+        result_entries.push_back(entry);
+    }
+}
+
+void MainFrame::fillFileSearchData() {
+
+    wxString query = search_query_text_ctrl->GetValue();
+    query = query.SubString(1, query.size() - 1);
+
+
+    auto files = spotlightSearch(std::format("kMDItemDisplayName == '{}*'c", query.ToStdString()));
+
+    for (const auto& file : files) {
+        auto* entry = new ResultEntry(state, results_panel, file);
+        results_panel->GetSizer()->Add(entry, wxSizerFlags(0).Expand().Border(wxLEFT | wxRIGHT, 0));
+        result_entries.push_back(entry);
+    }
 }

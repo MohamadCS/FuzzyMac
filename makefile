@@ -35,6 +35,7 @@ endif
 all: clean $(BUILD_DIR)/$(TARGET)
 	@echo "✅ Build succeeded!"
 	@$(UPDATE_BUILD)
+	@killall $(TARGET) 2> /dev/null || true
 
 # Link step
 $(BUILD_DIR)/$(TARGET): $(OBJECTS)
@@ -55,7 +56,7 @@ $(BUILD_DIR)/%.mm.o: $(SRC_DIR)/%.mm
 
 # Clean
 clean:
-	@echo "Cleaning..."
+	@echo "🧹  Cleaning..."
 	@rm -f $(BUILD_DIR)/*.o $(BUILD_DIR)/*.mm.o $(BUILD_DIR)/$(TARGET)
 
 .PHONY: all clean

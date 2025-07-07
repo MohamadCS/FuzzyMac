@@ -1,5 +1,7 @@
 #include "../include/App/App.hpp"
 #include "../include/App/MainFrame.hpp"
+#include "../include/App/GlobalKeys.hpp"
+#include "../include/App/MacNativeHandler.hpp"
 
 #include "wx/arrstr.h"
 
@@ -10,9 +12,6 @@
 #include <filesystem>
 #include <string>
 
-#ifndef CLI_TOOL
-#include "../include/App/GlobalKeys.hpp"
-#endif
 
 namespace fs = std::filesystem;
 
@@ -24,17 +23,6 @@ static wxArrayString runCommand(const std::string& cmd) {
     wxExecute(cmd, output, errors);
     return output;
 }
-
-static void loadConfig(State& state) {
-}
-
-// static void processOptions(State& state,const AppCli& cli) {
-//     if(cli.basename) {
-//         for(auto& entry : state.entries) {
-//             entry = std::filesystem::path(entry.ToStdString()).filename().string();
-//         }
-//     }
-// }
 
 static void processInput(wxArrayString& vec) {
 #ifdef CLI_TOOL
@@ -52,7 +40,7 @@ static void processInput(wxArrayString& vec) {
 
     for (const auto& entry : fs::directory_iterator(apps_path)) {
         if (entry.path().extension() == ".app") {
-            vec.push_back(entry.path().filename().string());
+            vec.push_back(entry.path().string());
         }
     }
 
@@ -60,27 +48,26 @@ static void processInput(wxArrayString& vec) {
 }
 
 bool App::OnInit() {
-    bool is_cli = false;
-#ifdef CLI_TOOL
-    is_cli = true;
-#else
     wxSingleInstanceChecker* checker = new wxSingleInstanceChecker;
     if (checker->IsAnotherRunning()) {
         delete checker;
         checker = nullptr;
         return false;
     }
-#endif
 
-    loadConfig(state);
-    processInput(state.entries);
 
-    MainFrame* frame = new MainFrame(&state, "hello", is_cli);
+    wxArrayString entries;
+
+    processInput(entries);
+
+    MainFrame* frame = new MainFrame(&state, "FuzzyMac", std::move(entries));
     frame->Show();
 
-#ifndef CLI_TOOL
-    registerGlobalHotkey(frame);
-#endif
+    if constexpr(!is_cli) {
+        registerGlobalHotkey(frame);
+        DeactivateApp();
+        frame->Hide();
+    }
 
     return true;
 }
