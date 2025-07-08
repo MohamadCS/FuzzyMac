@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.18)
 project(FuzzyMac LANGUAGES C CXX OBJCXX)
 
+
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -13,7 +14,6 @@ file(GLOB CPP_SOURCES src/*.cpp)
 file(GLOB MM_SOURCES  src/*.mm)
 set(SOURCES ${CPP_SOURCES} ${MM_SOURCES})
 
-# wx-config flags (combined)
 execute_process(
     COMMAND sh -c "~/Developer/Libraries/wxWidgets/macbuild/wx-config --libs"
     OUTPUT_VARIABLE WX_LDFLAGS_RAW
@@ -36,7 +36,9 @@ separate_arguments(WX_CFLAGS NATIVE_COMMAND "${WX_CFLAGS_RAW}")
 add_executable(FuzzyMac MACOSX_BUNDLE ${SOURCES})
 
 target_compile_options(FuzzyMac PRIVATE ${WX_CFLAGS})
-target_link_libraries(FuzzyMac PRIVATE ${WX_LDFLAGS} "-framework Carbon" "-framework AppKit")
+target_link_libraries(FuzzyMac PRIVATE ${WX_LDFLAGS}
+    "-framework Carbon" 
+     "-framework AppKit")
 
 # Bundle settings
 set_target_properties(FuzzyMac PROPERTIES
