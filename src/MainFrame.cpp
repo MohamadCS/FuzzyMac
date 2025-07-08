@@ -14,11 +14,17 @@
 #include "wx/scrolwin.h"
 #include "wx/sizer.h"
 #include "wx/textctrl.h"
-#include "wx/utils.h"
-#include <algorithm>
-#include <unistd.h>
-
+#include "wx/timer.h"
 #include "wx/toplevel.h"
+#include "wx/utils.h"
+
+#include <algorithm>
+#include <cstdlib>
+#include <filesystem>
+#include <unistd.h>
+#include <vector>
+
+namespace fs = std::filesystem;
 
 MainFrame::MainFrame(State* state, const std::string& title, wxArrayString&& arr)
     : wxFrame(nullptr, wxID_ANY, title, wxDefaultPosition, wxDefaultSize,
@@ -94,9 +100,16 @@ void MainFrame::createBindings() {
      * any entry with a score of less than 0 will be discarded.
      * */
 
+    search_query_text_ctrl->Bind(wxEVT_TEXT, [this](wxCommandEvent&) {
+        const auto& query = this->search_query_text_ctrl->GetValue();
+        int time = query.size() >= 1 && query[0] == ' ' && !is_cli ? 200 : 50;
+        result_reload_timer.Start(time, true);
+
+    });
+
     search_query_text_ctrl->Bind(wxEVT_KEY_DOWN, &MainFrame::onKeyDown, this);
 
-    search_query_text_ctrl->Bind(wxEVT_TEXT, [this](wxCommandEvent&) {
+    result_reload_timer.Bind(wxEVT_TIMER, [this](wxTimerEvent& evt) {
         results_panel->GetSizer()->Clear(true);
         result_entries = {};
 
@@ -222,8 +235,9 @@ void MainFrame::fillFileSearchData() {
     wxString query = search_query_text_ctrl->GetValue();
     query = query.SubString(1, query.size() - 1);
 
+    std::vector<std::string> paths{fs::absolute(std::format("{}/Library/Mobile Documents/", std::getenv("HOME")))};
 
-    auto files = spotlightSearch(std::format("kMDItemDisplayName == '{}*'c", query.ToStdString()));
+    auto files = spotlightSearch(std::format("kMDItemDisplayName == '{}*'c", query.ToStdString()), paths);
 
     for (const auto& file : files) {
         auto* entry = new ResultEntry(state, results_panel, file);
