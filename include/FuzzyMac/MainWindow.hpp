@@ -35,6 +35,7 @@ public slots:
     void nextItem();
     void prevItem();
     void openItem();
+    void onApplicationStateChanged(Qt::ApplicationState state);
 
 private:
     QWidget* central;
@@ -52,6 +53,7 @@ private:
     void createKeybinds();
     void processStdIn();
     void fillData();
+    void connectEventHandlers();
 
     void customSearchDataFill(const QString& query);
     void spotlightSearchDataFill(const QString& query);
