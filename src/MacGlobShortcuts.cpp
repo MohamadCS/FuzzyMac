@@ -8,12 +8,9 @@ OSStatus triggerApp(EventHandlerCallRef nextHandler, EventRef theEvent, void* us
     auto* win = static_cast<MainWindow*>(userData);
 
     if (win->isHidden()) { // HIDE
-        win->show();
-        win->raise();
-        win->activateWindow();
+        win->wakeup();
     } else {
-        deactivateApp();
-        win->hide();
+        win->sleep();
     }
     return noErr;
 }
