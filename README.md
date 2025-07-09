@@ -6,8 +6,15 @@ A GUI fuzzy finder for macOS(Very early release, most likely will not function p
 ## Overview
 
 The program has two modes:
-- CLI mode: Pipe an input to the cli tool and it will output the selected entry, mutliple instances allowed.
-- Application Mode: Runs in background, and supports app launching only.
+- CLI mode: `list_of_items | FuzzyMacCLI | cmd`
+- Application Mode: Runs in background with the default `cmd-space` to open. By
+default it searchs for applications under `/Applications/`. Enter `<Space>` in 
+order to search files under `iCloud`(this is the default, I plan to make a config file support
+for any dirs to look for).
+
+## How the app finds files ?
+In cli mode and applications finding its a very simple scoring algorithm.
+for file search I used spotlight's api in order to find the files as quickly as possible.
 
 ## Config
 
@@ -15,7 +22,6 @@ Still didn't create a custom config file support.
 
 ## Compiling from source
 
-### cmake
 
 ### Requirements
 
@@ -25,6 +31,7 @@ brew install qt@6
 
 ```
 
+### cmake
 For compiling both versions 
 ```
 mkdir build
@@ -37,7 +44,6 @@ cmake --build .
 
 - [x] convert to `cmake` and make it work on any mac.
 - [ ] make it customizable.
-- [ ] Clean the missy code. 
 
 
 
