@@ -25,7 +25,7 @@ void MainWindow::createWidgets() {
 void MainWindow::setupLayout() {
     setWindowFlag(Qt::FramelessWindowHint);
     setWindowFlag(Qt::WindowStaysOnTopHint);
-    setAttribute(Qt::WA_ShowWithoutActivating);
+    setAttribute(Qt::WA_ShowWithoutActivating, false); // allow focus when showing
 
     layout->addWidget(query_input, 0);
     layout->addWidget(results_list, 0);
@@ -36,6 +36,7 @@ void MainWindow::setupLayout() {
     central->setLayout(layout);
 
     query_input->setFocus();
+    activateWindow();
 
     setCentralWidget(central);
     setFixedSize(400, 300);
@@ -173,4 +174,8 @@ void MainWindow::setupStyles() {
     results_list->setSelectionMode(QAbstractItemView::SingleSelection);
 
     results_list->setFont(font);
+}
+
+void MainWindow::moveEvent(QMoveEvent* event) {
+    deactivateApp();
 }

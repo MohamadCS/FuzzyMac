@@ -19,7 +19,7 @@ static int prefixScore(const std::string& cand, const std::string& query) {
     int score = 0;
     for (int i = 0; i < N; ++i) {
         if (cand[i] == query[i]) {
-            score+=10;
+            score += 10;
         } else {
             return score;
         }
@@ -45,7 +45,6 @@ int fuzzyScore(const std::string& cand, const std::string& query) {
 
     std::string lower_cand = toLower(cand);
 
-
     for (auto ch : query) {
         pos = lower_cand.find(ch, pos);
 
@@ -57,6 +56,7 @@ int fuzzyScore(const std::string& cand, const std::string& query) {
     }
 
     score += prefixScore(lower_cand, query);
+    qDebug() << std::format("{},{},{}", lower_cand, query, score);
 
     return score;
 }
