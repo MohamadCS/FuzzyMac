@@ -1,7 +1,5 @@
 # Fuzzy Mac
 
-THIS PROJECT WILL ONLY WORK ON MY COMPUTER(for now) UNLESS YOU CHANGE THE MAKEFILE.
-
 A GUI fuzzy finder for macOS(Very early release, most likely will not function properly).
 
 ## Overview
@@ -17,6 +15,15 @@ Still didn't create a custom config file support.
 ## Compiling from source
 
 ### cmake
+
+### Requirements
+
+Requires homebrew installation of qt6, you can install it using the command
+```bash
+brew install qt@6
+
+```
+
 For compiling both versions 
 ```
 mkdir build
@@ -25,29 +32,11 @@ cmake ..
 cmake --build .
 ```
 
-### make
-For now it requires wxWidgets in order to compile:
-
-- For compiling the GUI version.
-
-```cpp
-make
-
-```
-
-- For compiling the cli version.
-```cpp
-make CLI=1
-
-```
-
-
 ## TODOs
 
-- [] convert to `cmake` and make it work on any mac.
-- [] make it customizable.
-- [] Create custom text input, just like using similar concepts like my vimz app. 
-- [] Clean the missy code. 
+[x] convert to `cmake` and make it work on any mac.
+[] make it customizable.
+[] Clean the missy code. 
 
 
 
