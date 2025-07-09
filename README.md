@@ -34,9 +34,9 @@ cmake --build .
 
 ## TODOs
 
-[x] convert to `cmake` and make it work on any mac.
-[] make it customizable.
-[] Clean the missy code. 
+- [x] convert to `cmake` and make it work on any mac.
+- [ ] make it customizable.
+- [ ] Clean the missy code. 
 
 
 
