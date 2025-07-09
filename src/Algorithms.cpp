@@ -56,7 +56,6 @@ int fuzzyScore(const std::string& cand, const std::string& query) {
     }
 
     score += prefixScore(lower_cand, query);
-    qDebug() << std::format("{},{},{}", lower_cand, query, score);
 
     return score;
 }

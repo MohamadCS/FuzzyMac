@@ -17,7 +17,6 @@ void AppModeHandler::enterHandler(QListWidget* results_list) {
     QProcess* process = new QProcess(nullptr);
     QStringList args;
     args << QString::fromStdString(apps[results_indices[i]]);
-    qDebug() << QString::fromStdString(apps[results_indices[i]]);
     process->start("open", args);
     deactivateApp();
     results_list->window()->hide();
@@ -53,7 +52,6 @@ void CLIModeHandler::enterHandler(QListWidget* results_list) {
 }
 
 void CLIModeHandler::fillData(QListWidget* results_list) {
-    qDebug() << "CLI TOOL";
     entries = {};
     std::string line;
 
