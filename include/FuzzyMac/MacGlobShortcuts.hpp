@@ -1,10 +1,11 @@
 #pragma once
 
 #include "Carbon/Carbon.h"
-#include "MainFrame.hpp"
+#include "FuzzyMac/MainWindow.hpp"
+#include "MainWindow.hpp"
 
 
 
 OSStatus hotKeyHandler(EventHandlerCallRef nextHandler, EventRef theEvent, void* userData); 
-void registerGlobalHotkey(MainFrame* frame); 
+void registerGlobalHotkey(MainWindow* win); 
 

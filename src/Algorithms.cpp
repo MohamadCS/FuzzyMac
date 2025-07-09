@@ -1,25 +1,24 @@
-#include "../include/App/Algorithms.hpp"
+#include "FuzzyMac/Algorithms.hpp"
+#include <QDebug>
 #include <algorithm>
 #include <cctype>
 
-
-
 static char flipChar(char c) {
-    if (c >= 'a' && c <='z') {
+    if (c >= 'a' && c <= 'z') {
         return 'A' + c - 'a';
-    } else if (c >= 'A' && c <='Z'){
+    } else if (c >= 'A' && c <= 'Z') {
         return 'a' + c - 'A';
     } else {
-        return c; 
+        return c;
     }
 }
 
-static int prefixScore(const wxString& cand,const wxString& query) {
+static int prefixScore(const std::string& cand, const std::string& query) {
     const auto N = std::min(cand.size(), query.size());
 
     int score = 0;
-    for(int i = 0; i < N; ++i){
-        if(cand[i] == query[i]) {
+    for (int i = 0; i < N; ++i) {
+        if (cand[i] == query[i]) {
             score++;
         } else {
             return score;
@@ -29,25 +28,35 @@ static int prefixScore(const wxString& cand,const wxString& query) {
     return score;
 }
 
-int fuzzyScore(const wxString& cand, const wxString& query) {
+static std::string toLower(const std::string& str) {
+    std::string res;
+    res.resize(str.size());
+
+    for (int i = 0; i < str.size(); ++i) {
+        res[i] = (str[i] >= 'A' && str[i] <= 'Z') ? str[i] - 'A' + 'a' : str[i];
+    }
+
+    return res;
+}
+
+int fuzzyScore(const std::string& cand, const std::string& query) {
     int score = 0;
     std::size_t pos = 0;
 
-    for(auto ch : query) {
-        pos = cand.find(ch, pos);
+    std::string lower_cand = toLower(cand);
 
-        if(pos == std::string::npos) {
+
+    for (auto ch : query) {
+        pos = lower_cand.find(ch, pos);
+
+        if (pos == std::string::npos) {
             return -1;
         }
         ++score;
         ++pos;
     }
 
-    score += prefixScore(cand, query);
+    score += prefixScore(lower_cand, query);
 
     return score;
 }
-
-
-
-

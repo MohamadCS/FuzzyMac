@@ -5,58 +5,64 @@ project(FuzzyMac LANGUAGES C CXX OBJCXX)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set(CMAKE_AUTOMOC ON) 
+set(CMAKE_AUTORCC ON)
+set(CMAKE_AUTOUIC ON)
+
 enable_language(OBJCXX)
 
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
 # Source files
 file(GLOB CPP_SOURCES src/*.cpp)
+file(GLOB CPP_HEADERS include/FuzzyMac/*.hpp)
 file(GLOB MM_SOURCES  src/*.mm)
+
 set(SOURCES ${CPP_SOURCES} ${MM_SOURCES})
+set(HEADERS ${CPP_HEADERS})
 
-execute_process(
-    COMMAND sh -c "~/Developer/Libraries/wxWidgets/macbuild/wx-config --libs"
-    OUTPUT_VARIABLE WX_LDFLAGS_RAW
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-)
 
-execute_process(
-    COMMAND sh -c "~/Developer/Libraries/wxWidgets/macbuild/wx-config --cxxflags"
-    OUTPUT_VARIABLE WX_CFLAGS_RAW
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-)
+set(CMAKE_PREFIX_PATH "/opt/homebrew/opt/qt@6/lib/cmake")
 
-separate_arguments(WX_LDFLAGS NATIVE_COMMAND "${WX_LDFLAGS_RAW}")
-separate_arguments(WX_CFLAGS NATIVE_COMMAND "${WX_CFLAGS_RAW}")
+find_package(Qt6 COMPONENTS Core Gui Widgets REQUIRED)
+
 
 # =========================
 # GUI App Target (FuzzyMac)
 # =========================
 
-add_executable(FuzzyMac MACOSX_BUNDLE ${SOURCES})
+add_executable(FuzzyMac ${SOURCES} ${HEADERS})
 
-target_compile_options(FuzzyMac PRIVATE ${WX_CFLAGS})
-target_link_libraries(FuzzyMac PRIVATE ${WX_LDFLAGS}
-    "-framework Carbon" 
-     "-framework AppKit")
+target_compile_definitions(FuzzyMac PRIVATE)
 
-# Bundle settings
+target_link_libraries(FuzzyMac PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets "-framework Carbon" "-framework AppKit")
+
 set_target_properties(FuzzyMac PROPERTIES
     MACOSX_BUNDLE TRUE
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/build/App"
+    MACOSX_BUNDLE_BUNDLE_NAME "FuzzyMac"
+    MACOSX_BUNDLE_GUI_IDENTIFIER "com.fuzzymac.app"
     MACOSX_BUNDLE_INFO_PLIST "${CMAKE_SOURCE_DIR}/res/Info.plist"
+    MACOSX_BUNDLE_BUNDLE_VERSION "1.0"
+    MACOSX_BUNDLE_SHORT_VERSION_STRING "1.0"
+    MACOSX_BUNDLE_INFO_STRING "A Fuzzy finder for macOs"
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/build/app/"
 )
+
+
+
+
 
 # =========================
 # CLI Target (FuzzyMacCLI)
 # =========================
-add_executable(FuzzyMacCLI ${SOURCES})
+
+
+add_executable(FuzzyMacCLI ${SOURCES} ${HEADERS})
 
 target_compile_definitions(FuzzyMacCLI PRIVATE CLI_TOOL)
-target_compile_options(FuzzyMacCLI PRIVATE ${WX_CFLAGS})
-target_link_libraries(FuzzyMacCLI PRIVATE ${WX_LDFLAGS} "-framework Carbon" "-framework AppKit")
 
-# Set output directory to `cli/`
+target_link_libraries(FuzzyMacCLI PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets "-framework Carbon" "-framework AppKit")
+
 set_target_properties(FuzzyMacCLI PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/build/cli/"
 )
