@@ -61,6 +61,19 @@ void MainWindow::prevItem() {
     results_list->setCurrentRow(prev);
 }
 
+void MainWindow::wakeup() {
+    show();
+    raise();
+    activateWindow();
+    query_input->setFocus();
+    query_input->selectAll();
+}
+
+void MainWindow::sleep() {
+    deactivateApp();
+    hide();
+}
+
 void MainWindow::connectEventHandlers() {
 
     results_watcher = new QFutureWatcher<QStringList>(this);
@@ -92,6 +105,8 @@ void MainWindow::connectEventHandlers() {
         }
     });
 
+    connect(results_list, &QListWidget::itemDoubleClicked, this, [this](QListWidgetItem* item) { openItem(); });
+
     QObject::connect(qApp, &QGuiApplication::applicationStateChanged, this, &MainWindow::onApplicationStateChanged);
 }
 
@@ -105,6 +120,8 @@ void MainWindow::createKeybinds() {
     new QShortcut(QKeySequence(Qt::MetaModifier | Qt::Key_N), this, SLOT(nextItem()));
     new QShortcut(QKeySequence(Qt::MetaModifier | Qt::Key_P), this, SLOT(prevItem()));
     new QShortcut(Qt::Key_Return, this, SLOT(openItem()));
+    auto escShortcut = new QShortcut(QKeySequence(Qt::Key_Escape), this);
+    connect(escShortcut, &QShortcut::activated, this, [this]() { this->sleep(); });
 }
 
 void MainWindow::fillData() {

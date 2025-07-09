@@ -29,6 +29,9 @@ public:
     MainWindow(Mode mode = Mode::APP, QWidget* parent = nullptr);
     ~MainWindow();
 
+    void wakeup();
+    void sleep();
+
 public slots:
     void nextItem();
     void prevItem();
@@ -54,6 +57,4 @@ private:
     void fillData();
     void connectEventHandlers();
 
-    void customSearchDataFill(const QString& query);
-    void spotlightSearchDataFill(const QString& query);
 };
