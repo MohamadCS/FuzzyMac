@@ -2,13 +2,36 @@
 #import <CoreServices/CoreServices.h>
 #import <Foundation/Foundation.h>
 
+#include <QWidget>
 #include <algorithm>
+#include <objc/objc-runtime.h>
 #include <string>
 #include <vector>
 
 extern "C" void deactivateApp() {
 
   [NSApp hide:nil]; // This returns focus to the previously active app
+}
+
+#import <Cocoa/Cocoa.h>
+#include <QWidget>
+
+extern "C" void makeWindowFloating(QWidget *widget) {
+  // Get the native NSWindow handle
+  NSView *native_view = reinterpret_cast<NSView *>(widget->winId());
+  NSWindow *window = [native_view window];
+
+  // Set the floating window level
+  [window setLevel:NSFloatingWindowLevel];
+  [window setHidesOnDeactivate:YES];
+
+  [window setCollectionBehavior:(NSWindowCollectionBehaviorCanJoinAllSpaces |
+                                 NSWindowCollectionBehaviorTransient |
+                                 NSWindowCollectionBehaviorStationary)];
+
+  [window setStyleMask:(NSWindowStyleMaskUtilityWindow |
+                        NSWindowStyleMaskNonactivatingPanel |
+                        NSWindowStyleMaskBorderless)];
 }
 
 extern "C++" std::vector<std::string>

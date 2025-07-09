@@ -11,10 +11,7 @@
 #include <QTimer>
 #include <QVBoxLayout>
 
-#include <filesystem>
-#include <iostream>
 #include <memory>
-#include <string>
 
 namespace fs = std::filesystem;
 
@@ -36,9 +33,6 @@ public slots:
     void prevItem();
     void openItem();
     void onApplicationStateChanged(Qt::ApplicationState state);
-
-protected:
-    void moveEvent(QMoveEvent *event) override;
 
 private:
     QWidget* central;

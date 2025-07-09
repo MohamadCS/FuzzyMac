@@ -1,6 +1,7 @@
-#include "../include/FuzzyMac/MainWindow.hpp"
-
+#include "FuzzyMac/MainWindow.hpp"
 #include <QApplication>
+
+#include <QLabel>
 
 int main(int argc, char* argv[]) {
 #ifdef CLI_TOOL
