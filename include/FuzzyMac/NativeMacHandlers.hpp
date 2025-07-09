@@ -3,8 +3,7 @@
 #include <string>
 #include <vector>
 
-extern "C" void MakeWindowKey(void* windowPtr);
-extern "C" void DeactivateApp();
+extern "C" void deactivateApp();
 
 extern "C++" std::vector<std::string> spotlightSearch(const std::string& query,
                                                       const std::vector<std::string>& folders);
