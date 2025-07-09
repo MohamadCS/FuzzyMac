@@ -1,8 +1,11 @@
 #include "FuzzyMac/MainWindow.hpp"
 #include "FuzzyMac/MacGlobShortcuts.hpp"
+#include "FuzzyMac/NativeMacHandlers.hpp"
 
+#include <QApplication>
 #include <QDebug>
 #include <QFont>
+#include <QGuiApplication>
 #include <QMessageBox>
 #include <QProcess>
 #include <QShortcut>
@@ -22,6 +25,7 @@ void MainWindow::createWidgets() {
 void MainWindow::setupLayout() {
     setWindowFlag(Qt::FramelessWindowHint);
     setWindowFlag(Qt::WindowStaysOnTopHint);
+    setAttribute(Qt::WA_ShowWithoutActivating);
 
     layout->addWidget(query_input, 0);
     layout->addWidget(results_list, 0);
@@ -37,7 +41,6 @@ void MainWindow::setupLayout() {
     setFixedSize(400, 300);
 }
 
-
 void MainWindow::nextItem() {
     int next = std::min(results_list->count() - 1, results_list->currentRow() + 1);
     results_list->setCurrentRow(next);
@@ -52,16 +55,8 @@ void MainWindow::prevItem() {
     results_list->setCurrentRow(prev);
 }
 
-void MainWindow::createKeybinds() {
-    // Global shortcuts
-
-    if (mode != Mode::CLI) {
-        registerGlobalHotkey(this);
-    }
-
-    new QShortcut(QKeySequence(Qt::MetaModifier | Qt::Key_N), this, SLOT(nextItem()));
-    new QShortcut(QKeySequence(Qt::MetaModifier | Qt::Key_P), this, SLOT(prevItem()));
-    new QShortcut(Qt::Key_Return, this, SLOT(openItem()));
+void MainWindow::connectEventHandlers() {
+    // QObject::connect(qApp, &QGuiApplication::applicationStateChanged, this, &MainWindow::onApplicationStateChanged);
 
     QObject::connect(search_refresh_timer, &QTimer::timeout, [this]() {
         auto query = query_input->text();
@@ -88,6 +83,18 @@ void MainWindow::createKeybinds() {
     });
 }
 
+void MainWindow::createKeybinds() {
+    // Global shortcuts
+
+    if (mode != Mode::CLI) {
+        registerGlobalHotkey(this);
+    }
+
+    new QShortcut(QKeySequence(Qt::MetaModifier | Qt::Key_N), this, SLOT(nextItem()));
+    new QShortcut(QKeySequence(Qt::MetaModifier | Qt::Key_P), this, SLOT(prevItem()));
+    new QShortcut(Qt::Key_Return, this, SLOT(openItem()));
+}
+
 void MainWindow::fillData() {
     mode_handler[mode]->fillData(results_list);
 }
@@ -104,10 +111,14 @@ MainWindow::MainWindow(Mode mode, QWidget* parent)
     setupLayout();
     setupStyles();
     createKeybinds();
+    connectEventHandlers();
     fillData();
 }
 
 MainWindow::~MainWindow() {
+}
+
+void MainWindow::onApplicationStateChanged(Qt::ApplicationState state) {
 }
 
 void MainWindow::setupStyles() {
@@ -163,4 +174,3 @@ void MainWindow::setupStyles() {
 
     results_list->setFont(font);
 }
-
