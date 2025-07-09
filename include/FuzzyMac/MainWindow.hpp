@@ -37,6 +37,9 @@ public slots:
     void openItem();
     void onApplicationStateChanged(Qt::ApplicationState state);
 
+protected:
+    void moveEvent(QMoveEvent *event) override;
+
 private:
     QWidget* central;
     QLineEdit* query_input;

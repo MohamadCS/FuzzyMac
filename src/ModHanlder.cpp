@@ -117,7 +117,7 @@ static void customSearch(const QString& query_, QListWidget* results_list, const
 
     // calculate the score for each entry.
     for (int i = 0; i < entries.size(); ++i) {
-        int score = fuzzyScore(entries[i], query);
+        int score = fuzzyScore(fs::path(entries[i]).filename().string(), query);
 
         if (score >= 0) {
             scores_per_idx.push_back({score, i});
