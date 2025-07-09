@@ -2,6 +2,7 @@
 
 #include "FuzzyMac/ModHandler.hpp"
 
+#include <QFutureWatcher>
 #include <QLineEdit>
 #include <QListWidget>
 #include <QMainWindow>
@@ -40,6 +41,7 @@ private:
     QListWidget* results_list;
     QVBoxLayout* layout;
     QTimer* search_refresh_timer;
+    QFutureWatcher<QStringList>* results_watcher;
 
     Mode mode;
     std::map<Mode, std::unique_ptr<ModeHandler>> mode_handler;

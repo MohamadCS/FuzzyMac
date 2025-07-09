@@ -7,7 +7,7 @@
 
 namespace fs = std::filesystem;
 
-static void customSearch(const QString& query_, QListWidget* results_list, const std::vector<std::string>& entries,
+static QStringList customSearch(const QString& query_, QListWidget* results_list, const std::vector<std::string>& entries,
                          std::vector<int>& results_indices);
 
 /***************************/
@@ -40,8 +40,8 @@ void AppModeHandler::fillData(QListWidget* results_list) {
     }
 }
 
-void AppModeHandler::updateResultsList(const QString& query_, QListWidget* results_list) {
-    customSearch(query_, results_list, apps, results_indices);
+QStringList AppModeHandler::getResults(const QString& query_, QListWidget* results_list) {
+    return customSearch(query_, results_list, apps, results_indices);
 }
 
 /***************************/
@@ -66,8 +66,8 @@ void CLIModeHandler::fillData(QListWidget* results_list) {
     }
 }
 
-void CLIModeHandler::updateResultsList(const QString& query_, QListWidget* results_list) {
-    customSearch(query_, results_list, entries, results_indices);
+QStringList CLIModeHandler::getResults(const QString& query_, QListWidget* results_list) {
+    return customSearch(query_, results_list, entries, results_indices);
 }
 
 /***************************/
@@ -86,10 +86,10 @@ void FileModeHandler::fillData(QListWidget* results_list) {
     // should not be the first
 }
 
-void FileModeHandler::updateResultsList(const QString& query_, QListWidget* results_list) {
+QStringList FileModeHandler::getResults(const QString& query_, QListWidget* results_list) {
     abs_results.clear();
     if (query_.size() <= 1) {
-        return;
+        return {};
     }
 
     auto query = query_.right(query_.size() - 1);
@@ -97,16 +97,18 @@ void FileModeHandler::updateResultsList(const QString& query_, QListWidget* resu
     std::vector<std::string> paths{fs::absolute(std::format("{}/Library/Mobile Documents/", std::getenv("HOME")))};
     auto files = spotlightSearch(std::format("kMDItemDisplayName == '{}*'c", query.toStdString()), paths);
 
+    QStringList res{};
     for (const auto& file : files) {
-        results_list->addItem(QString::fromStdString(fs::path(file).filename().string()));
+        res.push_back(QString::fromStdString(fs::path(file).filename().string()));
     }
 
     abs_results = files;
+    return res;
 }
 
 /***************************/
 
-static void customSearch(const QString& query_, QListWidget* results_list, const std::vector<std::string>& entries,
+static QStringList customSearch(const QString& query_, QListWidget* results_list, const std::vector<std::string>& entries,
                          std::vector<int>& results_indices) {
 
     results_indices.clear();
@@ -128,13 +130,13 @@ static void customSearch(const QString& query_, QListWidget* results_list, const
         return lhs.first > rhs.first;
     });
 
+    QStringList res;
     for (int i = 0; i < scores_per_idx.size(); ++i) {
         int idx = scores_per_idx[i].second;
-        results_list->addItem(QString::fromStdString(fs::path(entries[idx]).filename().string()));
+        res.push_back(QString::fromStdString(fs::path(entries[idx]).filename().string()));
         results_indices.push_back(idx);
     }
 
-    if (scores_per_idx.size() >= 1) {
-        results_list->setCurrentRow(0);
-    }
+    return res;
+
 }

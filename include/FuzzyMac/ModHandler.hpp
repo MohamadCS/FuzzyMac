@@ -12,7 +12,7 @@ class ModeHandler {
 public:
     virtual void enterHandler(QListWidget* results_list) = 0;
     virtual void fillData(QListWidget* results_list) = 0;
-    virtual void updateResultsList(const QString& query_, QListWidget* results_list) = 0;
+    virtual QStringList getResults(const QString& query_, QListWidget* results_list) = 0;
     virtual ~ModeHandler() = default;
 };
 
@@ -24,7 +24,7 @@ public:
     ~AppModeHandler() override = default;
     void enterHandler(QListWidget* results_list) override;
     void fillData(QListWidget* results_list) override;
-    void updateResultsList(const QString& query_, QListWidget* results_list) override;
+    QStringList getResults(const QString& query_, QListWidget* results_list) override;
 };
 
 class CLIModeHandler : public ModeHandler {
@@ -35,7 +35,7 @@ public:
     ~CLIModeHandler() override = default;
     void enterHandler(QListWidget* results_list) override;
     void fillData(QListWidget* results_list) override;
-    void updateResultsList(const QString& query_, QListWidget* results_list) override;
+    QStringList getResults(const QString& query_, QListWidget* results_list) override;
 };
 
 class FileModeHandler : public ModeHandler {
@@ -45,5 +45,5 @@ public:
     ~FileModeHandler() override = default;
     void enterHandler(QListWidget* results_list) override;
     void fillData(QListWidget* results_list) override;
-    void updateResultsList(const QString& query_, QListWidget* results_list) override;
+    QStringList getResults(const QString& query_, QListWidget* results_list) override;
 };
