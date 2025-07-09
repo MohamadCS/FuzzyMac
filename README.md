@@ -5,10 +5,14 @@ A GUI fuzzy finder for macOS(Very early release, most likely will not function p
 
 ## Overview
 
-The program has two modes:
-- CLI mode: `list_of_items | FuzzyMacCLI | cmd`
-- Application Mode: Runs in background with the default `cmd-space` to open. By
-default it searchs for applications under `/Applications/`. Enter `<Space>` in 
+## CLI mode
+```
+list_of_items | FuzzyMacCLI | cmd
+```
+
+## Application Mode
+Runs in background with the default `cmd-space` to open. By
+default it searchs for applications under `/Applications/`. Enter `<Space>` in
 order to search files under `iCloud`(this is the default, I plan to make a config file support
 for any dirs to look for).
 
@@ -32,7 +36,7 @@ brew install qt@6
 ```
 
 ### cmake
-For compiling both versions 
+For compiling both versions
 ```
 mkdir build
 cd build
