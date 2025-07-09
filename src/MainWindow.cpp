@@ -21,6 +21,7 @@ void MainWindow::createWidgets() {
 
 void MainWindow::setupLayout() {
     setWindowFlag(Qt::FramelessWindowHint);
+    setWindowFlag(Qt::WindowStaysOnTopHint);
 
     layout->addWidget(query_input, 0);
     layout->addWidget(results_list, 0);

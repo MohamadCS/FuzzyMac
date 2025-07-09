@@ -1,4 +1,5 @@
 # Fuzzy Mac
+![Example](./res/overview.png)
 
 A GUI fuzzy finder for macOS(Very early release, most likely will not function properly).
 

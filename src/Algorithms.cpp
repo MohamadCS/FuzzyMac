@@ -19,7 +19,7 @@ static int prefixScore(const std::string& cand, const std::string& query) {
     int score = 0;
     for (int i = 0; i < N; ++i) {
         if (cand[i] == query[i]) {
-            score++;
+            score+=10;
         } else {
             return score;
         }
