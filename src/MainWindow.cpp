@@ -10,6 +10,7 @@
 #include <QProcess>
 #include <QShortcut>
 #include <QStaticText>
+#include <QtConcurrent>
 #include <memory>
 
 void MainWindow::createWidgets() {
@@ -27,7 +28,7 @@ void MainWindow::setupLayout() {
     setWindowFlag(Qt::WindowStaysOnTopHint);
     // setWindowFlag(Qt::Tool);
     //
-    resize(400,400);
+    resize(400, 400);
 
     makeWindowFloating(this);
 
@@ -61,20 +62,10 @@ void MainWindow::prevItem() {
 }
 
 void MainWindow::connectEventHandlers() {
-    QObject::connect(qApp, &QGuiApplication::applicationStateChanged, this, &MainWindow::onApplicationStateChanged);
 
-    QObject::connect(search_refresh_timer, &QTimer::timeout, [this]() {
-        auto query = query_input->text();
-        results_list->clear();
+    results_watcher = new QFutureWatcher<QStringList>(this);
 
-        mode_handler[mode]->updateResultsList(query, results_list);
-
-        if (results_list->count() > 0) {
-            results_list->setCurrentRow(0);
-        }
-    });
-
-    QObject::connect(query_input, &QLineEdit::textChanged, [this](const QString& text) {
+    connect(query_input, &QLineEdit::textChanged, this, [this](const QString& text) {
         if (mode != Mode::CLI) {
             if (text.size() > 0 && text[0] == ' ') {
                 mode = Mode::FILE;
@@ -82,10 +73,26 @@ void MainWindow::connectEventHandlers() {
                 mode = Mode::APP;
             }
         }
+        if (results_watcher->isRunning()) {
+            results_watcher->cancel();
+        }
 
-        int time = (mode == Mode::APP) ? 10 : 200;
-        search_refresh_timer->start(time);
+        QFuture<QStringList> future = QtConcurrent::run(
+            [this, text]() -> QStringList { return mode_handler[mode]->getResults(text, this->results_list); });
+
+        results_watcher->setFuture(future);
     });
+
+    connect(results_watcher, &QFutureWatcher<QStringList>::finished, this, [this]() {
+        QStringList results = results_watcher->result();
+        results_list->clear();
+        results_list->addItems(results);
+        if (results.size() > 1) {
+            results_list->setCurrentRow(0);
+        }
+    });
+
+    QObject::connect(qApp, &QGuiApplication::applicationStateChanged, this, &MainWindow::onApplicationStateChanged);
 }
 
 void MainWindow::createKeybinds() {

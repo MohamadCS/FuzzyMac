@@ -66,7 +66,7 @@ spotlightSearch(const std::string &query,
     std::vector<std::string> results;
 
     int i = 0;
-    const auto MAX = 20;
+    const auto MAX = 30;
     for (NSString *line in lines) {
       if (i > MAX) {
         break;
