@@ -19,18 +19,21 @@ void MainWindow::createWidgets() {
 
     query_input = new QLineEdit(central);
     results_list = new QListWidget(central);
-    search_refresh_timer = new QTimer;
-    search_refresh_timer->setSingleShot(true);
+    // search_refresh_timer = new QTimer;
+    // search_refresh_timer->setSingleShot(true);
 }
 
 void MainWindow::setupLayout() {
-    // setWindowFlag(Qt::FramelessWindowHint);
     setWindowFlag(Qt::WindowStaysOnTopHint);
-    // setWindowFlag(Qt::Tool);
+    if (mode == Mode::CLI) {
+        setWindowFlag(Qt::FramelessWindowHint);
+        setWindowFlag(Qt::FramelessWindowHint);
+        // setWindowFlag(Qt::Tool);
+    } else {
+        resize(400, 400);
+        makeWindowFloating(this);
+    }
     //
-    resize(400, 400);
-
-    makeWindowFloating(this);
 
     layout->addWidget(query_input, 0);
     layout->addWidget(results_list, 0);
@@ -42,6 +45,7 @@ void MainWindow::setupLayout() {
 
     query_input->setFocus();
     activateWindow();
+    raise();
 
     setCentralWidget(central);
     setFixedSize(400, 300);
@@ -86,6 +90,7 @@ void MainWindow::connectEventHandlers() {
                 mode = Mode::APP;
             }
         }
+
         if (results_watcher->isRunning()) {
             results_watcher->cancel();
         }
@@ -100,14 +105,16 @@ void MainWindow::connectEventHandlers() {
         QStringList results = results_watcher->result();
         results_list->clear();
         results_list->addItems(results);
-        if (results.size() > 1) {
+        if (results.size() >= 1) {
             results_list->setCurrentRow(0);
         }
     });
 
     connect(results_list, &QListWidget::itemDoubleClicked, this, [this](QListWidgetItem* item) { openItem(); });
 
+#ifndef CLI_TOOL
     QObject::connect(qApp, &QGuiApplication::applicationStateChanged, this, &MainWindow::onApplicationStateChanged);
+#endif
 }
 
 void MainWindow::createKeybinds() {
@@ -126,6 +133,9 @@ void MainWindow::createKeybinds() {
 
 void MainWindow::fillData() {
     mode_handler[mode]->fillData(results_list);
+    if(results_list->count() > 0) {
+        results_list->setCurrentRow(0);
+    }
 }
 
 MainWindow::MainWindow(Mode mode, QWidget* parent)
@@ -146,17 +156,21 @@ MainWindow::MainWindow(Mode mode, QWidget* parent)
     if (mode != Mode::CLI) {
         deactivateApp();
         hide();
+    } else {
+        wakeup();
     }
 }
 
 MainWindow::~MainWindow() {
 }
 
+#ifndef CLI_TOOL
 void MainWindow::onApplicationStateChanged(Qt::ApplicationState state) {
     if (state == Qt::ApplicationInactive) {
         hide();
     }
 }
+#endif
 
 void MainWindow::setupStyles() {
     QFont font("JetBrainsMono Nerd Font", 25);
@@ -183,30 +197,17 @@ void MainWindow::setupStyles() {
             padding: 0px;
         }
 
-        qscrollbar::up-arrow:vertical {
-            top: 0px;
-            border-top-color: transparent;
-        }
-
-
-        QScrollBar::down-arrow:vertical {
-            bottom: 0px;
-            border-top-color: transparent;
-        }
-
         QScrollBar:vertical {
-            border: none;
-            color: #575279;
-            border: none;
             background:  #f2e9e1;
-            padding: 0px;
         }
+
     )");
 
     query_input->setFont(font);
     font.setPointSize(15);
 
     results_list->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    results_list->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     results_list->setSelectionMode(QAbstractItemView::SingleSelection);
 
     results_list->setFont(font);

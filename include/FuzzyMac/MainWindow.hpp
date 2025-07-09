@@ -36,7 +36,9 @@ public slots:
     void nextItem();
     void prevItem();
     void openItem();
+#ifndef CLI_TOOL
     void onApplicationStateChanged(Qt::ApplicationState state);
+#endif
 
 private:
     QWidget* central;
