@@ -1,6 +1,7 @@
 #pragma once
 
 #include "FuzzyMac/ModHandler.hpp"
+#include "toml++/toml.h"
 
 #include <QFutureWatcher>
 #include <QLineEdit>
@@ -40,6 +41,8 @@ public slots:
     void onApplicationStateChanged(Qt::ApplicationState state);
 #endif
 
+    const toml::table& getConfig() const;
+
 private:
     QWidget* central;
     QLineEdit* query_input;
@@ -47,10 +50,12 @@ private:
     QVBoxLayout* layout;
     QTimer* search_refresh_timer;
     QFutureWatcher<QStringList>* results_watcher;
+    toml::table config;
 
     Mode mode;
     std::map<Mode, std::unique_ptr<ModeHandler>> mode_handler;
 
+    void processConfigFile();
     void createWidgets();
     void setupLayout();
     void setupStyles();
