@@ -22,7 +22,39 @@ for file search I used spotlight's api in order to find the files as quickly as 
 
 ## Config
 
-Still didn't create a custom config file support.
+You can configure FuzzyMac by creating a file `~/.config/FuzzyMac/config.toml`
+
+### Default config
+
+
+```toml
+[colors.query_input]
+selection = "#cecacd"
+selection_background = "#cecacd"
+text = "#575279"
+background = "#f2e9e1"
+
+[colors.results_list]
+selection = "#575279"
+selection_background = "#cecacd"
+text = "#575279"
+background = "#f2e9e1"
+
+
+[mode.apps]
+
+dirs = ["/Applications/", "/System/Applications", "/Applications/Utilities/"]
+
+apps = ["/System/Library/CoreServices/Finder.app"]
+
+[mode.files]
+
+dirs = ["$HOME/Library/Mobile Documents/"]
+
+```
+
+if the user does not define a field, it will be defined automatically using the config
+    file above.
 
 ## Compiling from source
 
@@ -47,7 +79,7 @@ cmake --build .
 ## TODOs
 
 - [x] convert to `cmake` and make it work on any mac.
-- [ ] make it customizable.
+- [x] make it customizable.
 - [ ] Add the ability to view file path. 
 - [ ] Add application icon view. 
 - [ ] add application folder change watcher.
