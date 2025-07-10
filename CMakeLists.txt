@@ -41,7 +41,8 @@ add_executable(FuzzyMac ${SOURCES} ${HEADERS})
 target_compile_definitions(FuzzyMac PRIVATE)
 target_sources(FuzzyMac PRIVATE ${APP_ICON})
 
-target_link_libraries(FuzzyMac PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Concurrent "-framework Carbon" "-framework AppKit")
+target_link_libraries(FuzzyMac PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Concurrent "-framework Cocoa"
+    "-framework QuickLook" "-framework QuickLookUI" "-framework Carbon" "-framework AppKit")
 
 set_target_properties(FuzzyMac PROPERTIES
     MACOSX_BUNDLE TRUE
@@ -62,7 +63,7 @@ add_executable(FuzzyMacCLI ${SOURCES} ${HEADERS})
 
 target_compile_definitions(FuzzyMacCLI PRIVATE CLI_TOOL)
 
-target_link_libraries(FuzzyMacCLI PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Concurrent "-framework Carbon" "-framework AppKit")
+target_link_libraries(FuzzyMacCLI PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Concurrent "-framework Carbon" "-framework AppKit" "-framework QuickLook" "-framework QuickLookUI" "-framework Carbon")
 
 set_target_properties(FuzzyMacCLI PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/build/cli/"

@@ -1,5 +1,6 @@
 #include "FuzzyMac/MainWindow.hpp"
 #include "FuzzyMac/MacGlobShortcuts.hpp"
+#include "FuzzyMac/ModHandler.hpp"
 #include "FuzzyMac/NativeMacHandlers.hpp"
 #include "FuzzyMac/ParseConfig.hpp"
 #include "toml++/impl/parser.hpp"
@@ -25,6 +26,8 @@ const toml::table& MainWindow::getConfig() const {
     return config;
 }
 
+
+
 void MainWindow::createWidgets() {
     central = new QWidget(this);
     layout = new QVBoxLayout(central);
@@ -34,6 +37,7 @@ void MainWindow::createWidgets() {
     // search_refresh_timer = new QTimer;
     // search_refresh_timer->setSingleShot(true);
 }
+
 
 void MainWindow::setupLayout() {
     setWindowFlag(Qt::WindowStaysOnTopHint);
@@ -70,6 +74,10 @@ void MainWindow::nextItem() {
 
 void MainWindow::openItem() {
     mode_handler[mode]->enterHandler(results_list);
+}
+
+void MainWindow::quickLock() {
+    mode_handler[mode]->handleQuickLock(results_list);
 }
 
 void MainWindow::prevItem() {
@@ -138,6 +146,7 @@ void MainWindow::createKeybinds() {
 
     new QShortcut(QKeySequence(Qt::MetaModifier | Qt::Key_N), this, SLOT(nextItem()));
     new QShortcut(QKeySequence(Qt::MetaModifier | Qt::Key_P), this, SLOT(prevItem()));
+    new QShortcut(QKeySequence(Qt::MetaModifier | Qt::Key_Q), this, SLOT(quickLock()));
     new QShortcut(Qt::Key_Return, this, SLOT(openItem()));
 
     auto escShortcut = new QShortcut(QKeySequence(Qt::Key_Escape), this);
@@ -215,7 +224,7 @@ void MainWindow::setupStyles() {
                                     .arg(get<std::string>(config, {"colors", "results_list", "text"}))
                                     .arg(get<std::string>(config, {"colors", "results_list", "background"})));
 
-    QFont font("JetBrainsMono Nerd Font", 25);
+    QFont font(get<std::string>(config, {"font"}).c_str(), 25);
     query_input->setFont(font);
     font.setPointSize(15);
 
@@ -225,3 +234,5 @@ void MainWindow::setupStyles() {
 
     results_list->setFont(font);
 }
+
+

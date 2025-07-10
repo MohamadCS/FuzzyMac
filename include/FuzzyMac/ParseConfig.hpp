@@ -8,6 +8,7 @@
 // Generic get with fallback from default
 
 const toml::table default_config = toml::parse(R"toml(
+font="SF Mono"
 [colors.query_input]
 selection = "#cecacd"
 selection_background = "#cecacd"

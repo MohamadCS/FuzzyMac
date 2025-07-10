@@ -1,6 +1,11 @@
 #import <Cocoa/Cocoa.h>
 #import <CoreServices/CoreServices.h>
 #import <Foundation/Foundation.h>
+#import <QuickLook/QuickLook.h>
+#import <Foundation/Foundation.h>
+#import <QuickLook/QuickLook.h>
+#import <Foundation/Foundation.h>
+#import <QuickLookUI/QuickLookUI.h>
 
 #include <QWidget>
 #include <algorithm>
@@ -80,3 +85,58 @@ spotlightSearch(const std::string &query,
     return results;
   }
 }
+
+
+@interface PreviewController : NSObject <QLPreviewPanelDataSource>
+{
+    NSURL *_file;
+}
+- (instancetype)initWithFile:(NSURL *)file;
+- (void)showPreview;
+@end
+
+@implementation PreviewController
+- (instancetype)initWithFile:(NSURL *)file {
+    if ((self = [super init])) {
+        _file = file;
+    }
+    return self;
+}
+
+- (NSInteger)numberOfPreviewItemsInPreviewPanel:(QLPreviewPanel *)panel {
+    return 1;
+}
+
+- (id<QLPreviewItem>)previewPanel:(QLPreviewPanel *)panel previewItemAtIndex:(NSInteger)index {
+    return _file;
+}
+
+- (void)showPreview {
+    QLPreviewPanel *panel = [QLPreviewPanel sharedPreviewPanel];
+    panel.dataSource = self;
+    [panel makeKeyAndOrderFront:nil];
+    [panel reloadData];
+}
+@end
+
+static PreviewController *gPreviewController = nil;
+
+extern "C" void closeQuickLook() {
+    QLPreviewPanel *panel = [QLPreviewPanel sharedPreviewPanel];
+    if ([panel isVisible]) {
+        [panel orderOut:nil];  // Close the panel
+    }
+}
+
+extern "C++" void quickLock(const std::string& filePath) {
+    @autoreleasepool {
+        closeQuickLook();
+        NSString *nsPath = [NSString stringWithUTF8String:filePath.c_str()];
+        NSURL *url = [NSURL fileURLWithPath:nsPath];
+        if (!url) return;
+
+        gPreviewController = [[PreviewController alloc] initWithFile:url];
+        [gPreviewController showPreview];
+    }
+}
+

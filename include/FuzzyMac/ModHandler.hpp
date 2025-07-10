@@ -17,6 +17,7 @@ public:
     toml::table* config;
     virtual void enterHandler(QListWidget* results_list) = 0;
     virtual void fillData(QListWidget* results_list) = 0;
+    virtual void handleQuickLock(QListWidget* results_list) = 0;
     virtual QStringList getResults(const QString& query_, QListWidget* results_list) = 0;
     virtual ~ModeHandler() = default;
 };
@@ -32,6 +33,7 @@ public:
     ~AppModeHandler() override = default;
     void enterHandler(QListWidget* results_list) override;
     void fillData(QListWidget* results_list) override;
+    void handleQuickLock(QListWidget* results_list) override;
     QStringList getResults(const QString& query_, QListWidget* results_list) override;
 };
 
@@ -48,6 +50,7 @@ public:
     void enterHandler(QListWidget* results_list) override;
     void fillData(QListWidget* results_list) override;
     QStringList getResults(const QString& query_, QListWidget* results_list) override;
+    void handleQuickLock(QListWidget* results_list) override;
 };
 
 class FileModeHandler : public ModeHandler {
@@ -61,4 +64,5 @@ public:
     void enterHandler(QListWidget* results_list) override;
     void fillData(QListWidget* results_list) override;
     QStringList getResults(const QString& query_, QListWidget* results_list) override;
+    void handleQuickLock(QListWidget* results_list) override;
 };
