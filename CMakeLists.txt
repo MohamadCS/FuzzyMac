@@ -30,21 +30,22 @@ find_package(Qt6 COMPONENTS Core Gui Widgets Concurrent REQUIRED)
 # =========================
 # GUI App Target (FuzzyMac)
 # =========================
+set(APP_ICON ${CMAKE_SOURCE_DIR}/res/icons/icon.icns)
+
+set_source_files_properties(${APP_ICON} PROPERTIES
+    MACOSX_PACKAGE_LOCATION "Resources"
+)
 
 add_executable(FuzzyMac ${SOURCES} ${HEADERS})
 
 target_compile_definitions(FuzzyMac PRIVATE)
+target_sources(FuzzyMac PRIVATE ${APP_ICON})
 
 target_link_libraries(FuzzyMac PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Concurrent "-framework Carbon" "-framework AppKit")
 
 set_target_properties(FuzzyMac PROPERTIES
     MACOSX_BUNDLE TRUE
-    MACOSX_BUNDLE_BUNDLE_NAME "FuzzyMac"
-    MACOSX_BUNDLE_GUI_IDENTIFIER "com.fuzzymac.app"
     MACOSX_BUNDLE_INFO_PLIST "${CMAKE_SOURCE_DIR}/res/Info.plist"
-    MACOSX_BUNDLE_BUNDLE_VERSION "1.0"
-    MACOSX_BUNDLE_SHORT_VERSION_STRING "1.0"
-    MACOSX_BUNDLE_INFO_STRING "A Fuzzy finder for macOs"
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/build/app/"
 )
 

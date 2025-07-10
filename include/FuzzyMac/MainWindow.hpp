@@ -58,5 +58,4 @@ private:
     void processStdIn();
     void fillData();
     void connectEventHandlers();
-
 };
