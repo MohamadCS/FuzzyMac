@@ -48,6 +48,7 @@ cmake --build .
 
 - [x] convert to `cmake` and make it work on any mac.
 - [ ] make it customizable.
+- [ ] add application folder change watcher.
 
 
 
