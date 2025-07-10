@@ -9,6 +9,7 @@ int main(int argc, char* argv[]) {
 #else
     Mode mode = Mode::APP;
 #endif
+
     QApplication app(argc, argv);
     MainWindow main_win(mode);
     main_win.show();

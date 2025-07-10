@@ -30,6 +30,10 @@ static void expand(std::vector<std::string>& paths) {
     }
 }
 
+
+void AppModeHandler::handleQuickLock(QListWidget* results_list){
+}
+
 void AppModeHandler::enterHandler(QListWidget* results_list) {
     int i = results_list->currentRow();
     QProcess* process = new QProcess(nullptr);
@@ -100,6 +104,11 @@ QStringList CLIModeHandler::getResults(const QString& query_, QListWidget* resul
     return customSearch(query_, results_list, entries, results_indices);
 }
 
+
+void CLIModeHandler::handleQuickLock(QListWidget* results_list){
+
+}
+
 /***************************/
 
 void FileModeHandler::enterHandler(QListWidget* results_list) {
@@ -137,6 +146,11 @@ QStringList FileModeHandler::getResults(const QString& query_, QListWidget* resu
 
     abs_results = files;
     return res;
+}
+
+
+void FileModeHandler::handleQuickLock(QListWidget* results_list){
+    quickLock(abs_results[results_list->currentRow()]);
 }
 
 /***************************/

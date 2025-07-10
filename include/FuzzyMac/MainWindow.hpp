@@ -32,17 +32,18 @@ public:
 
     void wakeup();
     void sleep();
+    const toml::table& getConfig() const;
 
 public slots:
     void nextItem();
     void prevItem();
     void openItem();
+    void quickLock();
 #ifndef CLI_TOOL
     void onApplicationStateChanged(Qt::ApplicationState state);
 #endif
 
-    const toml::table& getConfig() const;
-
+protected:
 private:
     QWidget* central;
     QLineEdit* query_input;
