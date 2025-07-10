@@ -16,6 +16,9 @@ default it searchs for applications under `/Applications/`. Enter `<Space>` in
 order to search files under `iCloud`(this is the default, I plan to make a config file support
 for any dirs to look for).
 
+** You can quicklook files using ctrl-q**
+
+
 ## How the app finds files ?
 In cli mode and applications finding its a very simple scoring algorithm.
 for file search I used spotlight's api in order to find the files as quickly as possible.
