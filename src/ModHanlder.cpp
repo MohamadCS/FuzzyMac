@@ -1,16 +1,34 @@
 #include "FuzzyMac/Algorithms.hpp"
 #include "FuzzyMac/ModHandler.hpp"
 #include "FuzzyMac/NativeMacHandlers.hpp"
+#include "FuzzyMac/ParseConfig.hpp"
 
 #include <filesystem>
 #include <iostream>
+#include <wordexp.h>
 
 namespace fs = std::filesystem;
 
-static QStringList customSearch(const QString& query_, QListWidget* results_list, const std::vector<std::string>& entries,
-                         std::vector<int>& results_indices);
+static QStringList customSearch(const QString& query_, QListWidget* results_list,
+                                const std::vector<std::string>& entries, std::vector<int>& results_indices);
 
 /***************************/
+
+static void expand(std::vector<std::string>& paths) {
+    for (auto& input : paths) {
+        wordexp_t p;
+        fs::path expanded_path;
+        std::string quoted = "\"" + input + "\"";
+        if (wordexp(quoted.c_str(), &p, 0) == 0) {
+            if (p.we_wordc > 0) {
+                input = p.we_wordv[0]; // Take the first expanded word
+            }
+            wordfree(&p);
+        } else {
+            std::cerr << "wordexp failed!" << std::endl;
+        }
+    }
+}
 
 void AppModeHandler::enterHandler(QListWidget* results_list) {
     int i = results_list->currentRow();
@@ -23,19 +41,33 @@ void AppModeHandler::enterHandler(QListWidget* results_list) {
 }
 
 void AppModeHandler::fillData(QListWidget* results_list) {
-    const fs::path apps_path = "/Applications";
-    if (!fs::exists(apps_path)) {
-        QMessageBox::critical(nullptr, "Error", "Wrong Path");
-    }
+
+    auto paths = get_array<std::string>(*config, {"mode", "apps", "dirs"});
+    expand(paths);
+
+    const std::vector<fs::path> special_apps{
+        "/System/Library/CoreServices/Finder.app",
+    };
 
     int i = 0;
-    for (const auto& entry : fs::directory_iterator(apps_path)) {
-        if (entry.path().extension() == ".app") {
-            apps.push_back(entry.path().string());
-            results_list->addItem(QString::fromStdString(entry.path().filename().string()));
-            results_indices.push_back(i);
-            ++i;
+    for (const auto& path : paths) {
+        for (const auto& entry : fs::directory_iterator(path)) {
+            if (entry.path().extension() == ".app") {
+                apps.push_back(entry.path().string());
+                results_list->addItem(QString::fromStdString(entry.path().filename().string()));
+                results_indices.push_back(i);
+                ++i;
+            }
         }
+    }
+    paths = get_array<std::string>(*config, {"mode", "apps", "apps"});
+    expand(paths);
+
+    for (const auto& path : paths) {
+        apps.push_back(path);
+        results_list->addItem(QString::fromStdString(fs::path(path).filename().string()));
+        results_indices.push_back(i);
+        ++i;
     }
 }
 
@@ -89,10 +121,13 @@ QStringList FileModeHandler::getResults(const QString& query_, QListWidget* resu
     if (query_.size() <= 1) {
         return {};
     }
+    if (paths.empty()) {
+        paths = get_array<std::string>(*config, {"mode", "files", "dirs"});
+        expand(paths);
+    }
 
     auto query = query_.right(query_.size() - 1);
 
-    std::vector<std::string> paths{fs::absolute(std::format("{}/Library/Mobile Documents/", std::getenv("HOME")))};
     auto files = spotlightSearch(std::format("kMDItemDisplayName == '{}*'c", query.toStdString()), paths);
 
     QStringList res{};
@@ -106,8 +141,8 @@ QStringList FileModeHandler::getResults(const QString& query_, QListWidget* resu
 
 /***************************/
 
-static QStringList customSearch(const QString& query_, QListWidget* results_list, const std::vector<std::string>& entries,
-                         std::vector<int>& results_indices) {
+static QStringList customSearch(const QString& query_, QListWidget* results_list,
+                                const std::vector<std::string>& entries, std::vector<int>& results_indices) {
 
     results_indices.clear();
 
@@ -136,5 +171,4 @@ static QStringList customSearch(const QString& query_, QListWidget* results_list
     }
 
     return res;
-
 }

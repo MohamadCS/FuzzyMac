@@ -1,6 +1,8 @@
 #include "FuzzyMac/MainWindow.hpp"
 #include "FuzzyMac/MacGlobShortcuts.hpp"
 #include "FuzzyMac/NativeMacHandlers.hpp"
+#include "FuzzyMac/ParseConfig.hpp"
+#include "toml++/impl/parser.hpp"
 
 #include <QApplication>
 #include <QDebug>
@@ -12,6 +14,16 @@
 #include <QStaticText>
 #include <QtConcurrent>
 #include <memory>
+
+void MainWindow::processConfigFile() {
+    fs::path home_path = std::getenv("HOME");
+    fs::path config_path = home_path / ".config" / "FuzzyMac" / "config.toml";
+    config = toml::parse_file(config_path.string());
+}
+
+const toml::table& MainWindow::getConfig() const {
+    return config;
+}
 
 void MainWindow::createWidgets() {
     central = new QWidget(this);
@@ -143,10 +155,10 @@ MainWindow::MainWindow(Mode mode, QWidget* parent)
     : QMainWindow(parent),
       mode(mode) {
 
-    mode_handler.emplace(Mode::CLI, std::make_unique<CLIModeHandler>());
-    mode_handler.emplace(Mode::APP, std::make_unique<AppModeHandler>());
-    mode_handler.emplace(Mode::FILE, std::make_unique<FileModeHandler>());
-
+    processConfigFile();
+    mode_handler.emplace(Mode::CLI, std::make_unique<CLIModeHandler>(&config));
+    mode_handler.emplace(Mode::APP, std::make_unique<AppModeHandler>(&config));
+    mode_handler.emplace(Mode::FILE, std::make_unique<FileModeHandler>(&config));
     createWidgets();
     setupLayout();
     setupStyles();
@@ -174,36 +186,36 @@ void MainWindow::onApplicationStateChanged(Qt::ApplicationState state) {
 #endif
 
 void MainWindow::setupStyles() {
+
+    query_input->setStyleSheet(QString(R"(
+                                    QLineEdit {
+                                        selection-background-color : %1;
+                                        selection-color : %2;
+                                        color: %3;
+                                        background: %4;
+                                        border : none;
+                                        padding: 0px;
+                                    })")
+                                   .arg(get<std::string>(config, {"colors", "query_input", "selection_background"}))
+                                   .arg(get<std::string>(config, {"colors", "query_input", "selection"}))
+                                   .arg(get<std::string>(config, {"colors", "query_input", "text"}))
+                                   .arg(get<std::string>(config, {"colors", "query_input", "background"})));
+
+    results_list->setStyleSheet(QString(R"(
+                                    QListWidget {
+                                        background: %4;
+                                        selection-background-color : %1;
+                                        selection-color : %2;
+                                        color: %3;
+                                        border: none;
+                                        padding: 0px;
+                                    })")
+                                    .arg(get<std::string>(config, {"colors", "results_list", "selection_background"}))
+                                    .arg(get<std::string>(config, {"colors", "results_list", "selection"}))
+                                    .arg(get<std::string>(config, {"colors", "results_list", "text"}))
+                                    .arg(get<std::string>(config, {"colors", "results_list", "background"})));
+
     QFont font("JetBrainsMono Nerd Font", 25);
-
-    query_input->setStyleSheet(R"(
-        QLineEdit {
-            border : none;
-            selection-background-color : #cecacd;
-            selection-color : #575279;
-            color: #575279;
-            background:  #f2e9e1;
-            padding: 0px;
-
-        }
-    )");
-
-    results_list->setStyleSheet(R"(
-        QListWidget {
-            border: none;
-            color: #575279;
-            background:  #f2e9e1;
-            selection-background-color : #cecacd;
-            selection-color : #575279;
-            padding: 0px;
-        }
-
-        QScrollBar:vertical {
-            background:  #f2e9e1;
-        }
-
-    )");
-
     query_input->setFont(font);
     font.setPointSize(15);
 
