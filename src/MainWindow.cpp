@@ -277,3 +277,7 @@ int MainWindow::getCurrentResultIdx() const {
 int MainWindow::resultsNum() const {
     return results_list->count();
 }
+
+void MainWindow::refreshResults() {
+    onTextChange(query_input->text());
+}

@@ -2,6 +2,7 @@
 #include "FuzzyMac/MainWindow.hpp"
 
 #include <QFileIconProvider>
+#include <QFileSystemWatcher>
 #include <QListWidget>
 #include <QMessageBox>
 #include <QProcess>
@@ -14,7 +15,8 @@
 class ModeHandler {
 protected:
     MainWindow* win;
-     QListWidgetItem* createListItem(); 
+    QListWidgetItem* createListItem();
+
 public:
     ModeHandler(MainWindow* win)
         : win(win) {
@@ -30,12 +32,21 @@ class AppModeHandler : public ModeHandler {
     std::vector<std::string> apps;
     std::vector<std::string> app_dirs;
     std::vector<int> results_indices;
+    QFileSystemWatcher* app_watcher;
 
 public:
     AppModeHandler(MainWindow* win)
-        : ModeHandler(win) {
+        : ModeHandler(win),
+          app_watcher(new QFileSystemWatcher(nullptr)) {
+        QObject::connect(app_watcher, &QFileSystemWatcher::directoryChanged, win, [this,win](const QString&) {
+                load();
+                win->refreshResults();
+            });
     }
-    ~AppModeHandler() override = default;
+    ~AppModeHandler() override {
+        delete app_watcher;
+    };
+
     void load() override;
     void enterHandler() override;
     void handleQuickLock() override;
@@ -66,7 +77,7 @@ class FileModeHandler : public ModeHandler {
 public:
     FileModeHandler(MainWindow* win)
         : ModeHandler(win) {
-            load();
+        load();
     }
     ~FileModeHandler() override = default;
     void enterHandler() override;
