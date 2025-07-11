@@ -16,7 +16,7 @@ default it searchs for applications under `/Applications/`. Enter `<Space>` in
 order to search files under `iCloud`(this is the default, I plan to make a config file support
 for any dirs to look for).
 
-**You can quicklook files using ctrl-q**
+** You can quicklook files using ctrl-q**
 
 
 ## How the app finds files ?
