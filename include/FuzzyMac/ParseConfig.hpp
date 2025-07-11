@@ -11,33 +11,36 @@
 
 const toml::table default_config = toml::parse(R"toml(
 font = "JetBrainsMono Nerd Font"
+
 [colors.query_input]
 selection = "#cecacd"
 selection_background = "#cecacd"
 text = "#575279"
-background = "#f2e9e1"
+background = "#faf4ed"
 
 [colors.results_list]
 selection = "#575279"
-selection_background = "#cecacd"
+selection_background = "#dfdad9"
 text = "#575279"
-background = "#f2e9e1"
+background = "#faf4ed"
 
 
 [mode.apps]
 
-dirs = ["/Applications/", "/System/Applications", "/Applications/Utilities/"]
+dirs = [
+  "/Applications/",
+  "/System/Applications",
+  "/Applications/Utilities/",
+  "/System/Applications/Utilities",
+]
 show_icons = true
 
-apps = [
-  "/System/Library/CoreServices/Finder.app",
-  "/System/Applications/Utilities/Activity Monitor.app",
-]
+apps = ["/System/Library/CoreServices/Finder.app"]
 
 [mode.files]
 show_icons = true
 
-dirs = ["$HOME/Library/Mobile Documents/com~apple~CloudDocs/", "$HOME/Desktop/"]
+dirs = ["$HOME/Library/Mobile Documents/com~apple~CloudDocs/"]
 )toml");
 
 template <typename T>

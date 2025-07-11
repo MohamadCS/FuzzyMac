@@ -38,7 +38,7 @@ extern "C" void makeWindowFloating(QWidget *widget) {
                                  NSWindowCollectionBehaviorTransient |
                                  NSWindowCollectionBehaviorStationary)];
 
-  [window setStyleMask:(NSWindowStyleMaskBorderless)];
+  [window setStyleMask:( NSWindowStyleMaskBorderless)];
   [window center];
 }
 
