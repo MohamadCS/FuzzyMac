@@ -3,14 +3,18 @@
 #include "FuzzyMac/ModHandler.hpp"
 #include "FuzzyMac/NativeMacHandlers.hpp"
 #include "FuzzyMac/ParseConfig.hpp"
+#include "FuzzyMac/QueryInput.hpp"
+#include "FuzzyMac/ResultsPanel.hpp"
 #include "FuzzyMac/Utils.hpp"
 
 #include "toml++/impl/parser.hpp"
 
 #include <QApplication>
 #include <QDebug>
+#include <QEvent>
 #include <QFont>
 #include <QGuiApplication>
+#include <QKeyEvent>
 #include <QMessageBox>
 #include <QProcess>
 #include <QShortcut>
@@ -29,8 +33,8 @@ void MainWindow::createWidgets() {
     central = new QWidget(this);
     layout = new QVBoxLayout(central);
 
-    query_input = new QLineEdit(central);
-    results_list = new QListWidget(central);
+    query_input = new QueryInput(central);
+    results_list = new ResultsPanel(central);
     // search_refresh_timer = new QTimer;
     // search_refresh_timer->setSingleShot(true);
 }
@@ -42,7 +46,7 @@ void MainWindow::setupLayout() {
         setWindowFlag(Qt::FramelessWindowHint);
         // setWindowFlag(Qt::Tool);
     } else {
-        resize(400, 400);
+        resize(600, 400);
         makeWindowFloating(this);
     }
     //
@@ -52,6 +56,7 @@ void MainWindow::setupLayout() {
 
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(0);
+    results_list->setDragEnabled(true);
 
     central->setLayout(layout);
 
@@ -60,7 +65,7 @@ void MainWindow::setupLayout() {
     raise();
 
     setCentralWidget(central);
-    setFixedSize(400, 300);
+    setFixedSize(600, 400);
 }
 
 void MainWindow::nextItem() {
@@ -115,7 +120,7 @@ void MainWindow::connectEventHandlers() {
 
     results_watcher = new QFutureWatcher<std::vector<QListWidgetItem*>>(this);
 
-    connect(query_input, &QLineEdit::textChanged, this, &MainWindow::onTextChange);
+    connect(query_input, &QueryInput::textChanged, this, &MainWindow::onTextChange);
 
     connect(results_watcher, &QFutureWatcher<QStringList>::finished, this, [this]() {
         auto results = results_watcher->result();
@@ -141,15 +146,16 @@ void MainWindow::createKeybinds() {
     if (mode != Mode::CLI) {
         registerGlobalHotkey(this);
     }
-    disableCmdQ();
 
+    disableCmdQ();
     new QShortcut(QKeySequence(Qt::MetaModifier | Qt::Key_N), this, SLOT(nextItem()));
     new QShortcut(QKeySequence(Qt::MetaModifier | Qt::Key_P), this, SLOT(prevItem()));
-    new QShortcut(QKeySequence(Qt::MetaModifier | Qt::Key_Q), this, SLOT(quickLock()));
-    new QShortcut(Qt::Key_Return, this, SLOT(openItem()));
 
-    auto escShortcut = new QShortcut(QKeySequence(Qt::Key_Escape), this);
-    connect(escShortcut, &QShortcut::activated, this, [this]() { this->sleep(); });
+    new QShortcut(QKeySequence(Qt::ControlModifier | Qt::Key_Y), this, SLOT(quickLock()));
+    new QShortcut(Qt::Key_Return, this, SLOT(openItem()));
+    new QShortcut(Qt::Key_Escape, this, [this]() { this->sleep(); });
+
+    connect(query_input, &QueryInput::requestAppCopy, this, [this]() { copyToClipboard(); });
 }
 
 MainWindow::MainWindow(Mode mode, QWidget* parent)
@@ -192,6 +198,7 @@ void MainWindow::onApplicationStateChanged(Qt::ApplicationState state) {
 #endif
 
 void MainWindow::loadConfig() {
+
     std::vector<std::string> p_ = {"$HOME/.config/FuzzyMac/config.toml"};
     expandPaths(p_);
     std::string config_path = p_[0];
@@ -205,35 +212,10 @@ void MainWindow::loadConfig() {
 
     config = new_config;
 
-    query_input->setStyleSheet(QString(R"(
-                                    QLineEdit {
-                                        selection-background-color : %1;
-                                        selection-color : %2;
-                                        color: %3;
-                                        background: %4;
-                                        border : none;
-                                        padding: 0px;
-                                    })")
-                                   .arg(get<std::string>(config, {"colors", "query_input", "selection_background"}))
-                                   .arg(get<std::string>(config, {"colors", "query_input", "selection"}))
-                                   .arg(get<std::string>(config, {"colors", "query_input", "text"}))
-                                   .arg(get<std::string>(config, {"colors", "query_input", "background"})));
+    query_input->setStyleSheet(buildStyleSheet(config, "query_input"));
+    results_list->setStyleSheet(buildStyleSheet(config, "results_list"));
 
-    results_list->setStyleSheet(QString(R"(
-                                    QListWidget {
-                                        background: %4;
-                                        selection-background-color : %1;
-                                        selection-color : %2;
-                                        color: %3;
-                                        border: none;
-                                        padding: 0px;
-                                    })")
-                                    .arg(get<std::string>(config, {"colors", "results_list", "selection_background"}))
-                                    .arg(get<std::string>(config, {"colors", "results_list", "selection"}))
-                                    .arg(get<std::string>(config, {"colors", "results_list", "text"}))
-                                    .arg(get<std::string>(config, {"colors", "results_list", "background"})));
-
-    QFont font(get<std::string>(config, {"font"}).c_str(), 25);
+    QFont font(get<std::string>(config, {"font"}).c_str(), 30);
     query_input->setFont(font);
     font.setPointSize(15);
 
@@ -242,6 +224,7 @@ void MainWindow::loadConfig() {
     results_list->setSelectionMode(QAbstractItemView::SingleSelection);
 
     results_list->setFont(font);
+    results_list->setIconSize(QSize(40, 40)); // Set desired icon size
 
     int curr_selection = results_list->currentRow();
     QString curr_query = query_input->text();
@@ -267,9 +250,17 @@ QListWidgetItem* MainWindow::createListItem(const std::string& name, std::option
     return item;
 }
 
+void MainWindow::copyToClipboard() {
+    mode_handler[mode]->handleCopy();
+}
+
+void MainWindow::copyPathToClipboard() {
+}
+
 void MainWindow::clearResultList() {
     results_list->clear();
 }
+
 int MainWindow::getCurrentResultIdx() const {
     return results_list->currentRow();
 }
@@ -280,4 +271,12 @@ int MainWindow::resultsNum() const {
 
 void MainWindow::refreshResults() {
     onTextChange(query_input->text());
+}
+
+QIcon MainWindow::getFileIcon(const std::string& path) const {
+    return icon_provider.icon(QFileInfo(QString::fromStdString(path)));
+}
+
+ModeHandler* MainWindow::getModeHandler() const{
+    return mode_handler.at(mode).get();
 }

@@ -1,10 +1,12 @@
 #pragma once
 
 #include "toml++/toml.h"
+#include "FuzzyMac/QueryInput.hpp"
+#include "FuzzyMac/ResultsPanel.hpp"
 
 #include <QFileIconProvider>
-#include <QFutureWatcher>
 #include <QFileSystemWatcher>
+#include <QFutureWatcher>
 #include <QLineEdit>
 #include <QListWidget>
 #include <QMainWindow>
@@ -39,14 +41,17 @@ public:
     const toml::table& getConfig() const;
     void refreshResults();
     void addToResultList(const std::string& name, std::optional<fs::path> path = std::nullopt);
+    QIcon getFileIcon(const std::string& path) const;
     QListWidgetItem* createListItem(const std::string& name, std::optional<fs::path> path = std::nullopt);
     void clearResultList();
     int getCurrentResultIdx() const;
     int resultsNum() const;
-
+    ModeHandler* getModeHandler() const;
 private slots:
     void nextItem();
     void prevItem();
+    void copyToClipboard();
+    void copyPathToClipboard();
     void openItem();
     void quickLock();
     void onTextChange(const QString& text);
@@ -57,8 +62,8 @@ private slots:
 protected:
 private:
     QWidget* central;
-    QLineEdit* query_input;
-    QListWidget* results_list;
+    QueryInput* query_input;
+    ResultsPanel* results_list;
     QVBoxLayout* layout;
     QFileIconProvider icon_provider;
     QFileSystemWatcher* config_file_watcher;
