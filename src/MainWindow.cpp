@@ -90,7 +90,6 @@ void MainWindow::wakeup() {
     raise();
     activateWindow();
     query_input->setFocus();
-    query_input->selectAll();
 }
 
 void MainWindow::sleep() {
@@ -143,6 +142,7 @@ void MainWindow::createKeybinds() {
     if (mode != Mode::CLI) {
         registerGlobalHotkey(this);
     }
+    disableCmdQ();
 
     new QShortcut(QKeySequence(Qt::MetaModifier | Qt::Key_N), this, SLOT(nextItem()));
     new QShortcut(QKeySequence(Qt::MetaModifier | Qt::Key_P), this, SLOT(prevItem()));
