@@ -150,6 +150,10 @@ QStringList FileModeHandler::getResults(const QString& query_, QListWidget* resu
 
 
 void FileModeHandler::handleQuickLock(QListWidget* results_list){
+    if(results_list->count() == 0) {
+        return;
+    }
+
     quickLock(abs_results[results_list->currentRow()]);
 }
 
