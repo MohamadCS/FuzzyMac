@@ -1,9 +1,14 @@
 # Fuzzy Mac
-![Example](./res/overview.png)
+<p align="center">
+  <img src="./res/icons/Icon-256.png" alt="Icon" width="150">
+</p>
 
-A GUI fuzzy finder for macOS(Very early release, most likely will not function properly).
+<p align="center">
+    GUI fuzzy finder for macOS.
+</p>
 
 ## Overview
+![Example](./res/overview.png)
 
 ## CLI mode
 ```
@@ -16,7 +21,7 @@ default it searchs for applications under `/Applications/`. Enter `<Space>` in
 order to search files under `iCloud`(this is the default, I plan to make a config file support
 for any dirs to look for).
 
-** You can quicklook files using ctrl-q**
+**You can quicklook files using ctrl-q**
 
 
 ## How the app finds files ?
