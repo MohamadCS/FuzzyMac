@@ -38,6 +38,14 @@ void AppModeHandler::load() {
         }
     }
 
+    app_watcher->removePaths(app_watcher->directories());
+    QStringList paths_list{};
+    for (const auto& path : paths) {
+        paths_list.push_back(QString::fromStdString(path));
+    }
+
+    app_watcher->addPaths(paths_list);
+
     paths = get_array<std::string>(win->getConfig(), {"mode", "apps", "apps"});
     expandPaths(paths);
 
@@ -65,7 +73,7 @@ std::vector<QListWidgetItem*> AppModeHandler::getResults(const QString& query) {
 /***************************/
 
 void CLIModeHandler::load() {
-    if(loaded) {
+    if (loaded) {
         return;
     }
 

@@ -37,6 +37,7 @@ public:
     void wakeup();
     void sleep();
     const toml::table& getConfig() const;
+    void refreshResults();
     void addToResultList(const std::string& name, std::optional<fs::path> path = std::nullopt);
     QListWidgetItem* createListItem(const std::string& name, std::optional<fs::path> path = std::nullopt);
     void clearResultList();
