@@ -1,11 +1,9 @@
 # Fuzzy Mac
-<img src="./res/icons/Icon-1024.png" width="100%" height="40%" align="center">
-
+![Example](./res/overview.png)
 
 A GUI fuzzy finder for macOS(Very early release, most likely will not function properly).
 
 ## Overview
-![Example](./res/overview.png)
 
 ## CLI mode
 ```
