@@ -126,7 +126,11 @@ spotlightSearch(const std::vector<std::string> &dirs,
     // Extract results
     NSLog(@"Spotlight query returned %lu items",
           (unsigned long)metadata_query.resultCount);
+    const int max = 30;
     for (NSMetadataItem *item in metadata_query.results) {
+        if(results.size() > max) {
+            return results;
+        }
       NSString *path =
           [item valueForAttribute:(__bridge NSString *)kMDItemPath];
       if (path) {
