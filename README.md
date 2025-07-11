@@ -1,6 +1,6 @@
 # Fuzzy Mac
 <p align="center">
-  <img src="./res/icons/Icon-256.png" alt="Icon" width="150">
+  <img src="./res/icons/icon-256x256.png" alt="Icon" width="150">
 </p>
 
 <p align="center">
