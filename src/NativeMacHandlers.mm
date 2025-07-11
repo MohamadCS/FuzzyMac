@@ -2,9 +2,6 @@
 #import <CoreServices/CoreServices.h>
 #import <Foundation/Foundation.h>
 #import <QuickLook/QuickLook.h>
-#import <Foundation/Foundation.h>
-#import <QuickLook/QuickLook.h>
-#import <Foundation/Foundation.h>
 #import <QuickLookUI/QuickLookUI.h>
 
 #include <QWidget>
@@ -86,10 +83,8 @@ spotlightSearch(const std::string &query,
   }
 }
 
-
-@interface PreviewController : NSObject <QLPreviewPanelDataSource>
-{
-    NSURL *_file;
+@interface PreviewController : NSObject <QLPreviewPanelDataSource> {
+  NSURL *_file;
 }
 - (instancetype)initWithFile:(NSURL *)file;
 - (void)showPreview;
@@ -97,46 +92,71 @@ spotlightSearch(const std::string &query,
 
 @implementation PreviewController
 - (instancetype)initWithFile:(NSURL *)file {
-    if ((self = [super init])) {
-        _file = file;
-    }
-    return self;
+  if ((self = [super init])) {
+    _file = file;
+  }
+  return self;
 }
 
 - (NSInteger)numberOfPreviewItemsInPreviewPanel:(QLPreviewPanel *)panel {
-    return 1;
+  return 1;
 }
 
-- (id<QLPreviewItem>)previewPanel:(QLPreviewPanel *)panel previewItemAtIndex:(NSInteger)index {
-    return _file;
+- (id<QLPreviewItem>)previewPanel:(QLPreviewPanel *)panel
+               previewItemAtIndex:(NSInteger)index {
+  return _file;
 }
 
 - (void)showPreview {
-    QLPreviewPanel *panel = [QLPreviewPanel sharedPreviewPanel];
-    panel.dataSource = self;
-    [panel makeKeyAndOrderFront:nil];
-    [panel reloadData];
+  QLPreviewPanel *panel = [QLPreviewPanel sharedPreviewPanel];
+  panel.dataSource = self;
+  [panel makeKeyAndOrderFront:nil];
+  [panel reloadData];
 }
 @end
 
 static PreviewController *gPreviewController = nil;
 
 extern "C" void closeQuickLook() {
-    QLPreviewPanel *panel = [QLPreviewPanel sharedPreviewPanel];
-    if ([panel isVisible]) {
-        [panel orderOut:nil];  // Close the panel
-    }
+  QLPreviewPanel *panel = [QLPreviewPanel sharedPreviewPanel];
+  if ([panel isVisible]) {
+    [panel orderOut:nil]; // Close the panel
+  }
 }
 
-extern "C++" void quickLock(const std::string& filePath) {
-    @autoreleasepool {
-        closeQuickLook();
-        NSString *nsPath = [NSString stringWithUTF8String:filePath.c_str()];
-        NSURL *url = [NSURL fileURLWithPath:nsPath];
-        if (!url) return;
+extern "C++" void quickLock(const std::string &filePath) {
+  @autoreleasepool {
+    closeQuickLook();
+    NSString *ns_path = [NSString stringWithUTF8String:filePath.c_str()];
+    NSURL *url = [NSURL fileURLWithPath:ns_path];
+    if (!url)
+      return;
 
-        gPreviewController = [[PreviewController alloc] initWithFile:url];
-        [gPreviewController showPreview];
-    }
+    gPreviewController = [[PreviewController alloc] initWithFile:url];
+    [gPreviewController showPreview];
+  }
 }
 
+extern "C" void disableCmdQ() {
+  NSApplication *app = [NSApplication sharedApplication];
+
+  // Get the class of the NSApplication instance
+  Class app_class = [app class];
+  SEL terminate_selector = @selector(terminate:);
+
+  // Get the original terminate: method
+  Method original_method = class_getInstanceMethod(app_class, terminate_selector);
+  if (!original_method) {
+    NSLog(@"[DisableCmdQ] ERROR: terminate: method not found");
+    return;
+  }
+
+  // Create a new implementation block that does nothing on terminate:
+  IMP new_imp = imp_implementationWithBlock(^void(id _self, id sender) {
+    NSLog(@"[DisableCmdQ] Command-Q pressed, quitting prevented.");
+    // No call to original terminate:, so quitting is disabled
+  });
+
+  // Replace the original implementation with our new one
+  method_setImplementation(original_method, new_imp);
+}
