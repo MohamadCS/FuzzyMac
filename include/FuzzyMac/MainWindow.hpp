@@ -48,6 +48,7 @@ private slots:
     void prevItem();
     void openItem();
     void quickLock();
+    void onTextChange(const QString& text);
 #ifndef CLI_TOOL
     void onApplicationStateChanged(Qt::ApplicationState state);
 #endif
@@ -73,6 +74,5 @@ private:
     void setupStyles();
     void createKeybinds();
     void loadConfig();
-    void fillData();
     void connectEventHandlers();
 };

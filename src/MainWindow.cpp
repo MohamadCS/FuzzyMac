@@ -3,6 +3,8 @@
 #include "FuzzyMac/ModHandler.hpp"
 #include "FuzzyMac/NativeMacHandlers.hpp"
 #include "FuzzyMac/ParseConfig.hpp"
+#include "FuzzyMac/Utils.hpp"
+
 #include "toml++/impl/parser.hpp"
 
 #include <QApplication>
@@ -17,9 +19,6 @@
 #include <memory>
 
 void MainWindow::processConfigFile() {
-    fs::path home_path = std::getenv("HOME");
-    fs::path config_path = home_path / ".config" / "FuzzyMac" / "config.toml";
-    config = toml::parse_file(config_path.string());
 }
 
 const toml::table& MainWindow::getConfig() const {
@@ -94,27 +93,29 @@ void MainWindow::sleep() {
     hide();
 }
 
+void MainWindow::onTextChange(const QString& text) {
+    if (mode != Mode::CLI) {
+        if (text.size() > 0 && text[0] == ' ') {
+            mode = Mode::FILE;
+        } else {
+            mode = Mode::APP;
+        }
+    }
+
+    if (results_watcher->isRunning()) {
+        results_watcher->cancel();
+    }
+
+    auto future = QtConcurrent::run([this, text]() { return mode_handler[mode]->getResults(text); });
+
+    results_watcher->setFuture(future);
+}
+
 void MainWindow::connectEventHandlers() {
 
     results_watcher = new QFutureWatcher<std::vector<QListWidgetItem*>>(this);
 
-    connect(query_input, &QLineEdit::textChanged, this, [this](const QString& text) {
-        if (mode != Mode::CLI) {
-            if (text.size() > 0 && text[0] == ' ') {
-                mode = Mode::FILE;
-            } else {
-                mode = Mode::APP;
-            }
-        }
-
-        if (results_watcher->isRunning()) {
-            results_watcher->cancel();
-        }
-
-        auto future = QtConcurrent::run([this, text]() { return mode_handler[mode]->getResults(text); });
-
-        results_watcher->setFuture(future);
-    });
+    connect(query_input, &QLineEdit::textChanged, this, &MainWindow::onTextChange);
 
     connect(results_watcher, &QFutureWatcher<QStringList>::finished, this, [this]() {
         auto results = results_watcher->result();
@@ -151,27 +152,19 @@ void MainWindow::createKeybinds() {
     connect(escShortcut, &QShortcut::activated, this, [this]() { this->sleep(); });
 }
 
-void MainWindow::fillData() {
-    mode_handler[mode]->fillData();
-    if (results_list->count() > 0) {
-        results_list->setCurrentRow(0);
-    }
-}
-
 MainWindow::MainWindow(Mode mode, QWidget* parent)
     : QMainWindow(parent),
       mode(mode) {
 
-    processConfigFile();
     mode_handler.emplace(Mode::CLI, std::make_unique<CLIModeHandler>(this));
     mode_handler.emplace(Mode::APP, std::make_unique<AppModeHandler>(this));
     mode_handler.emplace(Mode::FILE, std::make_unique<FileModeHandler>(this));
     createWidgets();
     setupLayout();
-    loadConfig();
-    createKeybinds();
     connectEventHandlers();
-    fillData();
+    loadConfig();
+
+    createKeybinds();
 
     if (mode != Mode::CLI) {
         deactivateApp();
@@ -179,6 +172,12 @@ MainWindow::MainWindow(Mode mode, QWidget* parent)
     } else {
         wakeup();
     }
+
+    fs::path home_path = std::getenv("HOME");
+    fs::path config_path = home_path / ".config" / "FuzzyMac" / "config.toml";
+    config_file_watcher = new QFileSystemWatcher(this);
+    config_file_watcher->addPath(QString::fromStdString(config_path));
+    connect(config_file_watcher, &QFileSystemWatcher::fileChanged, this, [this]() { loadConfig(); });
 }
 
 MainWindow::~MainWindow() {
@@ -193,6 +192,19 @@ void MainWindow::onApplicationStateChanged(Qt::ApplicationState state) {
 #endif
 
 void MainWindow::loadConfig() {
+    std::vector<std::string> p_ = {"$HOME/.config/FuzzyMac/config.toml"};
+    expandPaths(p_);
+    std::string config_path = p_[0];
+
+    toml::table new_config = config;
+    try {
+        new_config = toml::parse_file(config_path);
+    } catch (const toml::parse_error& err) {
+        new_config = config;
+    }
+
+    config = new_config;
+
     query_input->setStyleSheet(QString(R"(
                                     QLineEdit {
                                         selection-background-color : %1;
@@ -231,8 +243,12 @@ void MainWindow::loadConfig() {
 
     results_list->setFont(font);
 
-}
+    int curr_selection = results_list->currentRow();
+    QString curr_query = query_input->text();
 
+    mode_handler[mode]->load();
+    onTextChange(query_input->text());
+}
 
 void MainWindow::addToResultList(const std::string& name, std::optional<fs::path> path) {
 
