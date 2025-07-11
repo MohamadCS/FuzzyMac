@@ -36,53 +36,107 @@ extern "C" void makeWindowFloating(QWidget *widget) {
                         NSWindowStyleMaskBorderless)];
 }
 
+#import <Foundation/Foundation.h>
+#import <string>
+#import <vector>
+
 extern "C++" std::vector<std::string>
-spotlightSearch(const std::string &query,
-                const std::vector<std::string> &dirs) {
-
+spotlightSearch(const std::vector<std::string> &dirs,
+                const std::string &query) {
   @autoreleasepool {
-    NSMutableArray *args = [NSMutableArray arrayWithObject:@"-onlyin"];
-
-    for (const std::string &folder : dirs) {
-      [args addObject:[NSString stringWithUTF8String:folder.c_str()]];
-    }
-
-    [args addObject:[NSString stringWithUTF8String:query.c_str()]];
-
-    NSTask *task = [[NSTask alloc] init];
-    task.launchPath = @"/usr/bin/mdfind";
-    task.arguments = args;
-
-    NSPipe *pipe = [NSPipe pipe];
-    task.standardOutput = pipe;
-
-    [task launch];
-    [task waitUntilExit];
-
-    NSData *data = [[pipe fileHandleForReading] readDataToEndOfFile];
-    NSString *output = [[NSString alloc] initWithData:data
-                                             encoding:NSUTF8StringEncoding];
-
-    NSArray<NSString *> *lines = [output componentsSeparatedByString:@"\n"];
-
     std::vector<std::string> results;
 
-    int i = 0;
-    const auto MAX = 30;
-    for (NSString *line in lines) {
-      if (i > MAX) {
-        break;
-      }
-
-      if ([line length] > 0) {
-        results.emplace_back([line UTF8String]);
-      }
-      ++i;
+    NSMetadataQuery *metadata_query = [[NSMetadataQuery alloc] init];
+    if (!metadata_query) {
+      NSLog(@"Failed to create NSMetadataQuery");
+      return results;
     }
+
+    // Convert query string to NSPredicate
+    NSPredicate *predicate = nil;
+    @try {
+      predicate = [NSPredicate
+          predicateWithFormat:[NSString stringWithUTF8String:query.c_str()]];
+    } @catch (NSException *exception) {
+      NSLog(@"Invalid NSPredicate: %@", exception);
+      return results;
+    }
+
+    if (!predicate) {
+      NSLog(@"Predicate is nil");
+      return results;
+    }
+
+    [metadata_query setPredicate:predicate];
+
+    // Add search scopes
+    NSMutableArray *scopes = [NSMutableArray array];
+    for (const auto &dir : dirs) {
+      NSString *path = [NSString stringWithUTF8String:dir.c_str()];
+      if ([[NSFileManager defaultManager] fileExistsAtPath:path]) {
+        [scopes addObject:[NSURL fileURLWithPath:path]];
+      } else {
+        NSLog(@"Directory does not exist: %@", path);
+      }
+    }
+
+    if (scopes.count == 0) {
+      NSLog(@"No valid search scopes");
+      return results;
+    }
+
+    [metadata_query setSearchScopes:scopes];
+
+    __block BOOL query_finished = NO;
+
+    // Add observer for query finished notification
+    id observer = [[NSNotificationCenter defaultCenter]
+        addObserverForName:NSMetadataQueryDidFinishGatheringNotification
+                    object:metadata_query
+                     queue:nil
+                usingBlock:^(NSNotification *note) {
+                  query_finished = YES;
+                }];
+
+    if (![metadata_query startQuery]) {
+      NSLog(@"Failed to start Spotlight query");
+      [[NSNotificationCenter defaultCenter] removeObserver:observer];
+      return results;
+    }
+
+    // Run loop until query finishes or timeout (max 5 seconds)
+    NSDate *timeout_date = [NSDate dateWithTimeIntervalSinceNow:5.0];
+    while (!query_finished &&
+           [[NSDate date] compare:timeout_date] == NSOrderedAscending) {
+      [[NSRunLoop currentRunLoop]
+             runMode:NSDefaultRunLoopMode
+          beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.1]];
+    }
+
+    // Stop query & cleanup
+    [metadata_query stopQuery];
+    [[NSNotificationCenter defaultCenter] removeObserver:observer];
+
+    // Check if query timed out
+    if (!query_finished) {
+      NSLog(@"Spotlight query timed out");
+      return results;
+    }
+
+    // Extract results
+    NSLog(@"Spotlight query returned %lu items",
+          (unsigned long)metadata_query.resultCount);
+    for (NSMetadataItem *item in metadata_query.results) {
+      NSString *path =
+          [item valueForAttribute:(__bridge NSString *)kMDItemPath];
+      if (path) {
+        results.emplace_back([path UTF8String]);
+      }
+    }
+
     return results;
   }
 }
-
 @interface PreviewController : NSObject <QLPreviewPanelDataSource> {
   NSURL *_file;
 }
@@ -145,7 +199,8 @@ extern "C" void disableCmdQ() {
   SEL terminate_selector = @selector(terminate:);
 
   // Get the original terminate: method
-  Method original_method = class_getInstanceMethod(app_class, terminate_selector);
+  Method original_method =
+      class_getInstanceMethod(app_class, terminate_selector);
   if (!original_method) {
     NSLog(@"[DisableCmdQ] ERROR: terminate: method not found");
     return;
