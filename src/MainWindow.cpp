@@ -26,8 +26,6 @@ const toml::table& MainWindow::getConfig() const {
     return config;
 }
 
-
-
 void MainWindow::createWidgets() {
     central = new QWidget(this);
     layout = new QVBoxLayout(central);
@@ -37,7 +35,6 @@ void MainWindow::createWidgets() {
     // search_refresh_timer = new QTimer;
     // search_refresh_timer->setSingleShot(true);
 }
-
 
 void MainWindow::setupLayout() {
     setWindowFlag(Qt::WindowStaysOnTopHint);
@@ -73,11 +70,11 @@ void MainWindow::nextItem() {
 }
 
 void MainWindow::openItem() {
-    mode_handler[mode]->enterHandler(results_list);
+    mode_handler[mode]->enterHandler();
 }
 
 void MainWindow::quickLock() {
-    mode_handler[mode]->handleQuickLock(results_list);
+    mode_handler[mode]->handleQuickLock();
 }
 
 void MainWindow::prevItem() {
@@ -99,7 +96,7 @@ void MainWindow::sleep() {
 
 void MainWindow::connectEventHandlers() {
 
-    results_watcher = new QFutureWatcher<QStringList>(this);
+    results_watcher = new QFutureWatcher<std::vector<QListWidgetItem*>>(this);
 
     connect(query_input, &QLineEdit::textChanged, this, [this](const QString& text) {
         if (mode != Mode::CLI) {
@@ -114,16 +111,17 @@ void MainWindow::connectEventHandlers() {
             results_watcher->cancel();
         }
 
-        QFuture<QStringList> future = QtConcurrent::run(
-            [this, text]() -> QStringList { return mode_handler[mode]->getResults(text, this->results_list); });
+        auto future = QtConcurrent::run([this, text]() { return mode_handler[mode]->getResults(text); });
 
         results_watcher->setFuture(future);
     });
 
     connect(results_watcher, &QFutureWatcher<QStringList>::finished, this, [this]() {
-        QStringList results = results_watcher->result();
+        auto results = results_watcher->result();
         results_list->clear();
-        results_list->addItems(results);
+        for (auto* item : results) {
+            results_list->addItem(item);
+        }
         if (results.size() >= 1) {
             results_list->setCurrentRow(0);
         }
@@ -154,7 +152,7 @@ void MainWindow::createKeybinds() {
 }
 
 void MainWindow::fillData() {
-    mode_handler[mode]->fillData(results_list);
+    mode_handler[mode]->fillData();
     if (results_list->count() > 0) {
         results_list->setCurrentRow(0);
     }
@@ -165,12 +163,12 @@ MainWindow::MainWindow(Mode mode, QWidget* parent)
       mode(mode) {
 
     processConfigFile();
-    mode_handler.emplace(Mode::CLI, std::make_unique<CLIModeHandler>(&config));
-    mode_handler.emplace(Mode::APP, std::make_unique<AppModeHandler>(&config));
-    mode_handler.emplace(Mode::FILE, std::make_unique<FileModeHandler>(&config));
+    mode_handler.emplace(Mode::CLI, std::make_unique<CLIModeHandler>(this));
+    mode_handler.emplace(Mode::APP, std::make_unique<AppModeHandler>(this));
+    mode_handler.emplace(Mode::FILE, std::make_unique<FileModeHandler>(this));
     createWidgets();
     setupLayout();
-    setupStyles();
+    loadConfig();
     createKeybinds();
     connectEventHandlers();
     fillData();
@@ -194,8 +192,7 @@ void MainWindow::onApplicationStateChanged(Qt::ApplicationState state) {
 }
 #endif
 
-void MainWindow::setupStyles() {
-
+void MainWindow::loadConfig() {
     query_input->setStyleSheet(QString(R"(
                                     QLineEdit {
                                         selection-background-color : %1;
@@ -233,6 +230,34 @@ void MainWindow::setupStyles() {
     results_list->setSelectionMode(QAbstractItemView::SingleSelection);
 
     results_list->setFont(font);
+
 }
 
 
+void MainWindow::addToResultList(const std::string& name, std::optional<fs::path> path) {
+
+    results_list->addItem(createListItem(name, path));
+}
+
+QListWidgetItem* MainWindow::createListItem(const std::string& name, std::optional<fs::path> path) {
+    QListWidgetItem* item = nullptr;
+    if (path.has_value()) {
+        QFileInfo file_info(QString::fromStdString(path->string()));
+        item = new QListWidgetItem(icon_provider.icon(std::move(file_info)), QString::fromStdString(name));
+    } else {
+        item = new QListWidgetItem(QString::fromStdString(name));
+    }
+
+    return item;
+}
+
+void MainWindow::clearResultList() {
+    results_list->clear();
+}
+int MainWindow::getCurrentResultIdx() const {
+    return results_list->currentRow();
+}
+
+int MainWindow::resultsNum() const {
+    return results_list->count();
+}

@@ -1,5 +1,7 @@
 #pragma once
+#include "FuzzyMac/MainWindow.hpp"
 
+#include <QFileIconProvider>
 #include <QListWidget>
 #include <QMessageBox>
 #include <QProcess>
@@ -10,15 +12,17 @@
 #include <toml++/toml.h>
 
 class ModeHandler {
+protected:
+    MainWindow* win;
+     QListWidgetItem* createListItem(); 
 public:
-    ModeHandler(toml::table* config)
-        : config(config) {
+    ModeHandler(MainWindow* win)
+        : win(win) {
     }
-    toml::table* config;
-    virtual void enterHandler(QListWidget* results_list) = 0;
-    virtual void fillData(QListWidget* results_list) = 0;
-    virtual void handleQuickLock(QListWidget* results_list) = 0;
-    virtual QStringList getResults(const QString& query_, QListWidget* results_list) = 0;
+    virtual void enterHandler() = 0;
+    virtual void fillData() = 0;
+    virtual void handleQuickLock() = 0;
+    virtual std::vector<QListWidgetItem*> getResults(const QString& query_) = 0;
     virtual ~ModeHandler() = default;
 };
 
@@ -27,14 +31,14 @@ class AppModeHandler : public ModeHandler {
     std::vector<int> results_indices;
 
 public:
-    AppModeHandler(toml::table* config)
-        : ModeHandler(config) {
+    AppModeHandler(MainWindow* win)
+        : ModeHandler(win) {
     }
     ~AppModeHandler() override = default;
-    void enterHandler(QListWidget* results_list) override;
-    void fillData(QListWidget* results_list) override;
-    void handleQuickLock(QListWidget* results_list) override;
-    QStringList getResults(const QString& query_, QListWidget* results_list) override;
+    void enterHandler() override;
+    void fillData() override;
+    void handleQuickLock() override;
+    std::vector<QListWidgetItem*> getResults(const QString& query_) override;
 };
 
 class CLIModeHandler : public ModeHandler {
@@ -43,26 +47,27 @@ class CLIModeHandler : public ModeHandler {
     std::vector<int> results_indices;
 
 public:
-    CLIModeHandler(toml::table* config)
-        : ModeHandler(config) {
+    CLIModeHandler(MainWindow* win)
+        : ModeHandler(win) {
     }
     ~CLIModeHandler() override = default;
-    void enterHandler(QListWidget* results_list) override;
-    void fillData(QListWidget* results_list) override;
-    QStringList getResults(const QString& query_, QListWidget* results_list) override;
-    void handleQuickLock(QListWidget* results_list) override;
+    void enterHandler() override;
+    void fillData() override;
+    std::vector<QListWidgetItem*> getResults(const QString& query_) override;
+    void handleQuickLock() override;
 };
 
 class FileModeHandler : public ModeHandler {
     std::vector<std::string> paths;
     std::vector<std::string> abs_results;
+
 public:
-    FileModeHandler(toml::table* config)
-        : ModeHandler(config) {
+    FileModeHandler(MainWindow* win)
+        : ModeHandler(win) {
     }
     ~FileModeHandler() override = default;
-    void enterHandler(QListWidget* results_list) override;
-    void fillData(QListWidget* results_list) override;
-    QStringList getResults(const QString& query_, QListWidget* results_list) override;
-    void handleQuickLock(QListWidget* results_list) override;
+    void enterHandler() override;
+    void fillData() override;
+    std::vector<QListWidgetItem*> getResults(const QString& query_) override;
+    void handleQuickLock() override;
 };

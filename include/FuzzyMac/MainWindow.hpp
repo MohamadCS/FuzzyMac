@@ -1,9 +1,10 @@
 #pragma once
 
-#include "FuzzyMac/ModHandler.hpp"
 #include "toml++/toml.h"
 
+#include <QFileIconProvider>
 #include <QFutureWatcher>
+#include <QFileSystemWatcher>
 #include <QLineEdit>
 #include <QListWidget>
 #include <QMainWindow>
@@ -14,8 +15,11 @@
 #include <QVBoxLayout>
 
 #include <memory>
+#include <optional>
 
 namespace fs = std::filesystem;
+
+class ModeHandler;
 
 enum class Mode {
     CLI,
@@ -33,8 +37,13 @@ public:
     void wakeup();
     void sleep();
     const toml::table& getConfig() const;
+    void addToResultList(const std::string& name, std::optional<fs::path> path = std::nullopt);
+    QListWidgetItem* createListItem(const std::string& name, std::optional<fs::path> path = std::nullopt);
+    void clearResultList();
+    int getCurrentResultIdx() const;
+    int resultsNum() const;
 
-public slots:
+private slots:
     void nextItem();
     void prevItem();
     void openItem();
@@ -49,8 +58,10 @@ private:
     QLineEdit* query_input;
     QListWidget* results_list;
     QVBoxLayout* layout;
+    QFileIconProvider icon_provider;
+    QFileSystemWatcher* config_file_watcher;
     QTimer* search_refresh_timer;
-    QFutureWatcher<QStringList>* results_watcher;
+    QFutureWatcher<std::vector<QListWidgetItem*>>* results_watcher;
     toml::table config;
 
     Mode mode;
@@ -61,7 +72,7 @@ private:
     void setupLayout();
     void setupStyles();
     void createKeybinds();
-    void processStdIn();
+    void loadConfig();
     void fillData();
     void connectEventHandlers();
 };
