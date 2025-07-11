@@ -14,6 +14,40 @@ static QStringList customSearch(const QString& query_, QListWidget* results_list
 
 /***************************/
 
+std::vector<std::string> spotlightQuery(const std::vector<std::string>& dirs, const std::string& query) {
+    std::vector<std::string> results;
+    const int MAX_RESULTS = 30;
+    int resultCount = 0;
+
+    for (const std::string& dir : dirs) {
+        if (resultCount >= MAX_RESULTS)
+            break;
+
+        QStringList args;
+        args << "-onlyin" << QString::fromStdString(dir) << QString::fromStdString(query);
+
+        QProcess process;
+        process.start("/usr/bin/mdfind", args);
+        if (!process.waitForFinished(3000)) { // Wait max 3 seconds
+            continue;                         // Skip on timeout
+        }
+
+        QByteArray output = process.readAllStandardOutput();
+        QList<QByteArray> lines = output.split('\n');
+
+        for (const QByteArray& line : lines) {
+            if (!line.isEmpty()) {
+                results.emplace_back(line.constData());
+                resultCount++;
+                if (resultCount >= MAX_RESULTS)
+                    break;
+            }
+        }
+    }
+
+    return results;
+}
+
 static void expand(std::vector<std::string>& paths) {
     for (auto& input : paths) {
         wordexp_t p;
@@ -30,8 +64,7 @@ static void expand(std::vector<std::string>& paths) {
     }
 }
 
-
-void AppModeHandler::handleQuickLock(QListWidget* results_list){
+void AppModeHandler::handleQuickLock(QListWidget* results_list) {
 }
 
 void AppModeHandler::enterHandler(QListWidget* results_list) {
@@ -104,9 +137,7 @@ QStringList CLIModeHandler::getResults(const QString& query_, QListWidget* resul
     return customSearch(query_, results_list, entries, results_indices);
 }
 
-
-void CLIModeHandler::handleQuickLock(QListWidget* results_list){
-
+void CLIModeHandler::handleQuickLock(QListWidget* results_list) {
 }
 
 /***************************/
@@ -137,7 +168,7 @@ QStringList FileModeHandler::getResults(const QString& query_, QListWidget* resu
 
     auto query = query_.right(query_.size() - 1);
 
-    auto files = spotlightSearch(std::format("kMDItemDisplayName == '{}*'c", query.toStdString()), paths);
+    auto files = spotlightSearch(paths,std::format("kMDItemDisplayName LIKE[cd] '{}*'", query.toStdString()));
 
     QStringList res{};
     for (const auto& file : files) {
@@ -148,9 +179,8 @@ QStringList FileModeHandler::getResults(const QString& query_, QListWidget* resu
     return res;
 }
 
-
-void FileModeHandler::handleQuickLock(QListWidget* results_list){
-    if(results_list->count() == 0) {
+void FileModeHandler::handleQuickLock(QListWidget* results_list) {
+    if (results_list->count() == 0) {
         return;
     }
 
