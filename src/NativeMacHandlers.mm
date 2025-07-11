@@ -18,6 +18,13 @@ extern "C" void deactivateApp() {
 #import <Cocoa/Cocoa.h>
 #include <QWidget>
 
+extern "C" void centerWindow(QWidget *widget) {
+  NSView *native_view = reinterpret_cast<NSView *>(widget->winId());
+  NSWindow *window = [native_view window];
+  if (!window)
+    return;
+  [window center];
+}
 extern "C" void makeWindowFloating(QWidget *widget) {
   // Get the native NSWindow handle
   NSView *native_view = reinterpret_cast<NSView *>(widget->winId());
@@ -31,9 +38,8 @@ extern "C" void makeWindowFloating(QWidget *widget) {
                                  NSWindowCollectionBehaviorTransient |
                                  NSWindowCollectionBehaviorStationary)];
 
-  [window setStyleMask:(NSWindowStyleMaskUtilityWindow |
-                        NSWindowStyleMaskNonactivatingPanel |
-                        NSWindowStyleMaskBorderless)];
+  [window setStyleMask:(NSWindowStyleMaskBorderless)];
+  [window center];
 }
 
 #import <Foundation/Foundation.h>
@@ -48,7 +54,6 @@ spotlightSearch(const std::vector<std::string> &dirs,
 
     NSMetadataQuery *metadata_query = [[NSMetadataQuery alloc] init];
     if (!metadata_query) {
-      NSLog(@"Failed to create NSMetadataQuery");
       return results;
     }
 
@@ -58,12 +63,10 @@ spotlightSearch(const std::vector<std::string> &dirs,
       predicate = [NSPredicate
           predicateWithFormat:[NSString stringWithUTF8String:query.c_str()]];
     } @catch (NSException *exception) {
-      NSLog(@"Invalid NSPredicate: %@", exception);
       return results;
     }
 
     if (!predicate) {
-      NSLog(@"Predicate is nil");
       return results;
     }
 
@@ -76,12 +79,10 @@ spotlightSearch(const std::vector<std::string> &dirs,
       if ([[NSFileManager defaultManager] fileExistsAtPath:path]) {
         [scopes addObject:[NSURL fileURLWithPath:path]];
       } else {
-        NSLog(@"Directory does not exist: %@", path);
       }
     }
 
     if (scopes.count == 0) {
-      NSLog(@"No valid search scopes");
       return results;
     }
 
@@ -99,7 +100,6 @@ spotlightSearch(const std::vector<std::string> &dirs,
                 }];
 
     if (![metadata_query startQuery]) {
-      NSLog(@"Failed to start Spotlight query");
       [[NSNotificationCenter defaultCenter] removeObserver:observer];
       return results;
     }
@@ -119,18 +119,15 @@ spotlightSearch(const std::vector<std::string> &dirs,
 
     // Check if query timed out
     if (!query_finished) {
-      NSLog(@"Spotlight query timed out");
       return results;
     }
 
     // Extract results
-    NSLog(@"Spotlight query returned %lu items",
-          (unsigned long)metadata_query.resultCount);
     const int max = 30;
     for (NSMetadataItem *item in metadata_query.results) {
-        if(results.size() > max) {
-            return results;
-        }
+      if (results.size() > max) {
+        return results;
+      }
       NSString *path =
           [item valueForAttribute:(__bridge NSString *)kMDItemPath];
       if (path) {
@@ -206,14 +203,12 @@ extern "C" void disableCmdQ() {
   Method original_method =
       class_getInstanceMethod(app_class, terminate_selector);
   if (!original_method) {
-    NSLog(@"[DisableCmdQ] ERROR: terminate: method not found");
     return;
   }
 
   // Create a new implementation block that does nothing on terminate:
-  IMP new_imp = imp_implementationWithBlock(^void(id _self, id sender) {
-    NSLog(@"[DisableCmdQ] Command-Q pressed, quitting prevented.");
-    // No call to original terminate:, so quitting is disabled
+  IMP new_imp = imp_implementationWithBlock(^void(id _self, id sender){
+      // No call to original terminate:, so quitting is disabled
   });
 
   // Replace the original implementation with our new one

@@ -19,6 +19,7 @@
 #include <QProcess>
 #include <QShortcut>
 #include <QStaticText>
+#include <QWindow>
 #include <QtConcurrent>
 #include <memory>
 
@@ -41,14 +42,10 @@ void MainWindow::createWidgets() {
 
 void MainWindow::setupLayout() {
     setWindowFlag(Qt::WindowStaysOnTopHint);
-    if (mode == Mode::CLI) {
-        setWindowFlag(Qt::FramelessWindowHint);
-        setWindowFlag(Qt::FramelessWindowHint);
-        // setWindowFlag(Qt::Tool);
-    } else {
-        resize(600, 400);
-        makeWindowFloating(this);
-    }
+    resize(600, 400);
+    makeWindowFloating(this);
+
+
     //
 
     layout->addWidget(query_input, 0);
@@ -133,6 +130,7 @@ void MainWindow::connectEventHandlers() {
         }
     });
 
+    connect(window()->windowHandle(), &QWindow::screenChanged, this, [this](QScreen* newScreen) { centerWindow(this); });
     connect(results_list, &QListWidget::itemDoubleClicked, this, [this](QListWidgetItem* item) { openItem(); });
 
 #ifndef CLI_TOOL
@@ -277,6 +275,6 @@ QIcon MainWindow::getFileIcon(const std::string& path) const {
     return icon_provider.icon(QFileInfo(QString::fromStdString(path)));
 }
 
-ModeHandler* MainWindow::getModeHandler() const{
+ModeHandler* MainWindow::getModeHandler() const {
     return mode_handler.at(mode).get();
 }

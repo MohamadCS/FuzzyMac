@@ -1,10 +1,13 @@
 #pragma once
 
-#include <string>
 #include <QWidget>
+#include <string>
 
 extern "C" void deactivateApp();
-extern "C" void makeWindowFloating(QWidget *widget);
+
+extern "C" void centerWindow(QWidget* widget);
+
+extern "C" void makeWindowFloating(QWidget* widget);
 
 extern "C" void disableCmdQ();
 
