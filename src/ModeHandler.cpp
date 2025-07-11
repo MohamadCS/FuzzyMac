@@ -4,11 +4,18 @@
 #include "FuzzyMac/ParseConfig.hpp"
 #include "FuzzyMac/Utils.hpp"
 
+#include <QDrag>
+#include <QMimeData>
 #include <filesystem>
 #include <iostream>
+#include <optional>
 #include <wordexp.h>
 
+#include <QClipboard>
+#include <QDrag>
 #include <QFileIconProvider>
+#include <QGuiApplication>
+
 namespace fs = std::filesystem;
 
 static std::vector<QListWidgetItem*> customSearch(MainWindow* win, const QString& query_,
@@ -16,6 +23,32 @@ static std::vector<QListWidgetItem*> customSearch(MainWindow* win, const QString
                                                   std::vector<int>& results_indices, bool show_icons);
 
 /***************************/
+
+ModeHandler::ModeHandler(MainWindow* win)
+    : win(win) {
+}
+void ModeHandler::handleCopy() {
+}
+void ModeHandler::handlePathCopy() {
+}
+
+void ModeHandler::handleDragAndDrop(QDrag* drag) {
+}
+
+/***************************/
+
+AppModeHandler::AppModeHandler(MainWindow* win)
+    : ModeHandler(win),
+      app_watcher(new QFileSystemWatcher(nullptr)) {
+    QObject::connect(app_watcher, &QFileSystemWatcher::directoryChanged, win, [this, win](const QString&) {
+        load();
+        win->refreshResults();
+    });
+}
+
+AppModeHandler::~AppModeHandler() {
+    delete app_watcher;
+};
 
 void AppModeHandler::handleQuickLock() {
 }
@@ -72,6 +105,10 @@ std::vector<QListWidgetItem*> AppModeHandler::getResults(const QString& query) {
 
 /***************************/
 
+CLIModeHandler::CLIModeHandler(MainWindow* win)
+    : ModeHandler(win) {
+}
+
 void CLIModeHandler::load() {
     if (loaded) {
         return;
@@ -103,6 +140,11 @@ void CLIModeHandler::handleQuickLock() {
 }
 
 /***************************/
+
+FileModeHandler::FileModeHandler(MainWindow* win)
+    : ModeHandler(win) {
+    load();
+}
 void FileModeHandler::load() {
     paths = get_array<std::string>(win->getConfig(), {"mode", "files", "dirs"});
     expandPaths(paths);
@@ -147,6 +189,32 @@ void FileModeHandler::handleQuickLock() {
     }
 
     quickLock(abs_results[win->getCurrentResultIdx()]);
+}
+
+void FileModeHandler::handleCopy() {
+    QMimeData* mime_data = new QMimeData();
+
+    // Create a list with a single file URL
+    QString file_path = QString::fromStdString(abs_results[win->getCurrentResultIdx()]);
+    QList<QUrl> urls;
+    qDebug() << file_path;
+    urls.append(QUrl::fromLocalFile(std::move(file_path)));
+
+    mime_data->setUrls(urls);
+
+    // Set the clipboard contents
+    QGuiApplication::clipboard()->setMimeData(mime_data);
+}
+
+void FileModeHandler::handleDragAndDrop(QDrag* drag) {
+    auto path = abs_results[win->getCurrentResultIdx()];
+    QIcon icon = win->getFileIcon(path);
+    QMimeData* mime_data = new QMimeData;
+    QPixmap pixmap = icon.pixmap(64, 64); // Icon size for the drag
+    mime_data->setUrls({QUrl::fromLocalFile(QString::fromStdString(path))});
+    drag->setMimeData(mime_data);
+    drag->setPixmap(pixmap);
+    drag->exec(Qt::CopyAction);
 }
 
 /***************************/

@@ -6,6 +6,7 @@
 #include <QListWidget>
 #include <QMessageBox>
 #include <QProcess>
+#include <QDrag>
 #include <QString>
 #include <QVBoxLayout>
 
@@ -18,12 +19,13 @@ protected:
     QListWidgetItem* createListItem();
 
 public:
-    ModeHandler(MainWindow* win)
-        : win(win) {
-    }
+    ModeHandler(MainWindow* win);
     virtual void load() = 0;
     virtual void enterHandler() = 0;
     virtual void handleQuickLock() = 0;
+    virtual void handleCopy();
+    virtual void handleDragAndDrop(QDrag*) ;
+    virtual void handlePathCopy();
     virtual std::vector<QListWidgetItem*> getResults(const QString& query_) = 0;
     virtual ~ModeHandler() = default;
 };
@@ -35,18 +37,8 @@ class AppModeHandler : public ModeHandler {
     QFileSystemWatcher* app_watcher;
 
 public:
-    AppModeHandler(MainWindow* win)
-        : ModeHandler(win),
-          app_watcher(new QFileSystemWatcher(nullptr)) {
-        QObject::connect(app_watcher, &QFileSystemWatcher::directoryChanged, win, [this,win](const QString&) {
-                load();
-                win->refreshResults();
-            });
-    }
-    ~AppModeHandler() override {
-        delete app_watcher;
-    };
-
+    AppModeHandler(MainWindow* win);
+    ~AppModeHandler() override;
     void load() override;
     void enterHandler() override;
     void handleQuickLock() override;
@@ -60,9 +52,7 @@ class CLIModeHandler : public ModeHandler {
     bool loaded = false;
 
 public:
-    CLIModeHandler(MainWindow* win)
-        : ModeHandler(win) {
-    }
+    CLIModeHandler(MainWindow* win);
     ~CLIModeHandler() override = default;
     void load() override;
     void enterHandler() override;
@@ -75,12 +65,11 @@ class FileModeHandler : public ModeHandler {
     std::vector<std::string> abs_results;
 
 public:
-    FileModeHandler(MainWindow* win)
-        : ModeHandler(win) {
-        load();
-    }
+    FileModeHandler(MainWindow* win);
     ~FileModeHandler() override = default;
     void enterHandler() override;
+    void handleCopy() override;
+    void handleDragAndDrop(QDrag*)  override ;
     void load() override;
     std::vector<QListWidgetItem*> getResults(const QString& query_) override;
     void handleQuickLock() override;

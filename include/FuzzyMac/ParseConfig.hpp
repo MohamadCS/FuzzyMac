@@ -2,13 +2,15 @@
 
 #include <toml++/toml.h>
 
+#include <QString>
+
 #include <initializer_list>
 #include <string>
 
 // Generic get with fallback from default
 
 const toml::table default_config = toml::parse(R"toml(
-font="SF Mono"
+font = "JetBrainsMono Nerd Font"
 [colors.query_input]
 selection = "#cecacd"
 selection_background = "#cecacd"
@@ -25,12 +27,17 @@ background = "#f2e9e1"
 [mode.apps]
 
 dirs = ["/Applications/", "/System/Applications", "/Applications/Utilities/"]
+show_icons = true
 
-apps = ["/System/Library/CoreServices/Finder.app"]
+apps = [
+  "/System/Library/CoreServices/Finder.app",
+  "/System/Applications/Utilities/Activity Monitor.app",
+]
 
 [mode.files]
+show_icons = true
 
-dirs = ["$HOME/Library/Mobile Documents/"]
+dirs = ["$HOME/Library/Mobile Documents/com~apple~CloudDocs/", "$HOME/Desktop/"]
 )toml");
 
 template <typename T>
@@ -115,3 +122,5 @@ std::vector<T> get_array(const toml::table& user, std::initializer_list<std::str
 
     return fallback; // fallback if nothing found
 }
+
+QString buildStyleSheet(const toml::table& config, const std::string& widget_name);
