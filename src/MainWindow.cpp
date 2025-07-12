@@ -21,6 +21,7 @@
 #include <QStaticText>
 #include <QWindow>
 #include <QtConcurrent>
+#include <filesystem>
 #include <memory>
 
 void MainWindow::processConfigFile() {
@@ -43,26 +44,23 @@ void MainWindow::createWidgets() {
 void MainWindow::setupLayout() {
     setWindowFlag(Qt::WindowStaysOnTopHint);
     resize(600, 400);
+    QApplication::setQuitOnLastWindowClosed(false);
+
     makeWindowFloating(this);
-
-
-    //
-
     layout->addWidget(query_input, 0);
     layout->addWidget(results_list, 0);
 
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(0);
     results_list->setDragEnabled(true);
+    results_list->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    results_list->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    results_list->setSelectionMode(QAbstractItemView::SingleSelection);
 
     central->setLayout(layout);
-
-    query_input->setFocus();
-    activateWindow();
-    raise();
-
     setCentralWidget(central);
-    setFixedSize(600, 400);
+
+    wakeup();
 }
 
 void MainWindow::nextItem() {
@@ -87,6 +85,7 @@ void MainWindow::wakeup() {
     show();
     raise();
     activateWindow();
+    centerWindow(this);
     query_input->setFocus();
 }
 
@@ -130,7 +129,8 @@ void MainWindow::connectEventHandlers() {
         }
     });
 
-    connect(window()->windowHandle(), &QWindow::screenChanged, this, [this](QScreen* newScreen) { centerWindow(this); });
+    connect(
+        window()->windowHandle(), &QWindow::screenChanged, this, [this](QScreen* newScreen) { centerWindow(this); });
     connect(results_list, &QListWidget::itemDoubleClicked, this, [this](QListWidgetItem* item) { openItem(); });
 
 #ifndef CLI_TOOL
@@ -158,7 +158,8 @@ void MainWindow::createKeybinds() {
 
 MainWindow::MainWindow(Mode mode, QWidget* parent)
     : QMainWindow(parent),
-      mode(mode) {
+      mode(mode),
+      config(default_config) {
 
     mode_handler.emplace(Mode::CLI, std::make_unique<CLIModeHandler>(this));
     mode_handler.emplace(Mode::APP, std::make_unique<AppModeHandler>(this));
@@ -201,38 +202,33 @@ void MainWindow::loadConfig() {
     expandPaths(p_);
     std::string config_path = p_[0];
 
-    toml::table new_config = config;
-    try {
-        new_config = toml::parse_file(config_path);
-    } catch (const toml::parse_error& err) {
-        new_config = config;
+    if (fs::exists(config_path)) {
+        toml::table new_config = config;
+        // reload config file
+        try {
+            new_config = toml::parse_file(config_path);
+        } catch (const toml::parse_error& err) {
+            QMessageBox::information(nullptr, "Error", "It looks that you have a syntax error in config file, falling back to default config");
+            new_config = config;
+        }
+        config = new_config;
     }
 
-    config = new_config;
-
-    query_input->setStyleSheet(buildStyleSheet(config, "query_input"));
-    results_list->setStyleSheet(buildStyleSheet(config, "results_list"));
-
-    QFont font(get<std::string>(config, {"font"}).c_str(), 30);
-    query_input->setFont(font);
-    font.setPointSize(15);
-
-    results_list->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    results_list->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    results_list->setSelectionMode(QAbstractItemView::SingleSelection);
-
-    results_list->setFont(font);
-    results_list->setIconSize(QSize(40, 40)); // Set desired icon size
+    // reload widgets
+    query_input->loadConfig();
+    results_list->loadConfig();
 
     int curr_selection = results_list->currentRow();
     QString curr_query = query_input->text();
 
+    // reload the mode handler
     mode_handler[mode]->load();
+
+    // simulate a text change in order to update results
     onTextChange(query_input->text());
 }
 
 void MainWindow::addToResultList(const std::string& name, std::optional<fs::path> path) {
-
     results_list->addItem(createListItem(name, path));
 }
 

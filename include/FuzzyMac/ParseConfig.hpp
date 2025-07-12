@@ -126,4 +126,3 @@ std::vector<T> get_array(const toml::table& user, std::initializer_list<std::str
     return fallback; // fallback if nothing found
 }
 
-QString buildStyleSheet(const toml::table& config, const std::string& widget_name);
