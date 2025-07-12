@@ -15,6 +15,7 @@
 #include <QFont>
 #include <QGuiApplication>
 #include <QKeyEvent>
+#include <QLabel>
 #include <QMessageBox>
 #include <QProcess>
 #include <QShortcut>
@@ -37,6 +38,7 @@ void MainWindow::createWidgets() {
 
     query_input = new QueryInput(central);
     results_list = new ResultsPanel(central);
+    mode_label = new QLabel(central);
     // search_refresh_timer = new QTimer;
     // search_refresh_timer->setSingleShot(true);
 }
@@ -48,7 +50,9 @@ void MainWindow::setupLayout() {
 
     makeWindowFloating(this);
     layout->addWidget(query_input, 0);
+    layout->addWidget(mode_label, 0);
     layout->addWidget(results_list, 0);
+    mode_label->setAlignment(Qt::AlignCenter | Qt::AlignVCenter);
 
     layout->setSpacing(0);
     results_list->setDragEnabled(true);
@@ -81,7 +85,27 @@ void MainWindow::prevItem() {
 }
 
 void MainWindow::wakeup() {
+    QRect end_rect = geometry();
+
+    QRect start_rect(end_rect.center().x(), end_rect.center().y(), 0, 0);
+
+    setGeometry(start_rect);
+    setWindowOpacity(0.0);
     show();
+
+    QPropertyAnimation* anim = new QPropertyAnimation(this, "windowOpacity");
+    anim->setDuration(150);
+    anim->setStartValue(0.0);
+    anim->setEndValue(1.0);
+    anim->start(QAbstractAnimation::DeleteWhenStopped);
+
+    QPropertyAnimation* scale_anim = new QPropertyAnimation(this, "geometry");
+    scale_anim->setDuration(300);
+    scale_anim->setStartValue(start_rect);
+    scale_anim->setEndValue(end_rect);
+    scale_anim->setEasingCurve(QEasingCurve::OutCubic);
+    scale_anim->start(QAbstractAnimation::DeleteWhenStopped);
+
     raise();
     activateWindow();
     centerWindow(this);
@@ -89,15 +113,25 @@ void MainWindow::wakeup() {
 }
 
 void MainWindow::sleep() {
-    deactivateApp();
-    hide();
+    QPropertyAnimation* anim = new QPropertyAnimation(this, "windowOpacity");
+    anim->setDuration(150);
+    anim->setStartValue(1.0);
+    anim->setEndValue(0.0);
+    anim->start();
+
+
+    connect(anim, &QPropertyAnimation::finished, this, [this]() {
+        deactivateApp();
+        hide();
+    });
 }
 
 void MainWindow::onTextChange(const QString& text) {
     if (mode != Mode::CLI) {
-        if (text.size() > 0 && text[0] == ' ') {
+        if (text.startsWith(' ')) {
+            query_input->setText("→ ");
             mode = Mode::FILE;
-        } else {
+        } else if (text.isEmpty()) {
             mode = Mode::APP;
         }
     }
@@ -109,6 +143,7 @@ void MainWindow::onTextChange(const QString& text) {
     auto future = QtConcurrent::run([this, text]() { return mode_handler[mode]->getResults(text); });
 
     results_watcher->setFuture(future);
+    mode_label->setText(QString("%1").arg(mode_handler[mode]->handleModeText()));
 }
 
 void MainWindow::connectEventHandlers() {
@@ -167,7 +202,6 @@ MainWindow::MainWindow(Mode mode, QWidget* parent)
     setupLayout();
     connectEventHandlers();
     loadConfig();
-
     createKeybinds();
 
     if (mode != Mode::CLI) {
@@ -225,6 +259,19 @@ void MainWindow::loadConfig() {
         }
     )")
                       .arg(get<std::string>(config, {"colors", "background"})));
+
+    mode_label->setStyleSheet(QString(R"(
+        QLabel {
+            color : %1;
+            background: %2;
+            font-weight: 500;
+            font-family: %3;
+            border-radius: 10px;
+        }
+    )")
+                                  .arg(get<std::string>(config, {"colors", "mode_label", "text"}))
+                                  .arg(get<std::string>(config, {"colors", "mode_label", "background"}))
+                                  .arg(get<std::string>(config, {"font"})));
 
     int curr_selection = results_list->currentRow();
     QString curr_query = query_input->text();
