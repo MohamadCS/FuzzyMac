@@ -1,96 +1,130 @@
-# Fuzzy Mac
+# FuzzyMac
+
 <p align="center">
-  <img src="./res/icons/icon-256x256.png" alt="Icon" width="150">
+<img src="./res/icons/icon-256x256.png" alt="FuzzyMac Icon" width="150">
 </p>
 
 <p align="center">
-    GUI fuzzy finder for macOS.
+A fuzzy finder GUI for macOS.
 </p>
 
-## Overview
-![Example](./res/overview.png)
 
-## CLI mode
+## 📸 Overview
+
+<p align="center">
+<img src="./res/overview.png" alt="FuzzyMac Screenshot">
+</p>
+
+
+###  🖥️ CLI Mode
+
+FuzzyMac can be used directly from the command line:
+
+- Generate a list of entries using some command
+- Pip those entries to FuzzyMac
+- FuzzyMac will popup the search window
+- After choosing an entry FuzzyMac prints out the result to stdout.
+
+**Example**
+```bash
+
+app=$(fd --max-depth 1 -e app . /Applications -x realpath | FuzzyMac)
+
+	if [ -z "$app"]; then
+	exit
+	fi
+
+	open -a "$app"
+
 ```
-list_of_items | FuzzyMacCLI | cmd
-```
 
-## Application Mode
-Runs in background with the default `cmd-space` to open. By
-default it searchs for applications under `/Applications/`. Enter `<Space>` in
-order to search files under `iCloud`(this is the default, I plan to make a config file support
-for any dirs to look for).
+### 🧭 Application Mode
 
-**You can quicklook files using ctrl-q**
+FuzzyMac runs as a background app, activated by default with ⌘ + Space.
+
+- By default:
+    *	It searches for applications in default config.
+    *	Pressing <Space> in the input box switches to file search mode.
+
+- 🔍 File search uses macOS’s native Spotlight API for maximum speed.
+
+- 📄 Press ⌘ + Y to QuickLook a selected file.
 
 
-## How the app finds files ?
-In cli mode and applications finding its a very simple scoring algorithm.
-for file search I used spotlight's api in order to find the files as quickly as possible.
+## 🔍 How It Works
+-	In CLI and application search modes, FuzzyMac uses a simple, custom scoring algorithm.
+-	In file search mode, it leverages macOS Spotlight to quickly find matching files.
 
-## Config
 
-You can configure FuzzyMac by creating a file `~/.config/FuzzyMac/config.toml`
+## ⚙️ Configuration
 
-### Default config
+You can configure FuzzyMac by creating a file at:
 
+~/.config/FuzzyMac/config.toml
+
+If a setting is not provided, it will fall back to the built-in default below.
+
+## 🔧 Default Config
 
 ```toml
+font = "JetBrainsMono Nerd Font"
+
 [colors.query_input]
 selection = "#cecacd"
 selection_background = "#cecacd"
 text = "#575279"
-background = "#f2e9e1"
+background = "#faf4ed"
 
 [colors.results_list]
 selection = "#575279"
-selection_background = "#cecacd"
+selection_background = "#dfdad9"
 text = "#575279"
-background = "#f2e9e1"
+background = "#faf4ed"
 
 
 [mode.apps]
 
-dirs = ["/Applications/", "/System/Applications", "/Applications/Utilities/"]
+dirs = [
+"/Applications/",
+"/System/Applications",
+"/Applications/Utilities/",
+"/System/Applications/Utilities",
+]
+show_icons = true
 
 apps = ["/System/Library/CoreServices/Finder.app"]
 
 [mode.files]
+show_icons = true
 
-dirs = ["$HOME/Library/Mobile Documents/"]
-
+dirs = ["$HOME/Library/Mobile Documents/com~apple~CloudDocs/"]
 ```
 
-if the user does not define a field, it will be defined automatically using the config
-    file above.
 
-## Compiling from source
+## 🛠️ Building from Source
 
-
-### Requirements
-
-Requires homebrew installation of qt6, you can install it using the command
-```bash
+### ✅ Requirements
+-	macOS with Homebrew
+-	Qt 6 installed via Homebrew:
+```
 brew install qt@6
-
 ```
 
-### cmake
-For compiling both versions
+### 🔨 Build with CMake
+
 ```
 mkdir build
 cd build
-cmake ..
+cmake -DCMAKE_BUILD_TYPE=Release ..
 cmake --build .
 ```
 
-## TODOs
-
-- [x] convert to `cmake` and make it work on any mac.
-- [x] make it customizable.
-- [ ] Add the ability to view file path. 
-- [ ] Add application icon view. 
-- [ ] add application folder change watcher.
+This builds both the CLI and GUI versions.
 
 
-
+## TODO
+- [x] Migrate to CMake and make build portable.
+- [x] Add application icon view.
+- [x] Add configuration support.
+- [x] Watch for changes in configured application directories.
+- [ ] Display full file paths in the UI.
