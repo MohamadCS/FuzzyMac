@@ -50,7 +50,6 @@ void MainWindow::setupLayout() {
     layout->addWidget(query_input, 0);
     layout->addWidget(results_list, 0);
 
-    layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(0);
     results_list->setDragEnabled(true);
     results_list->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -208,7 +207,6 @@ void MainWindow::loadConfig() {
         try {
             new_config = toml::parse_file(config_path);
         } catch (const toml::parse_error& err) {
-            QMessageBox::information(nullptr, "Error", "It looks that you have a syntax error in config file, falling back to default config");
             new_config = config;
         }
         config = new_config;
@@ -217,6 +215,16 @@ void MainWindow::loadConfig() {
     // reload widgets
     query_input->loadConfig();
     results_list->loadConfig();
+
+    auto border_size = get<int>(config, {"border_size"});
+    layout->setContentsMargins(border_size, border_size, border_size, border_size);
+
+    setStyleSheet(QString(R"(
+        QMainWindow {
+            background: %1;
+        }
+    )")
+                      .arg(get<std::string>(config, {"colors", "background"})));
 
     int curr_selection = results_list->currentRow();
     QString curr_query = query_input->text();
