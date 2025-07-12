@@ -1,9 +1,9 @@
-#include "FuzzyMac/QueryInput.hpp"
+#include "FuzzyMac/QueryEdit.hpp"
 #include "FuzzyMac/MainWindow.hpp"
 #include "FuzzyMac/ParseConfig.hpp"
 
 #include <QApplication>
-void QueryInput::keyPressEvent(QKeyEvent* event) {
+void QueryEdit::keyPressEvent(QKeyEvent* event) {
     if (QKeySequence(event->modifiers() | event->key()) == QKeySequence::Copy) {
         emit requestAppCopy();
         return;
@@ -13,7 +13,7 @@ void QueryInput::keyPressEvent(QKeyEvent* event) {
     QLineEdit::keyPressEvent(event);
 }
 
-void QueryInput::loadConfig() {
+void QueryEdit::loadConfig() {
     MainWindow* win = qobject_cast<MainWindow*>(window());
     const auto& config = win->getConfig();
     setStyleSheet(QString(R"(

@@ -96,7 +96,7 @@ void AppModeHandler::load() {
 
 void AppModeHandler::enterHandler() {
 
-    if (win->resultsNum() == 0) {
+    if (win->getResultsNum() == 0) {
         return;
     }
 
@@ -136,7 +136,7 @@ void CLIModeHandler::load() {
 }
 
 void CLIModeHandler::enterHandler() {
-    if (win->resultsNum() == 0) {
+    if (win->getResultsNum() == 0) {
         return;
     }
 
@@ -165,7 +165,7 @@ void FileModeHandler::load() {
 
 void FileModeHandler::enterHandler() {
 
-    if (win->resultsNum() == 0) {
+    if (win->getResultsNum() == 0) {
         return;
     }
 
@@ -203,7 +203,7 @@ std::vector<QListWidgetItem*> FileModeHandler::getResults(const QString& query_)
 }
 
 void FileModeHandler::handleQuickLock() {
-    if (win->resultsNum() == 0) {
+    if (win->getResultsNum() == 0) {
         return;
     }
 

@@ -3,7 +3,7 @@
 #include "FuzzyMac/ModHandler.hpp"
 #include "FuzzyMac/NativeMacHandlers.hpp"
 #include "FuzzyMac/ParseConfig.hpp"
-#include "FuzzyMac/QueryInput.hpp"
+#include "FuzzyMac/QueryEdit.hpp"
 #include "FuzzyMac/ResultsPanel.hpp"
 #include "FuzzyMac/Utils.hpp"
 
@@ -25,9 +25,6 @@
 #include <filesystem>
 #include <memory>
 
-void MainWindow::processConfigFile() {
-}
-
 const toml::table& MainWindow::getConfig() const {
     return config;
 }
@@ -36,11 +33,9 @@ void MainWindow::createWidgets() {
     central = new QWidget(this);
     layout = new QVBoxLayout(central);
 
-    query_input = new QueryInput(central);
+    query_edit = new QueryEdit(central);
     results_list = new ResultsPanel(central);
     mode_label = new QLabel(central);
-    // search_refresh_timer = new QTimer;
-    // search_refresh_timer->setSingleShot(true);
 }
 
 void MainWindow::setupLayout() {
@@ -49,7 +44,7 @@ void MainWindow::setupLayout() {
     QApplication::setQuitOnLastWindowClosed(false);
 
     makeWindowFloating(this);
-    layout->addWidget(query_input, 0);
+    layout->addWidget(query_edit, 0);
     layout->addWidget(mode_label, 0);
     layout->addWidget(results_list, 0);
     mode_label->setAlignment(Qt::AlignCenter | Qt::AlignVCenter);
@@ -85,51 +80,51 @@ void MainWindow::prevItem() {
 }
 
 void MainWindow::wakeup() {
-    QRect end_rect = geometry();
-
-    QRect start_rect(end_rect.center().x(), end_rect.center().y(), 0, 0);
-
-    setGeometry(start_rect);
-    setWindowOpacity(0.0);
+    // QRect end_rect = geometry();
+    //
+    // QRect start_rect(end_rect.center().x(), end_rect.center().y(), 0, 0);
+    //
+    // setGeometry(start_rect);
+    // setWindowOpacity(0.0);
     show();
 
-    QPropertyAnimation* anim = new QPropertyAnimation(this, "windowOpacity");
-    anim->setDuration(150);
-    anim->setStartValue(0.0);
-    anim->setEndValue(1.0);
-    anim->start(QAbstractAnimation::DeleteWhenStopped);
-
-    QPropertyAnimation* scale_anim = new QPropertyAnimation(this, "geometry");
-    scale_anim->setDuration(300);
-    scale_anim->setStartValue(start_rect);
-    scale_anim->setEndValue(end_rect);
-    scale_anim->setEasingCurve(QEasingCurve::OutCubic);
-    scale_anim->start(QAbstractAnimation::DeleteWhenStopped);
+    // QPropertyAnimation* anim = new QPropertyAnimation(this, "windowOpacity",this);
+    // anim->setDuration(150);
+    // anim->setStartValue(0.0);
+    // anim->setEndValue(1.0);
+    // anim->start();
+    //
+    // // TODO: make a special class for animations
+    // QPropertyAnimation* scale_anim = new QPropertyAnimation(this, "geometry",this);
+    // scale_anim->setDuration(320);
+    // scale_anim->setStartValue(start_rect);
+    // scale_anim->setEndValue(end_rect);
+    // scale_anim->setEasingCurve(QEasingCurve::OutCirc);
+    // scale_anim->start();
 
     raise();
     activateWindow();
     centerWindow(this);
-    query_input->setFocus();
+    query_edit->setFocus();
 }
 
 void MainWindow::sleep() {
-    QPropertyAnimation* anim = new QPropertyAnimation(this, "windowOpacity");
-    anim->setDuration(150);
-    anim->setStartValue(1.0);
-    anim->setEndValue(0.0);
-    anim->start();
+    // QPropertyAnimation* anim = new QPropertyAnimation(this, "windowOpacity");
+    // anim->setDuration(150);
+    // anim->setStartValue(1.0);
+    // anim->setEndValue(0.0);
+    // anim->start();
 
-
-    connect(anim, &QPropertyAnimation::finished, this, [this]() {
-        deactivateApp();
-        hide();
-    });
+    // connect(anim, &QPropertyAnimation::finished, this, [this]() {
+            deactivateApp();
+            hide();
+    // });
 }
 
 void MainWindow::onTextChange(const QString& text) {
     if (mode != Mode::CLI) {
         if (text.startsWith(' ')) {
-            query_input->setText("→ ");
+            query_edit->setText("→ ");
             mode = Mode::FILE;
         } else if (text.isEmpty()) {
             mode = Mode::APP;
@@ -150,7 +145,7 @@ void MainWindow::connectEventHandlers() {
 
     results_watcher = new QFutureWatcher<std::vector<QListWidgetItem*>>(this);
 
-    connect(query_input, &QueryInput::textChanged, this, &MainWindow::onTextChange);
+    connect(query_edit, &QueryEdit::textChanged, this, &MainWindow::onTextChange);
 
     connect(results_watcher, &QFutureWatcher<QStringList>::finished, this, [this]() {
         auto results = results_watcher->result();
@@ -187,7 +182,7 @@ void MainWindow::createKeybinds() {
     new QShortcut(Qt::Key_Return, this, SLOT(openItem()));
     new QShortcut(Qt::Key_Escape, this, [this]() { this->sleep(); });
 
-    connect(query_input, &QueryInput::requestAppCopy, this, [this]() { copyToClipboard(); });
+    connect(query_edit, &QueryEdit::requestAppCopy, this, [this]() { copyToClipboard(); });
 }
 
 MainWindow::MainWindow(Mode mode, QWidget* parent)
@@ -247,12 +242,13 @@ void MainWindow::loadConfig() {
     }
 
     // reload widgets
-    query_input->loadConfig();
+    query_edit->loadConfig();
     results_list->loadConfig();
 
     auto border_size = get<int>(config, {"border_size"});
     layout->setContentsMargins(border_size, border_size, border_size, border_size);
 
+    // TODO: move to another function
     setStyleSheet(QString(R"(
         QMainWindow {
             background: %1;
@@ -260,6 +256,7 @@ void MainWindow::loadConfig() {
     )")
                       .arg(get<std::string>(config, {"colors", "background"})));
 
+    // TODO: move to another function
     mode_label->setStyleSheet(QString(R"(
         QLabel {
             color : %1;
@@ -274,13 +271,13 @@ void MainWindow::loadConfig() {
                                   .arg(get<std::string>(config, {"font"})));
 
     int curr_selection = results_list->currentRow();
-    QString curr_query = query_input->text();
+    QString curr_query = query_edit->text();
 
     // reload the mode handler
     mode_handler[mode]->load();
 
     // simulate a text change in order to update results
-    onTextChange(query_input->text());
+    onTextChange(query_edit->text());
 }
 
 void MainWindow::addToResultList(const std::string& name, std::optional<fs::path> path) {
@@ -314,12 +311,12 @@ int MainWindow::getCurrentResultIdx() const {
     return results_list->currentRow();
 }
 
-int MainWindow::resultsNum() const {
+int MainWindow::getResultsNum() const {
     return results_list->count();
 }
 
 void MainWindow::refreshResults() {
-    onTextChange(query_input->text());
+    onTextChange(query_edit->text());
 }
 
 QIcon MainWindow::getFileIcon(const std::string& path) const {
