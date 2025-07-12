@@ -24,6 +24,9 @@ public:
     virtual void enterHandler() = 0;
     virtual void handleQuickLock() = 0;
     virtual void handleCopy();
+    virtual std::string handleModeText() {
+        return "empty";
+    }
     virtual void handleDragAndDrop(QDrag*);
     virtual void handlePathCopy();
     virtual std::vector<QListWidgetItem*> getResults(const QString& query_) = 0;
@@ -40,6 +43,11 @@ public:
     AppModeHandler(MainWindow* win);
     ~AppModeHandler() override;
     void load() override;
+
+    virtual std::string handleModeText() override {
+        return "Applications";
+    }
+
     void enterHandler() override;
     void handleQuickLock() override;
     std::vector<QListWidgetItem*> getResults(const QString& query_) override;
@@ -57,6 +65,9 @@ public:
     void load() override;
     void enterHandler() override;
     std::vector<QListWidgetItem*> getResults(const QString& query_) override;
+    std::string handleModeText() override {
+        return std::format("Results");
+    }
     void handleQuickLock() override;
 };
 
@@ -68,6 +79,9 @@ public:
     FileModeHandler(MainWindow* win);
     ~FileModeHandler() override = default;
     void enterHandler() override;
+    virtual std::string handleModeText() override {
+        return "Files";
+    }
     void handleCopy() override;
     void handleDragAndDrop(QDrag*) override;
     void load() override;

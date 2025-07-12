@@ -65,6 +65,7 @@ protected:
 private:
     QWidget* central;
     QueryInput* query_input;
+    QLabel *mode_label;
     ResultsPanel* results_list;
     QVBoxLayout* layout;
     QFileIconProvider icon_provider;

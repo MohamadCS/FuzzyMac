@@ -180,11 +180,11 @@ void FileModeHandler::enterHandler() {
 
 std::vector<QListWidgetItem*> FileModeHandler::getResults(const QString& query_) {
     abs_results.clear();
-    if (query_.size() <= 1) {
+    if (query_.size() <= 2) {
         return {};
     }
 
-    auto query = query_.right(query_.size() - 1);
+    auto query = query_.right(query_.size() - 2);
 
     auto files = spotlightSearch(paths, std::format("kMDItemDisplayName LIKE[cd] '{}*'", query.toStdString()));
 
