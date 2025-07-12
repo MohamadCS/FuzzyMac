@@ -27,6 +27,12 @@ brew install --cask MohamadCS/FuzzyMac/fuzzymac
 ```
 
 or by navigating to the releases section.
+#### Damaged Binary ?
+Solution
+```shell
+xattr -d com.apple.quarantine /Applications/FuzzyMac.app
+
+```
 
 ### 🛠️ Building from Source
 
