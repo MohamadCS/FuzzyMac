@@ -1,12 +1,12 @@
 #pragma once
 #include "FuzzyMac/MainWindow.hpp"
 
+#include <QDrag>
 #include <QFileIconProvider>
 #include <QFileSystemWatcher>
 #include <QListWidget>
 #include <QMessageBox>
 #include <QProcess>
-#include <QDrag>
 #include <QString>
 #include <QVBoxLayout>
 
@@ -24,7 +24,7 @@ public:
     virtual void enterHandler() = 0;
     virtual void handleQuickLock() = 0;
     virtual void handleCopy();
-    virtual void handleDragAndDrop(QDrag*) ;
+    virtual void handleDragAndDrop(QDrag*);
     virtual void handlePathCopy();
     virtual std::vector<QListWidgetItem*> getResults(const QString& query_) = 0;
     virtual ~ModeHandler() = default;
@@ -69,7 +69,7 @@ public:
     ~FileModeHandler() override = default;
     void enterHandler() override;
     void handleCopy() override;
-    void handleDragAndDrop(QDrag*)  override ;
+    void handleDragAndDrop(QDrag*) override;
     void load() override;
     std::vector<QListWidgetItem*> getResults(const QString& query_) override;
     void handleQuickLock() override;

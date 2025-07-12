@@ -9,6 +9,8 @@ class QueryInput : public QLineEdit {
 public:
     using QLineEdit::QLineEdit;
 
+    void loadConfig();
+
 signals:
     void requestAppCopy();
 

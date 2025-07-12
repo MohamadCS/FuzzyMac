@@ -38,7 +38,7 @@ extern "C" void makeWindowFloating(QWidget *widget) {
                                  NSWindowCollectionBehaviorTransient |
                                  NSWindowCollectionBehaviorStationary)];
 
-  [window setStyleMask:( NSWindowStyleMaskBorderless)];
+  [window setStyleMask:(NSWindowStyleMaskBorderless)];
   [window center];
 }
 
@@ -214,3 +214,4 @@ extern "C" void disableCmdQ() {
   // Replace the original implementation with our new one
   method_setImplementation(original_method, new_imp);
 }
+

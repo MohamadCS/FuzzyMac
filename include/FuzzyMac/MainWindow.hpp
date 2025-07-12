@@ -1,8 +1,8 @@
 #pragma once
 
-#include "toml++/toml.h"
 #include "FuzzyMac/QueryInput.hpp"
 #include "FuzzyMac/ResultsPanel.hpp"
+#include "toml++/toml.h"
 
 #include <QFileIconProvider>
 #include <QFileSystemWatcher>
@@ -11,6 +11,7 @@
 #include <QListWidget>
 #include <QMainWindow>
 #include <QMessageBox>
+#include <QPainterPath>
 #include <QProcess>
 #include <QString>
 #include <QTimer>
@@ -47,6 +48,7 @@ public:
     int getCurrentResultIdx() const;
     int resultsNum() const;
     ModeHandler* getModeHandler() const;
+
 private slots:
     void nextItem();
     void prevItem();
@@ -67,7 +69,6 @@ private:
     QVBoxLayout* layout;
     QFileIconProvider icon_provider;
     QFileSystemWatcher* config_file_watcher;
-    QTimer* search_refresh_timer;
     QFutureWatcher<std::vector<QListWidgetItem*>>* results_watcher;
     toml::table config;
 
@@ -75,6 +76,7 @@ private:
     std::map<Mode, std::unique_ptr<ModeHandler>> mode_handler;
 
     void processConfigFile();
+    void loadStyle();
     void createWidgets();
     void setupLayout();
     void setupStyles();

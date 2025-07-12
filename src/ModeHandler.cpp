@@ -27,8 +27,10 @@ static std::vector<QListWidgetItem*> customSearch(MainWindow* win, const QString
 ModeHandler::ModeHandler(MainWindow* win)
     : win(win) {
 }
+
 void ModeHandler::handleCopy() {
 }
+
 void ModeHandler::handlePathCopy() {
 }
 
@@ -61,6 +63,7 @@ void AppModeHandler::load() {
     results_indices.clear();
 
     int i = 0;
+    // reload apps in defined app dirs
     for (const auto& path : paths) {
         for (const auto& entry : fs::directory_iterator(path)) {
             if (entry.path().extension() == ".app") {
@@ -71,17 +74,18 @@ void AppModeHandler::load() {
         }
     }
 
+    // watch new app dirs
     app_watcher->removePaths(app_watcher->directories());
     QStringList paths_list{};
     for (const auto& path : paths) {
         paths_list.push_back(QString::fromStdString(path));
     }
-
     app_watcher->addPaths(paths_list);
 
     paths = get_array<std::string>(win->getConfig(), {"mode", "apps", "apps"});
     expandPaths(paths);
 
+    // add special apps(specific apps instead of dirs)
     for (const auto& path : paths) {
         apps.push_back(path);
         win->addToResultList(path, fs::path(path));
@@ -91,6 +95,11 @@ void AppModeHandler::load() {
 }
 
 void AppModeHandler::enterHandler() {
+
+    if (win->resultsNum() == 0) {
+        return;
+    }
+
     int i = win->getCurrentResultIdx();
     QProcess* process = new QProcess(nullptr);
     QStringList args;
@@ -127,6 +136,10 @@ void CLIModeHandler::load() {
 }
 
 void CLIModeHandler::enterHandler() {
+    if (win->resultsNum() == 0) {
+        return;
+    }
+
     int i = win->getCurrentResultIdx();
     std::cout << entries[results_indices[i]];
     exit(0);
@@ -151,7 +164,13 @@ void FileModeHandler::load() {
 }
 
 void FileModeHandler::enterHandler() {
+
+    if (win->resultsNum() == 0) {
+        return;
+    }
+
     int i = win->getCurrentResultIdx();
+    // start a new process that open the full path
     QProcess* process = new QProcess(nullptr);
     QStringList args;
     args << QString::fromStdString(abs_results[i]);
@@ -238,6 +257,7 @@ static std::vector<QListWidgetItem*> customSearch(MainWindow* win, const QString
         }
     }
 
+    // sort in decreasing order according to score
     std::sort(scores_per_idx.begin(), scores_per_idx.end(), [](const auto& lhs, const auto& rhs) {
         return lhs.first > rhs.first;
     });
@@ -245,6 +265,7 @@ static std::vector<QListWidgetItem*> customSearch(MainWindow* win, const QString
     std::vector<QListWidgetItem*> res{};
     res.reserve(scores_per_idx.size());
 
+    // fill resultslist based on the scores
     for (int i = 0; i < scores_per_idx.size(); ++i) {
         int idx = scores_per_idx[i].second;
         const auto& entry = entries[idx];
