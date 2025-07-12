@@ -3,7 +3,7 @@
 #include <QKeyEvent>
 #include <QLineEdit>
 
-class QueryInput : public QLineEdit {
+class QueryEdit : public QLineEdit {
     Q_OBJECT;
 
 public:
