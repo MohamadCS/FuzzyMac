@@ -101,6 +101,16 @@ dirs = ["$HOME/Library/Mobile Documents/com~apple~CloudDocs/"]
 ```
 
 
+## Installation
+If you have homebrew installed you can tap 
+
+```shell
+brew tap MohamadCS/FuzzyMac https://github.com/MohamadCS/FuzzyMac.git
+brew install --cask MohamadCS/FuzzyMac/fuzzymac
+
+```
+
+
 ## 🛠️ Building from Source
 
 ### ✅ Requirements
