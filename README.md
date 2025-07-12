@@ -16,6 +16,39 @@ A fuzzy finder GUI for macOS.
 </p>
 
 
+## Install 
+
+### Precompiled binary
+You can install it using homebrew
+
+```bash
+brew tap MohamadCS/FuzzyMac https://github.com/MohamadCS/FuzzyMac.git
+brew install --cask MohamadCS/FuzzyMac/fuzzymac
+```
+
+or by navigating to the releases section.
+
+### 🛠️ Building from Source
+
+#### ✅ Requirements
+-	macOS with Homebrew
+-	Qt 6 installed via Homebrew:
+```
+brew install qt@6
+```
+
+#### 🔨 Build with CMake
+
+```
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=Release ..
+cmake --build .
+```
+
+This builds both the CLI and GUI versions.
+
+
 ###  🖥️ CLI Mode
 
 FuzzyMac can be used directly from the command line:
@@ -101,25 +134,6 @@ dirs = ["$HOME/Library/Mobile Documents/com~apple~CloudDocs/"]
 ```
 
 
-## 🛠️ Building from Source
-
-### ✅ Requirements
--	macOS with Homebrew
--	Qt 6 installed via Homebrew:
-```
-brew install qt@6
-```
-
-### 🔨 Build with CMake
-
-```
-mkdir build
-cd build
-cmake -DCMAKE_BUILD_TYPE=Release ..
-cmake --build .
-```
-
-This builds both the CLI and GUI versions.
 
 
 ## TODO
