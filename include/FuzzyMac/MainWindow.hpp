@@ -1,6 +1,6 @@
 #pragma once
 
-#include "FuzzyMac/QueryInput.hpp"
+#include "FuzzyMac/QueryEdit.hpp"
 #include "FuzzyMac/ResultsPanel.hpp"
 #include "toml++/toml.h"
 
@@ -39,14 +39,16 @@ public:
 
     void wakeup();
     void sleep();
-    const toml::table& getConfig() const;
+
     void refreshResults();
     void addToResultList(const std::string& name, std::optional<fs::path> path = std::nullopt);
-    QIcon getFileIcon(const std::string& path) const;
     QListWidgetItem* createListItem(const std::string& name, std::optional<fs::path> path = std::nullopt);
     void clearResultList();
+
+    const toml::table& getConfig() const;
+    QIcon getFileIcon(const std::string& path) const;
     int getCurrentResultIdx() const;
-    int resultsNum() const;
+    int getResultsNum() const;
     ModeHandler* getModeHandler() const;
 
 private slots:
@@ -64,8 +66,8 @@ private slots:
 protected:
 private:
     QWidget* central;
-    QueryInput* query_input;
-    QLabel *mode_label;
+    QueryEdit* query_edit;
+    QLabel* mode_label;
     ResultsPanel* results_list;
     QVBoxLayout* layout;
     QFileIconProvider icon_provider;
@@ -76,7 +78,6 @@ private:
     Mode mode;
     std::map<Mode, std::unique_ptr<ModeHandler>> mode_handler;
 
-    void processConfigFile();
     void loadStyle();
     void createWidgets();
     void setupLayout();
