@@ -27,6 +27,7 @@ void ResultsPanel::loadConfig() {
                                         border: none;
                                         padding: 0px;
                                         font-size: 15px;
+                                        font-weight: 300;
                                         font-family: %5;
                                     })")
                       .arg(get<std::string>(config, {"colors", "results_list", "selection_background"}))
