@@ -27,7 +27,7 @@ background = "#faf4ed"
 
 [mode.apps]
 
-dirs = [
+dirs = [ 
   "/Applications/",
   "/System/Applications",
   "/Applications/Utilities/",
