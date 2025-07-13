@@ -19,10 +19,13 @@
 
 #include <memory>
 #include <optional>
+#include <variant>
 
 namespace fs = std::filesystem;
 
 class ModeHandler;
+
+using ResultsVec = std::vector<std::variant<QListWidgetItem*, QWidget*>>;
 
 enum class Mode {
     CLI,
@@ -43,9 +46,12 @@ public:
     void refreshResults();
     void addToResultList(const std::string& name, std::optional<fs::path> path = std::nullopt);
     QListWidgetItem* createListItem(const std::string& name, std::optional<fs::path> path = std::nullopt);
+    QListWidgetItem* createListItem(QWidget* widget);
     void clearResultList();
 
+    bool isWidgetCurrentSelection(QWidget* widget) const;
     const toml::table& getConfig() const;
+    std::string getQuery() const;
     QIcon getFileIcon(const std::string& path) const;
     int getCurrentResultIdx() const;
     int getResultsNum() const;
@@ -72,7 +78,7 @@ private:
     QVBoxLayout* layout;
     QFileIconProvider icon_provider;
     QFileSystemWatcher* config_file_watcher;
-    QFutureWatcher<std::vector<QListWidgetItem*>>* results_watcher;
+    QFutureWatcher<ResultsVec>* results_watcher;
     toml::table config;
 
     Mode mode;
@@ -85,4 +91,5 @@ private:
     void createKeybinds();
     void loadConfig();
     void connectEventHandlers();
+    void processResults(const ResultsVec&);
 };

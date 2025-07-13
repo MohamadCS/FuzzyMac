@@ -1,5 +1,7 @@
 #include "FuzzyMac/Utils.hpp"
 
+#include "exprtk/exprtk.hpp"
+
 #include <wordexp.h>
 #include <iostream>
 
@@ -17,4 +19,18 @@ void expandPaths(std::vector<std::string>& paths) {
             std::cerr << "wordexp failed!" << std::endl;
         }
     }
+}
+
+
+std::optional<double> evalMathExp(const std::string& exp) {
+    exprtk::expression<double> expression;
+    exprtk::parser<double> parser;
+
+    bool is_valid = parser.compile(exp, expression);
+
+    if (is_valid) {
+        return expression.value();
+    }
+
+    return std::nullopt;
 }

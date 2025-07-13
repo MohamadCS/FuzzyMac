@@ -24,6 +24,7 @@
 #include <QtConcurrent>
 #include <filesystem>
 #include <memory>
+#include <variant>
 
 const toml::table& MainWindow::getConfig() const {
     return config;
@@ -57,7 +58,6 @@ void MainWindow::setupLayout() {
 
     central->setLayout(layout);
     setCentralWidget(central);
-
     wakeup();
 }
 
@@ -80,27 +80,14 @@ void MainWindow::prevItem() {
 }
 
 void MainWindow::wakeup() {
-    // QRect end_rect = geometry();
-    //
-    // QRect start_rect(end_rect.center().x(), end_rect.center().y(), 0, 0);
-    //
-    // setGeometry(start_rect);
-    // setWindowOpacity(0.0);
+    setWindowOpacity(0.0);
     show();
 
-    // QPropertyAnimation* anim = new QPropertyAnimation(this, "windowOpacity",this);
-    // anim->setDuration(150);
-    // anim->setStartValue(0.0);
-    // anim->setEndValue(1.0);
-    // anim->start();
-    //
-    // // TODO: make a special class for animations
-    // QPropertyAnimation* scale_anim = new QPropertyAnimation(this, "geometry",this);
-    // scale_anim->setDuration(320);
-    // scale_anim->setStartValue(start_rect);
-    // scale_anim->setEndValue(end_rect);
-    // scale_anim->setEasingCurve(QEasingCurve::OutCirc);
-    // scale_anim->start();
+    QPropertyAnimation* anim = new QPropertyAnimation(this, "windowOpacity", this);
+    anim->setDuration(150);
+    anim->setStartValue(0.0);
+    anim->setEndValue(1.0);
+    anim->start();
 
     raise();
     activateWindow();
@@ -109,16 +96,16 @@ void MainWindow::wakeup() {
 }
 
 void MainWindow::sleep() {
-    // QPropertyAnimation* anim = new QPropertyAnimation(this, "windowOpacity");
-    // anim->setDuration(150);
-    // anim->setStartValue(1.0);
-    // anim->setEndValue(0.0);
-    // anim->start();
+    QPropertyAnimation* anim = new QPropertyAnimation(this, "windowOpacity");
+    anim->setDuration(150);
+    anim->setStartValue(1.0);
+    anim->setEndValue(0.0);
+    anim->start();
 
-    // connect(anim, &QPropertyAnimation::finished, this, [this]() {
-            deactivateApp();
-            hide();
-    // });
+    connect(anim, &QPropertyAnimation::finished, this, [this]() {
+        deactivateApp();
+        hide();
+    });
 }
 
 void MainWindow::onTextChange(const QString& text) {
@@ -135,27 +122,53 @@ void MainWindow::onTextChange(const QString& text) {
         results_watcher->cancel();
     }
 
-    auto future = QtConcurrent::run([this, text]() { return mode_handler[mode]->getResults(text); });
+    mode_handler[mode]->beforeFetch();
 
-    results_watcher->setFuture(future);
-    mode_label->setText(QString("%1").arg(mode_handler[mode]->handleModeText()));
+    // fetch results
+    if (mode_handler[mode]->needsAsyncFetch()) {
+        auto future = QtConcurrent::run([this, text]() { return mode_handler[mode]->fetch(text); });
+        results_watcher->setFuture(future);
+    } else {
+        processResults(mode_handler[mode]->fetch(text));
+    }
+
+    // replace mode text info if available
+    if (const auto& mode_text = mode_handler[mode]->handleModeText(); !mode_text.empty()) {
+        mode_label->setText(QString("%1").arg(mode_text));
+        mode_label->show();
+    } else {
+        mode_label->hide();
+    }
+}
+
+void MainWindow::processResults(const ResultsVec& results) {
+    results_list->clear();
+    for (auto obj : results) {
+        if (std::holds_alternative<QWidget*>(obj)) {
+            auto* widget = std::get<QWidget*>(obj);
+            auto* item = createListItem(widget);
+            widget->setParent(results_list);
+            results_list->setItemWidget(item, widget);
+        } else {
+            results_list->addItem(std::get<QListWidgetItem*>(obj));
+        }
+    }
+
+    mode_handler[mode]->afterFetch();
+
+    if (results.size() >= 1) {
+        results_list->setCurrentRow(0);
+    }
 }
 
 void MainWindow::connectEventHandlers() {
 
-    results_watcher = new QFutureWatcher<std::vector<QListWidgetItem*>>(this);
+    results_watcher = new QFutureWatcher<ResultsVec>(this);
 
     connect(query_edit, &QueryEdit::textChanged, this, &MainWindow::onTextChange);
 
     connect(results_watcher, &QFutureWatcher<QStringList>::finished, this, [this]() {
-        auto results = results_watcher->result();
-        results_list->clear();
-        for (auto* item : results) {
-            results_list->addItem(item);
-        }
-        if (results.size() >= 1) {
-            results_list->setCurrentRow(0);
-        }
+        processResults(results_watcher->result());
     });
 
     connect(
@@ -284,6 +297,12 @@ void MainWindow::addToResultList(const std::string& name, std::optional<fs::path
     results_list->addItem(createListItem(name, path));
 }
 
+QListWidgetItem* MainWindow::createListItem(QWidget* widget) {
+    QListWidgetItem* item = new QListWidgetItem(results_list);
+    item->setSizeHint(widget->sizeHint());
+    return item;
+}
+
 QListWidgetItem* MainWindow::createListItem(const std::string& name, std::optional<fs::path> path) {
     QListWidgetItem* item = nullptr;
     if (path.has_value()) {
@@ -325,4 +344,19 @@ QIcon MainWindow::getFileIcon(const std::string& path) const {
 
 ModeHandler* MainWindow::getModeHandler() const {
     return mode_handler.at(mode).get();
+}
+
+std::string MainWindow::getQuery() const {
+    return query_edit->text().toStdString();
+}
+
+bool MainWindow::isWidgetCurrentSelection(QWidget* widget) const {
+    QListWidgetItem* selectedItem = results_list->currentItem();
+    if (selectedItem) {
+        QWidget* curr_selection = results_list->itemWidget(selectedItem);
+        if (curr_selection == widget) {
+            return true;
+        }
+    }
+    return false;
 }
