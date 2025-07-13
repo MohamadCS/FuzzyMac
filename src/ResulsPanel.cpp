@@ -20,10 +20,10 @@ void ResultsPanel::loadConfig() {
     setIconSize(QSize(40, 40));
     setStyleSheet(QString(R"(
                                     QListWidget {
-                                        background: %4;
                                         selection-background-color : %1;
                                         selection-color : %2;
                                         color: %3;
+                                        background: %4;
                                         border: none;
                                         padding: 0px;
                                         font-size: 15px;

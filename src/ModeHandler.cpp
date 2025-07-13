@@ -1,4 +1,5 @@
 #include "FuzzyMac/Algorithms.hpp"
+#include "FuzzyMac/MainWindow.hpp"
 #include "FuzzyMac/ModHandler.hpp"
 #include "FuzzyMac/NativeMacHandlers.hpp"
 #include "FuzzyMac/ParseConfig.hpp"
@@ -6,26 +7,32 @@
 
 #include <QDrag>
 #include <QMimeData>
+#include <algorithm>
 #include <filesystem>
 #include <iostream>
 #include <optional>
 #include <wordexp.h>
 
+#include <QApplication>
 #include <QClipboard>
 #include <QDrag>
 #include <QFileIconProvider>
 #include <QGuiApplication>
+#include <QLabel>
 
 namespace fs = std::filesystem;
 
-static std::vector<QListWidgetItem*> customSearch(MainWindow* win, const QString& query_,
-                                                  const std::vector<std::string>& entries,
-                                                  std::vector<int>& results_indices, bool show_icons);
+static ResultsVec customSearch(MainWindow* win, const QString& query_, const std::vector<std::string>& entries,
+                               std::vector<int>& results_indices, bool show_icons);
 
 /***************************/
 
 ModeHandler::ModeHandler(MainWindow* win)
     : win(win) {
+}
+
+std::string ModeHandler::handleModeText() {
+    return "empty";
 }
 
 void ModeHandler::handleCopy() {
@@ -46,12 +53,20 @@ AppModeHandler::AppModeHandler(MainWindow* win)
         load();
         win->refreshResults();
     });
+    calc_widget = new CalculatorWidget(win);
 }
+
+bool AppModeHandler::needsAsyncFetch() {
+    return false;
+};
 
 AppModeHandler::~AppModeHandler() {
     delete app_watcher;
 };
 
+std::string AppModeHandler::handleModeText() {
+    return "";
+}
 void AppModeHandler::handleQuickLock() {
 }
 
@@ -94,9 +109,57 @@ void AppModeHandler::load() {
     }
 }
 
+CalculatorWidget::CalculatorWidget(MainWindow* win)
+    : QWidget(),
+      win(win) {
+    title_label = new QLabel(this);
+    answer_label = new QLabel(this);
+    const auto& config = win->getConfig();
+    title_label->setAlignment(Qt::AlignVCenter | Qt::AlignCenter);
+    title_label->setStyleSheet(QString(R"(
+        QLabel {
+            color : %1;
+            font-weight: 500;
+            font-family: %2;
+            font-size: 20px;
+        }
+    )")
+                                   .arg(get<std::string>(config, {"colors", "mode_label", "text"}))
+                                   .arg(get<std::string>(config, {"font"})));
+
+    answer_label->setStyleSheet(QString(R"(
+        QLabel {
+            color : %1;
+            font-weight: 500;
+            font-family: %2;
+            font-size: 30px;
+        }
+    )")
+                                    .arg(get<std::string>(config, {"colors", "mode_label", "text"}))
+                                    .arg(get<std::string>(config, {"font"})));
+
+    title_label->setAlignment(Qt::AlignVCenter | Qt::AlignCenter);
+    answer_label->setAlignment(Qt::AlignVCenter | Qt::AlignCenter);
+
+    title_label->setText("Result");
+
+    QVBoxLayout* layout = new QVBoxLayout(this);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(0);
+    layout->addWidget(title_label);
+    layout->addWidget(answer_label);
+}
+
 void AppModeHandler::enterHandler() {
 
     if (win->getResultsNum() == 0) {
+        return;
+    }
+
+    if (win->isWidgetCurrentSelection(calc_widget)) {
+        QClipboard* clipboard = QApplication::clipboard();
+        clipboard->setText(calc_widget->answer_label->text());
+        win->sleep();
         return;
     }
 
@@ -108,14 +171,47 @@ void AppModeHandler::enterHandler() {
     win->sleep();
 }
 
-std::vector<QListWidgetItem*> AppModeHandler::getResults(const QString& query) {
-    return customSearch(win, query, apps, results_indices, get<bool>(win->getConfig(), {"mode", "apps", "show_icons"}));
+ResultsVec AppModeHandler::fetch(const QString& query) {
+    ResultsVec res{};
+
+    if (math_mode || evalMathExp(query.toStdString())) {
+        math_mode = true;
+        res.push_back(calc_widget);
+    }
+
+    auto search_results =
+        customSearch(win, query, apps, results_indices, get<bool>(win->getConfig(), {"mode", "apps", "show_icons"}));
+
+    res.insert(res.end(), search_results.begin(), search_results.end());
+
+    return res;
+}
+
+void AppModeHandler::beforeFetch() {
+    // prepare the calculator widget
+    delete calc_widget;
+    calc_widget = new CalculatorWidget(win);
+    if (win->getQuery().empty()) {
+        math_mode = false;
+    }
+}
+
+void AppModeHandler::afterFetch() {
+    if (auto exp = evalMathExp(win->getQuery())) {
+        calc_widget->answer_label->setText(std::format("{}", exp.value()).c_str());
+    }
 }
 
 /***************************/
 
 CLIModeHandler::CLIModeHandler(MainWindow* win)
     : ModeHandler(win) {
+}
+
+void CLIModeHandler::beforeFetch() {
+}
+
+void CLIModeHandler::afterFetch() {
 }
 
 void CLIModeHandler::load() {
@@ -145,12 +241,20 @@ void CLIModeHandler::enterHandler() {
     exit(0);
 }
 
-std::vector<QListWidgetItem*> CLIModeHandler::getResults(const QString& query_) {
+ResultsVec CLIModeHandler::fetch(const QString& query_) {
     return customSearch(win, query_, entries, results_indices, false);
 }
 
 void CLIModeHandler::handleQuickLock() {
 }
+
+std::string CLIModeHandler::handleModeText() {
+    return std::format("Results");
+}
+
+bool CLIModeHandler::needsAsyncFetch() {
+    return true;
+};
 
 /***************************/
 
@@ -178,7 +282,7 @@ void FileModeHandler::enterHandler() {
     win->sleep();
 }
 
-std::vector<QListWidgetItem*> FileModeHandler::getResults(const QString& query_) {
+ResultsVec FileModeHandler::fetch(const QString& query_) {
     abs_results.clear();
     if (query_.size() <= 2) {
         return {};
@@ -188,7 +292,7 @@ std::vector<QListWidgetItem*> FileModeHandler::getResults(const QString& query_)
 
     auto files = spotlightSearch(paths, std::format("kMDItemDisplayName LIKE[cd] '{}*'", query.toStdString()));
 
-    std::vector<QListWidgetItem*> res{};
+    ResultsVec res{};
     for (const auto& file : files) {
         std::optional<fs::path> path;
         if (get<bool>(win->getConfig(), {"mode", "files", "show_icons"})) {
@@ -210,13 +314,16 @@ void FileModeHandler::handleQuickLock() {
     quickLock(abs_results[win->getCurrentResultIdx()]);
 }
 
+std::string FileModeHandler::handleModeText() {
+    return std::format("Files");
+}
+
 void FileModeHandler::handleCopy() {
     QMimeData* mime_data = new QMimeData();
 
     // Create a list with a single file URL
     QString file_path = QString::fromStdString(abs_results[win->getCurrentResultIdx()]);
     QList<QUrl> urls;
-    qDebug() << file_path;
     urls.append(QUrl::fromLocalFile(std::move(file_path)));
 
     mime_data->setUrls(urls);
@@ -236,11 +343,20 @@ void FileModeHandler::handleDragAndDrop(QDrag* drag) {
     drag->exec(Qt::CopyAction);
 }
 
+void FileModeHandler::beforeFetch() {
+}
+
+void FileModeHandler::afterFetch() {
+}
+
+bool FileModeHandler::needsAsyncFetch(){
+    return true;
+};
+
 /***************************/
 
-static std::vector<QListWidgetItem*> customSearch(MainWindow* win, const QString& query_,
-                                                  const std::vector<std::string>& entries,
-                                                  std::vector<int>& results_indices, bool show_icons) {
+static ResultsVec customSearch(MainWindow* win, const QString& query_, const std::vector<std::string>& entries,
+                               std::vector<int>& results_indices, bool show_icons) {
 
     results_indices.clear();
 
@@ -262,7 +378,7 @@ static std::vector<QListWidgetItem*> customSearch(MainWindow* win, const QString
         return lhs.first > rhs.first;
     });
 
-    std::vector<QListWidgetItem*> res{};
+    ResultsVec res{};
     res.reserve(scores_per_idx.size());
 
     // fill resultslist based on the scores

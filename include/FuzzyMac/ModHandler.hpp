@@ -24,33 +24,48 @@ public:
     virtual void enterHandler() = 0;
     virtual void handleQuickLock() = 0;
     virtual void handleCopy();
-    virtual std::string handleModeText() {
-        return "empty";
-    }
+    virtual bool needsAsyncFetch() = 0;
+    virtual std::string handleModeText();
     virtual void handleDragAndDrop(QDrag*);
     virtual void handlePathCopy();
-    virtual std::vector<QListWidgetItem*> getResults(const QString& query_) = 0;
+    virtual void beforeFetch() = 0;
+    virtual ResultsVec fetch(const QString& query_) = 0;
+    virtual void afterFetch() = 0;
     virtual ~ModeHandler() = default;
 };
 
+class CalculatorWidget : public QWidget {
+    Q_OBJECT;
+
+public:
+    CalculatorWidget(MainWindow* win);
+    MainWindow* win;
+    QLabel* title_label;
+    QLabel* answer_label;
+};
+
 class AppModeHandler : public ModeHandler {
+
+    bool math_mode = false;
     std::vector<std::string> apps;
     std::vector<std::string> app_dirs;
     std::vector<int> results_indices;
     QFileSystemWatcher* app_watcher;
+    CalculatorWidget* calc_widget;
 
 public:
     AppModeHandler(MainWindow* win);
     ~AppModeHandler() override;
     void load() override;
 
-    virtual std::string handleModeText() override {
-        return "Applications";
-    }
+    std::string handleModeText() override;
 
+    bool needsAsyncFetch() override;
     void enterHandler() override;
     void handleQuickLock() override;
-    std::vector<QListWidgetItem*> getResults(const QString& query_) override;
+    ResultsVec fetch(const QString& query_) override;
+    void beforeFetch() override;
+    void afterFetch() override;
 };
 
 class CLIModeHandler : public ModeHandler {
@@ -64,11 +79,14 @@ public:
     ~CLIModeHandler() override = default;
     void load() override;
     void enterHandler() override;
-    std::vector<QListWidgetItem*> getResults(const QString& query_) override;
-    std::string handleModeText() override {
-        return std::format("Results");
-    }
+    ResultsVec fetch(const QString& query_) override;
+
+    bool needsAsyncFetch() override;
+
+    std::string handleModeText() override;
     void handleQuickLock() override;
+    void beforeFetch() override;
+    void afterFetch() override;
 };
 
 class FileModeHandler : public ModeHandler {
@@ -79,12 +97,13 @@ public:
     FileModeHandler(MainWindow* win);
     ~FileModeHandler() override = default;
     void enterHandler() override;
-    virtual std::string handleModeText() override {
-        return "Files";
-    }
+    std::string handleModeText() override;
     void handleCopy() override;
     void handleDragAndDrop(QDrag*) override;
+    bool needsAsyncFetch() override;
     void load() override;
-    std::vector<QListWidgetItem*> getResults(const QString& query_) override;
+    ResultsVec fetch(const QString& query_) override;
     void handleQuickLock() override;
+    void beforeFetch() override;
+    void afterFetch() override;
 };
