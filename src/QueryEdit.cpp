@@ -4,6 +4,11 @@
 
 #include <QApplication>
 void QueryEdit::keyPressEvent(QKeyEvent* event) {
+    if (QKeySequence(event->modifiers() | event->key()) == QKeySequence(Qt::ControlModifier | Qt::Key_Backspace)) {
+        setText("");
+        return;
+    }
+
     if (QKeySequence(event->modifiers() | event->key()) == QKeySequence::Copy) {
         emit requestAppCopy();
         return;
