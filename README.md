@@ -46,15 +46,12 @@ FuzzyMac runs as a background app, activated by default with ⌘ + Space.
     *	It searches for applications in default config.
     *	Pressing <Space> in the input box switches to file search mode.
 
-- 🔍 File search uses macOS’s native Spotlight API for maximum speed.
-
 - 📄 Press ⌘ + Y to QuickLook a selected file.
 
 
 ## 🔍 How It Works
--	In CLI and application search modes, FuzzyMac uses a simple, custom scoring algorithm.
--	In file search mode, it leverages macOS Spotlight to quickly find matching files.
-
+I used a simple custom scoring algorithm. 
+(previous versions relied on spotlight's indexing, which was very slow for some reason).
 
 ## ⚙️ Configuration
 

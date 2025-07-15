@@ -25,7 +25,7 @@
 namespace fs = std::filesystem;
 
 static std::vector<std::string> customSearch(MainWindow* win, const QString& query_,
-                                             const std::vector<std::string>& entries, bool show_icons);
+                                             const std::vector<std::string>& entries);
 
 /***************************/
 
@@ -134,7 +134,7 @@ void AppModeHandler::invokeQuery(const QString& query) {
         widgets.push_back(calc_widget);
     }
 
-    auto search_results = customSearch(win, query, apps, get<bool>(win->getConfig(), {"mode", "apps", "show_icons"}));
+    auto search_results = customSearch(win, query, apps);
 
     for (const auto& path : search_results) {
         widgets.push_back(new FileWidget(win, path, get<bool>(win->getConfig(), {"mode", "apps", "show_icons"})));
@@ -176,7 +176,7 @@ void CLIModeHandler::enterHandler() {
 }
 
 void CLIModeHandler::invokeQuery(const QString& query_) {
-    auto results = customSearch(win, query_, entries, false);
+    auto results = customSearch(win, query_, entries);
 
     ResultsVec res{};
     res.reserve(entries.size());
@@ -197,6 +197,26 @@ std::string CLIModeHandler::handleModeText() {
 
 /***************************/
 
+static void loadDirs(const std::string& dir, std::vector<std::string>& paths) {
+    for (auto entry : fs::directory_iterator(dir)) {
+        if (entry.is_regular_file()) {
+            paths.push_back(entry.path());
+        } else if (entry.is_directory()) {
+            paths.push_back(entry.path());
+            loadDirs(entry.path(), paths);
+        }
+    }
+}
+
+void FileModeHandler::load() {
+    paths = get_array<std::string>(win->getConfig(), {"mode", "files", "dirs"});
+    expandPaths(paths);
+
+    for (auto& dir : paths) {
+        loadDirs(dir, entries);
+    }
+}
+
 FileModeHandler::FileModeHandler(MainWindow* win)
     : ModeHandler(win) {
     watcher = new QFutureWatcher<std::vector<std::string>>();
@@ -209,6 +229,9 @@ FileModeHandler::FileModeHandler(MainWindow* win)
         widgets.clear();
         auto results = watcher->result();
         for (const auto& file : results) {
+            if (widgets.size() >= 25) {
+                break;
+            }
             std::optional<fs::path> path;
             if (get<bool>(win->getConfig(), {"mode", "files", "show_icons"})) {
                 path = fs::path(file);
@@ -222,20 +245,6 @@ FileModeHandler::FileModeHandler(MainWindow* win)
     });
 
     load();
-}
-void FileModeHandler::load() {
-    paths = get_array<std::string>(win->getConfig(), {"mode", "files", "dirs"});
-    expandPaths(paths);
-}
-
-void FileModeHandler::enterHandler() {
-
-    if (win->getResultsNum() == 0) {
-        return;
-    }
-
-    int i = win->getCurrentResultIdx();
-    widgets[i]->enterHandler();
 }
 
 void FileModeHandler::invokeQuery(const QString& query_) {
@@ -254,7 +263,8 @@ void FileModeHandler::invokeQuery(const QString& query_) {
     widgets.clear();
 
     auto future = QtConcurrent::run([this, query]() -> std::vector<std::string> {
-        return spotlightSearch(paths, std::format("kMDItemDisplayName LIKE[cd] '{}*'", query.toStdString()));
+        // return spotlightSearch(paths, std::format("kMDItemDisplayName LIKE[cd] '{}*'", query.toStdString()));
+        return customSearch(win, query, entries);
     });
 
     watcher->setFuture(future);
@@ -268,6 +278,16 @@ void FileModeHandler::handleQuickLock() {
     }
 
     quickLock(dynamic_cast<FileWidget*>(widgets[win->getCurrentResultIdx()])->getPath());
+}
+
+void FileModeHandler::enterHandler() {
+
+    if (win->getResultsNum() == 0) {
+        return;
+    }
+
+    int i = win->getCurrentResultIdx();
+    widgets[i]->enterHandler();
 }
 
 std::string FileModeHandler::handleModeText() {
@@ -303,7 +323,7 @@ void FileModeHandler::handleDragAndDrop(QDrag* drag) {
 /***************************/
 
 static std::vector<std::string> customSearch(MainWindow* win, const QString& query_,
-                                             const std::vector<std::string>& entries, bool show_icons) {
+                                             const std::vector<std::string>& entries) {
 
     std::string query = query_.toLower().toStdString();
 
