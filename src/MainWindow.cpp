@@ -24,7 +24,6 @@
 #include <QtConcurrent>
 #include <filesystem>
 #include <memory>
-#include <variant>
 
 const toml::table& MainWindow::getConfig() const {
     return config;
@@ -37,20 +36,21 @@ void MainWindow::createWidgets() {
     query_edit = new QueryEdit(central);
     results_list = new ResultsPanel(central);
     mode_label = new QLabel(central);
+    // timer->setSingleShot(true);
 }
 
 void MainWindow::setupLayout() {
     setWindowFlag(Qt::WindowStaysOnTopHint);
     resize(600, 400);
     QApplication::setQuitOnLastWindowClosed(false);
-
     makeWindowFloating(this);
+
     layout->addWidget(query_edit, 0);
     layout->addWidget(mode_label, 0);
     layout->addWidget(results_list, 0);
+    layout->setSpacing(0);
     mode_label->setAlignment(Qt::AlignCenter | Qt::AlignVCenter);
 
-    layout->setSpacing(0);
     results_list->setDragEnabled(true);
     results_list->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     results_list->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -93,6 +93,7 @@ void MainWindow::wakeup() {
     activateWindow();
     centerWindow(this);
     query_edit->setFocus();
+    query_edit->selectAll();
 }
 
 void MainWindow::sleep() {
@@ -109,28 +110,18 @@ void MainWindow::sleep() {
 }
 
 void MainWindow::onTextChange(const QString& text) {
+    qDebug() << text;
     if (mode != Mode::CLI) {
-        if (text.startsWith(' ')) {
-            query_edit->setText("→ ");
-            mode = Mode::FILE;
-        } else if (text.isEmpty()) {
+        if (text.isEmpty()) {
             mode = Mode::APP;
+        } else {
+            if (text.startsWith(' ')) {
+                mode = Mode::FILE;
+            }
         }
     }
 
-    if (results_watcher->isRunning()) {
-        results_watcher->cancel();
-    }
-
-    mode_handler[mode]->beforeFetch();
-
-    // fetch results
-    if (mode_handler[mode]->needsAsyncFetch()) {
-        auto future = QtConcurrent::run([this, text]() { return mode_handler[mode]->fetch(text); });
-        results_watcher->setFuture(future);
-    } else {
-        processResults(mode_handler[mode]->fetch(text));
-    }
+    mode_handler[mode]->invokeQuery(text);
 
     // replace mode text info if available
     if (const auto& mode_text = mode_handler[mode]->handleModeText(); !mode_text.empty()) {
@@ -139,22 +130,26 @@ void MainWindow::onTextChange(const QString& text) {
     } else {
         mode_label->hide();
     }
+
+    qDebug() << "Finished On text change";
 }
 
 void MainWindow::processResults(const ResultsVec& results) {
+
+    qDebug() << "Processing Results";
     results_list->clear();
+    qDebug() << results.size();
     for (auto obj : results) {
-        if (std::holds_alternative<QWidget*>(obj)) {
-            auto* widget = std::get<QWidget*>(obj);
-            auto* item = createListItem(widget);
-            widget->setParent(results_list);
-            results_list->setItemWidget(item, widget);
+        auto item = obj->getItem();
+        if (std::holds_alternative<QListWidgetItem*>(item)) {
+            results_list->addItem(std::get<QListWidgetItem*>(item));
         } else {
-            results_list->addItem(std::get<QListWidgetItem*>(obj));
+            auto* obj = std::get<FuzzyWidget*>(item);
+            auto* item = createListItem(obj);
+            results_list->setItemWidget(item, obj);
         }
     }
-
-    mode_handler[mode]->afterFetch();
+    qDebug() << "Finished processing results";
 
     if (results.size() >= 1) {
         results_list->setCurrentRow(0);
@@ -164,7 +159,6 @@ void MainWindow::processResults(const ResultsVec& results) {
 void MainWindow::connectEventHandlers() {
 
     results_watcher = new QFutureWatcher<ResultsVec>(this);
-
     connect(query_edit, &QueryEdit::textChanged, this, &MainWindow::onTextChange);
 
     connect(results_watcher, &QFutureWatcher<QStringList>::finished, this, [this]() {
@@ -178,6 +172,7 @@ void MainWindow::connectEventHandlers() {
 #ifndef CLI_TOOL
     QObject::connect(qApp, &QGuiApplication::applicationStateChanged, this, &MainWindow::onApplicationStateChanged);
 #endif
+
 }
 
 void MainWindow::createKeybinds() {
@@ -185,16 +180,15 @@ void MainWindow::createKeybinds() {
 
     if (mode != Mode::CLI) {
         registerGlobalHotkey(this);
+        new QShortcut(Qt::Key_Escape, this, [this]() { this->sleep(); });
+        disableCmdQ();
     }
 
-    disableCmdQ();
     new QShortcut(QKeySequence(Qt::MetaModifier | Qt::Key_N), this, SLOT(nextItem()));
     new QShortcut(QKeySequence(Qt::MetaModifier | Qt::Key_P), this, SLOT(prevItem()));
 
     new QShortcut(QKeySequence(Qt::ControlModifier | Qt::Key_Y), this, SLOT(quickLock()));
     new QShortcut(Qt::Key_Return, this, SLOT(openItem()));
-    new QShortcut(Qt::Key_Escape, this, [this]() { this->sleep(); });
-
     connect(query_edit, &QueryEdit::requestAppCopy, this, [this]() { copyToClipboard(); });
 }
 
@@ -203,9 +197,10 @@ MainWindow::MainWindow(Mode mode, QWidget* parent)
       mode(mode),
       config(default_config) {
 
-    mode_handler.emplace(Mode::CLI, std::make_unique<CLIModeHandler>(this));
     mode_handler.emplace(Mode::APP, std::make_unique<AppModeHandler>(this));
     mode_handler.emplace(Mode::FILE, std::make_unique<FileModeHandler>(this));
+    // mode_handler.emplace(Mode::CLI, std::make_unique<CLIModeHandler>(this));
+
     createWidgets();
     setupLayout();
     connectEventHandlers();
@@ -258,30 +253,7 @@ void MainWindow::loadConfig() {
     query_edit->loadConfig();
     results_list->loadConfig();
 
-    auto border_size = get<int>(config, {"border_size"});
-    layout->setContentsMargins(border_size, border_size, border_size, border_size);
-
-    // TODO: move to another function
-    setStyleSheet(QString(R"(
-        QMainWindow {
-            background: %1;
-        }
-    )")
-                      .arg(get<std::string>(config, {"colors", "background"})));
-
-    // TODO: move to another function
-    mode_label->setStyleSheet(QString(R"(
-        QLabel {
-            color : %1;
-            background: %2;
-            font-weight: 500;
-            font-family: %3;
-            border-radius: 10px;
-        }
-    )")
-                                  .arg(get<std::string>(config, {"colors", "mode_label", "text"}))
-                                  .arg(get<std::string>(config, {"colors", "mode_label", "background"}))
-                                  .arg(get<std::string>(config, {"font"})));
+    loadStyle();
 
     int curr_selection = results_list->currentRow();
     QString curr_query = query_edit->text();
@@ -293,7 +265,7 @@ void MainWindow::loadConfig() {
     onTextChange(query_edit->text());
 }
 
-void MainWindow::addToResultList(const std::string& name, std::optional<fs::path> path) {
+void MainWindow::addItemToResultsList(const std::string& name, std::optional<fs::path> path) {
     results_list->addItem(createListItem(name, path));
 }
 
@@ -359,4 +331,28 @@ bool MainWindow::isWidgetCurrentSelection(QWidget* widget) const {
         }
     }
     return false;
+}
+
+void MainWindow::loadStyle() {
+    auto border_size = get<int>(config, {"border_size"});
+    layout->setContentsMargins(border_size, border_size, border_size, border_size);
+    setStyleSheet(QString(R"(
+        QMainWindow {
+            background: %1;
+        }
+    )")
+                      .arg(get<std::string>(config, {"colors", "background"})));
+
+    mode_label->setStyleSheet(QString(R"(
+        QLabel {
+            color : %1;
+            background: %2;
+            font-weight: 500;
+            font-family: %3;
+            border-radius: 10px;
+        }
+    )")
+                                  .arg(get<std::string>(config, {"colors", "mode_label", "text"}))
+                                  .arg(get<std::string>(config, {"colors", "mode_label", "background"}))
+                                  .arg(get<std::string>(config, {"font"})));
 }

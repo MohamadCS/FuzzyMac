@@ -14,7 +14,6 @@
 #include <QPainterPath>
 #include <QProcess>
 #include <QString>
-#include <QTimer>
 #include <QVBoxLayout>
 
 #include <memory>
@@ -24,8 +23,9 @@
 namespace fs = std::filesystem;
 
 class ModeHandler;
+class FuzzyWidget;
 
-using ResultsVec = std::vector<std::variant<QListWidgetItem*, QWidget*>>;
+using ResultsVec = std::vector<FuzzyWidget*>;
 
 enum class Mode {
     CLI,
@@ -44,7 +44,7 @@ public:
     void sleep();
 
     void refreshResults();
-    void addToResultList(const std::string& name, std::optional<fs::path> path = std::nullopt);
+    void addItemToResultsList(const std::string& name, std::optional<fs::path> path = std::nullopt);
     QListWidgetItem* createListItem(const std::string& name, std::optional<fs::path> path = std::nullopt);
     QListWidgetItem* createListItem(QWidget* widget);
     void clearResultList();
@@ -55,6 +55,7 @@ public:
     QIcon getFileIcon(const std::string& path) const;
     int getCurrentResultIdx() const;
     int getResultsNum() const;
+    void processResults(const ResultsVec&);
     ModeHandler* getModeHandler() const;
 
 private slots:
@@ -87,9 +88,7 @@ private:
     void loadStyle();
     void createWidgets();
     void setupLayout();
-    void setupStyles();
     void createKeybinds();
     void loadConfig();
     void connectEventHandlers();
-    void processResults(const ResultsVec&);
 };
