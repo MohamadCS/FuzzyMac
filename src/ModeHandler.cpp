@@ -38,13 +38,16 @@ std::string ModeHandler::handleModeText() {
     return "empty";
 }
 
+std::optional<QIcon> ModeHandler::getIcon() const {
+    return {};
+}
 void ModeHandler::handleCopy() {
 }
 
 void ModeHandler::handlePathCopy() {
 }
 
-void ModeHandler::handleDragAndDrop(QDrag* drag) {
+void ModeHandler::handleDragAndDrop(QDrag* drag) const {
 }
 
 std::string ModeHandler::getPrefix() const {
@@ -56,7 +59,7 @@ std::string ModeHandler::getPrefix() const {
 AppModeHandler::AppModeHandler(MainWindow* win)
     : ModeHandler(win),
       app_watcher(new QFileSystemWatcher(nullptr)) {
-    modes.insert_or_assign("Search files", std::make_pair(Mode::FILE, ":/res/icons/search_files_icon.svg"));
+    modes.insert_or_assign("Search files", Mode::FILE);
     QObject::connect(app_watcher, &QFileSystemWatcher::directoryChanged, win, [this, win](const QString& path) {
         load();
         win->refreshResults();
@@ -72,8 +75,6 @@ std::string AppModeHandler::handleModeText() {
 }
 void AppModeHandler::handleQuickLock() {
 }
-
-
 
 void AppModeHandler::load() {
     auto paths = get_array<std::string>(win->getConfig(), {"mode", "apps", "dirs"});
@@ -116,7 +117,7 @@ void AppModeHandler::load() {
     std::transform(modes.begin(), modes.end(), std::back_inserter(keys), [](const auto& pair) { return pair.first; });
 
     for (const auto& key : keys) {
-        widgets.push_back(new ModeWidget(win, key, modes[key].first, modes[key].second));
+        widgets.push_back(new ModeWidget(win, key, modes[key], win->getModeHandler(modes[key])->getIcon()));
     }
 
     win->processResults(widgets);
@@ -163,7 +164,7 @@ void AppModeHandler::invokeQuery(const QString& query) {
     auto modes_results = customSearch(win, query, keys);
 
     for (const auto& key : modes_results) {
-        widgets.push_back(new ModeWidget(win, key, modes[key].first, modes[key].second));
+        widgets.push_back(new ModeWidget(win, key, modes[key], win->getModeHandler(modes[key])->getIcon()));
     }
 
     qDebug() << "Finished invoking";
@@ -238,6 +239,9 @@ void FileModeHandler::load() {
     paths = get_array<std::string>(win->getConfig(), {"mode", "files", "dirs"});
     expandPaths(paths);
 
+    icon = win->createIcon(":/res/icons/search_files_icon.svg",
+                           QColor(get<std::string>(win->getConfig(), {"colors", "results_list", "text"}).c_str()));
+
     entries.clear();
     for (auto& dir : paths) {
         loadDirs(dir, entries);
@@ -256,6 +260,10 @@ void FileModeHandler::load() {
     }
 
     dir_watcher->addPaths(paths_list);
+}
+
+std::optional<QIcon> FileModeHandler::getIcon() const {
+    return icon;
 }
 
 FileModeHandler::FileModeHandler(MainWindow* win)
@@ -359,7 +367,7 @@ void FileModeHandler::handleCopy() {
     QGuiApplication::clipboard()->setMimeData(mime_data);
 }
 
-void FileModeHandler::handleDragAndDrop(QDrag* drag) {
+void FileModeHandler::handleDragAndDrop(QDrag* drag) const {
     auto path = dynamic_cast<FileWidget*>(widgets[win->getCurrentResultIdx()])->getPath();
     QIcon icon = win->getFileIcon(path);
     QMimeData* mime_data = new QMimeData;

@@ -50,14 +50,17 @@ public:
 
     void changeMode(Mode mode);
 
+
     bool isWidgetCurrentSelection(QWidget* widget) const;
     const toml::table& getConfig() const;
     std::string getQuery() const;
     QIcon getFileIcon(const std::string& path) const;
+    QIcon createIcon(const std::string& path, const QColor& color) const;
     int getCurrentResultIdx() const;
     int getResultsNum() const;
     void processResults(const ResultsVec&);
-    ModeHandler* getModeHandler() const;
+    const ModeHandler* getCurrentModeHandler() const;
+    const ModeHandler* getModeHandler(Mode mode) const;
 
 private slots:
     void nextItem();
