@@ -1,61 +1,38 @@
 #include "FuzzyMac/Algorithms.hpp"
 #include <QDebug>
-#include <algorithm>
 #include <cctype>
 
-static char flipChar(char c) {
-    if (c >= 'a' && c <= 'z') {
-        return 'A' + c - 'a';
-    } else if (c >= 'A' && c <= 'Z') {
-        return 'a' + c - 'A';
-    } else {
-        return c;
-    }
-}
-
-static int prefixScore(const std::string& cand, const std::string& query) {
-    const auto N = std::min(cand.size(), query.size());
-
-    int score = 0;
-    for (int i = 0; i < N; ++i) {
-        if (cand[i] == query[i]) {
-            score += 10;
-        } else {
-            return score;
-        }
-    }
-
-    return score;
-}
-
-static std::string toLower(const std::string& str) {
-    std::string res;
-    res.resize(str.size());
-
-    for (int i = 0; i < str.size(); ++i) {
-        res[i] = (str[i] >= 'A' && str[i] <= 'Z') ? str[i] - 'A' + 'a' : str[i];
-    }
-
-    return res;
-}
-
-int fuzzyScore(const std::string& cand, const std::string& query) {
-    int score = 0;
+int fuzzyScore(const QString& cand, const QString& query) {
+    int sub_seq_score = 0;
     std::size_t pos = 0;
 
-    std::string lower_cand = toLower(cand);
+    auto lower_cand = cand.toLower();
 
-    for (auto ch : query) {
-        pos = lower_cand.find(ch, pos);
+    int q = 0;
+    int c = 0;
+    int prefix_score = 0;
 
-        if (pos == std::string::npos) {
-            return -1;
+    while (q < query.size() && c < cand.size()) {
+        if (query[q] != lower_cand[c]) {
+            break;
         }
-        ++score;
-        ++pos;
+
+        c++;
+        q++;
+        prefix_score++;
     }
 
-    score += prefixScore(lower_cand, query);
+    while (q < query.size() && c < cand.size()) {
+        if (query[q] == lower_cand[c]) {
+            sub_seq_score += 1;
+            ++q;
+        }
+        ++c;
+    }
 
-    return score;
+    if (q != query.size()) {
+        return -1;
+    }
+
+    return sub_seq_score + prefix_score * 10;
 }

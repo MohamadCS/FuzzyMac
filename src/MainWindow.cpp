@@ -117,14 +117,14 @@ void MainWindow::sleep() {
     });
 }
 
-void MainWindow::matchModeShortcut(const std::string& text) {
+void MainWindow::matchModeShortcut(const QString& text) {
     if (mode != Mode::APP) {
         return;
     }
 
     for (auto& [mode, handler] : mode_handler) {
         auto prefix = handler->getPrefix();
-        if (!prefix.empty() && prefix == text) {
+        if (!prefix.isEmpty() && prefix == text) {
             changeMode(mode);
             return;
         }
@@ -133,12 +133,12 @@ void MainWindow::matchModeShortcut(const std::string& text) {
 
 void MainWindow::onTextChange(const QString& text) {
     qDebug() << "text changed to " << text;
-    matchModeShortcut(text.toStdString());
+    matchModeShortcut(text);
 
     mode_handler[mode]->invokeQuery(text);
 
     // replace mode text info if available
-    if (const auto& mode_text = mode_handler[mode]->handleModeText(); !mode_text.empty()) {
+    if (const auto& mode_text = mode_handler[mode]->handleModeText(); !mode_text.isEmpty()) {
         mode_label->setText(QString("%1").arg(mode_text));
         mode_label->show();
     } else {
@@ -185,7 +185,7 @@ void MainWindow::createKeybinds() {
     if (mode != Mode::CLI) {
         registerGlobalHotkey(this);
         new QShortcut(Qt::Key_Escape, this, [this]() { this->sleep(); });
-        // disableCmdQ();
+        disableCmdQ();
     }
 
     new QShortcut(QKeySequence(Qt::MetaModifier | Qt::Key_N), this, SLOT(nextItem()));
@@ -238,15 +238,15 @@ void MainWindow::onApplicationStateChanged(Qt::ApplicationState state) {
 
 void MainWindow::loadConfig() {
 
-    std::vector<std::string> p_ = {"$HOME/.config/FuzzyMac/config.toml"};
+    QStringList p_{"$HOME/.config/FuzzyMac/config.toml"};
     expandPaths(p_);
-    std::string config_path = p_[0];
+    QString config_path = p_[0];
 
-    if (fs::exists(config_path)) {
+    if (QFileInfo(config_path).exists()) {
         toml::table new_config = config;
         // reload config file
         try {
-            new_config = toml::parse_file(config_path);
+            new_config = toml::parse_file(config_path.toStdString());
         } catch (const toml::parse_error& err) {
             new_config = config;
         }
@@ -275,12 +275,12 @@ QListWidgetItem* MainWindow::createListItem(QWidget* widget) {
     return item;
 }
 
-QListWidgetItem* MainWindow::createListItem(const std::string& name, const std::optional<QIcon>& icon) {
+QListWidgetItem* MainWindow::createListItem(const QString& name, const std::optional<QIcon>& icon) {
     QListWidgetItem* item = nullptr;
     if (icon) {
-        item = new QListWidgetItem(icon.value(), QString::fromStdString(name));
+        item = new QListWidgetItem(icon.value(), name);
     } else {
-        item = new QListWidgetItem(QString::fromStdString(name));
+        item = new QListWidgetItem(name);
     }
 
     return item;
@@ -309,8 +309,8 @@ void MainWindow::refreshResults() {
     onTextChange(query_edit->text());
 }
 
-QIcon MainWindow::createIcon(const std::string& path, const QColor& color) const {
-    QPixmap pixmap(path.c_str()); // Load image or SVG as pixmap
+QIcon MainWindow::createIcon(const QString& path, const QColor& color) const {
+    QPixmap pixmap(path); // Load image or SVG as pixmap
     if (pixmap.isNull()) {
         return QIcon();
     }
@@ -330,8 +330,8 @@ QIcon MainWindow::createIcon(const std::string& path, const QColor& color) const
     return QIcon(tinted);
 }
 
-QIcon MainWindow::getFileIcon(const std::string& path) const {
-    return icon_provider.icon(QFileInfo(QString::fromStdString(path)));
+QIcon MainWindow::getFileIcon(const QString& path) const {
+    return icon_provider.icon(QFileInfo(path));
 }
 
 const ModeHandler* MainWindow::getCurrentModeHandler() const {
@@ -342,8 +342,8 @@ const ModeHandler* MainWindow::getModeHandler(Mode mode) const {
     return mode_handler.at(mode).get();
 }
 
-std::string MainWindow::getQuery() const {
-    return query_edit->text().toStdString();
+QString MainWindow::getQuery() const {
+    return query_edit->text();
 }
 
 bool MainWindow::isWidgetCurrentSelection(QWidget* widget) const {

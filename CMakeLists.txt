@@ -8,6 +8,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON) 
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
+set(CMAKE_MACOSX_BUNDLE ON)
 
 enable_language(OBJCXX)
 
@@ -53,6 +54,7 @@ target_link_libraries(FuzzyMac PRIVATE
 
 set_target_properties(FuzzyMac PROPERTIES
     MACOSX_BUNDLE TRUE
+    INSTALL_RPATH "@executable_path/../Frameworks"
     MACOSX_BUNDLE_INFO_PLIST "${CMAKE_SOURCE_DIR}/res/Info.plist"
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/build/app/"
 )

@@ -2,7 +2,6 @@
 #include "FuzzyMac/Algorithms.hpp"
 #include "FuzzyMac/FuzzyWidget.hpp"
 #include "FuzzyMac/MainWindow.hpp"
-#include "FuzzyMac/NativeMacHandlers.hpp"
 #include "FuzzyMac/ParseConfig.hpp"
 #include "FuzzyMac/Utils.hpp"
 
@@ -11,7 +10,6 @@
 #include <QtConcurrent>
 #include <algorithm>
 #include <cstdlib>
-#include <filesystem>
 #include <iostream>
 #include <optional>
 #include <utility>
@@ -24,10 +22,7 @@
 #include <QGuiApplication>
 #include <QLabel>
 
-namespace fs = std::filesystem;
-
-static std::vector<std::string> customSearch(MainWindow* win, const QString& query_,
-                                             const std::vector<std::string>& entries);
+static QStringList customSearch(MainWindow* win, const QString& query_, const QStringList& entries);
 
 /***************************/
 
@@ -39,7 +34,7 @@ ModeHandler::ModeHandler(MainWindow* win)
 void ModeHandler::freeWidgets() {
 }
 
-std::string ModeHandler::handleModeText() {
+QString ModeHandler::handleModeText() {
     return "empty";
 }
 
@@ -55,7 +50,7 @@ void ModeHandler::handlePathCopy() {
 void ModeHandler::handleDragAndDrop(QDrag* drag) const {
 }
 
-std::string ModeHandler::getPrefix() const {
+QString ModeHandler::getPrefix() const {
     return "";
 }
 
@@ -75,14 +70,17 @@ AppModeHandler::~AppModeHandler() {
     delete app_watcher;
 };
 
-std::string AppModeHandler::handleModeText() {
+QString AppModeHandler::handleModeText() {
     return "";
 }
 void AppModeHandler::handleQuickLook() {
 }
 
 void AppModeHandler::load() {
-    auto paths = get_array<std::string>(win->getConfig(), {"mode", "apps", "dirs"});
+    QStringList paths;
+    for (const auto& p : get_array<std::string>(win->getConfig(), {"mode", "apps", "dirs"})) {
+        paths.push_back(QString::fromStdString(p));
+    }
     expandPaths(paths);
 
     apps.clear();
@@ -90,9 +88,15 @@ void AppModeHandler::load() {
 
     // reload apps in defined app dirs
     for (const auto& path : paths) {
-        for (const auto& entry : fs::directory_iterator(path)) {
-            if (entry.path().extension() == ".app") {
-                apps.push_back(entry.path().string());
+
+        QDir dir(path);
+        if (!dir.exists())
+            continue;
+
+        QFileInfoList entryInfoList = dir.entryInfoList(QDir::Dirs);
+        for (const QFileInfo& entry : entryInfoList) {
+            if (entry.suffix() == "app") {
+                apps << entry.absoluteFilePath();
             }
         }
     }
@@ -104,11 +108,14 @@ void AppModeHandler::load() {
 
     QStringList paths_list{};
     for (const auto& path : paths) {
-        paths_list.push_back(QString::fromStdString(path));
+        paths_list.push_back(path);
     }
     app_watcher->addPaths(paths_list);
 
-    paths = get_array<std::string>(win->getConfig(), {"mode", "apps", "apps"});
+    paths = {};
+    for (const auto& p : get_array<std::string>(win->getConfig(), {"mode", "apps", "apps"})) {
+        paths.push_back(QString::fromStdString(p.c_str()));
+    }
     expandPaths(paths);
 
     // add special apps(specific apps instead of dirs)
@@ -118,7 +125,7 @@ void AppModeHandler::load() {
             new FileWidget(win, main_widget, path, get<bool>(win->getConfig(), {"mode", "apps", "show_icons"})));
     }
 
-    std::vector<std::string> keys;
+    QStringList keys;
     keys.reserve(modes.size());
     std::transform(modes.begin(), modes.end(), std::back_inserter(keys), [](const auto& pair) { return pair.first; });
 
@@ -136,7 +143,7 @@ void AppModeHandler::enterHandler() {
         return;
     }
 
-    int i = std::max(win->getCurrentResultIdx(),0);
+    int i = std::max(win->getCurrentResultIdx(), 0);
     widgets[i]->enterHandler();
 }
 
@@ -174,7 +181,7 @@ void AppModeHandler::invokeQuery(const QString& query) {
             new FileWidget(win, main_widget, path, get<bool>(win->getConfig(), {"mode", "apps", "show_icons"})));
     }
 
-    std::vector<std::string> keys;
+    QStringList keys;
     keys.reserve(modes.size());
     std::transform(modes.begin(), modes.end(), std::back_inserter(keys), [](const auto& pair) { return pair.first; });
     auto modes_results = customSearch(win, query, keys);
@@ -203,8 +210,8 @@ void CLIModeHandler::load() {
     std::string line;
 
     while (std::getline(std::cin, line)) {
-        entries.push_back(line);
-        widgets.push_back(new TextWidget(win, main_widget, line));
+        entries.push_back(line.c_str());
+        widgets.push_back(new TextWidget(win, main_widget, line.c_str()));
     }
     loaded = true;
 }
@@ -214,8 +221,8 @@ void CLIModeHandler::enterHandler() {
         return;
     }
 
-    int i = std::max(win->getCurrentResultIdx(),0);
-    std::cout << widgets[i]->getValue();
+    int i = std::max(win->getCurrentResultIdx(), 0);
+    std::cout << widgets[i]->getValue().toStdString();
     exit(0);
 }
 
@@ -235,8 +242,8 @@ void CLIModeHandler::invokeQuery(const QString& query_) {
 void CLIModeHandler::handleQuickLook() {
 }
 
-std::string CLIModeHandler::handleModeText() {
-    return std::format("Results");
+QString CLIModeHandler::handleModeText() {
+    return "Results";
 }
 
 /***************************/
@@ -252,39 +259,45 @@ void FileModeHandler::freeWidgets() {
     mutex.unlock();
 }
 
-static void loadDirs(const std::string& dir, std::vector<std::string>& paths) {
-    for (auto entry : fs::directory_iterator(dir)) {
-        if (entry.is_regular_file()) {
-            paths.push_back(entry.path());
-        } else if (entry.is_directory()) {
-            paths.push_back(entry.path());
-            loadDirs(entry.path(), paths);
+static void loadDirs(const QString& d, QStringList& paths) {
+
+    QDir dir(d);
+    QFileInfoList entryInfoList = dir.entryInfoList(QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot);
+    for (const QFileInfo& entry : entryInfoList) {
+        auto abs_path = entry.absoluteFilePath();
+        if (entry.isDir()) {
+            loadDirs(abs_path, paths);
         }
+        paths.push_back(std::move(abs_path));
     }
 }
 
 void FileModeHandler::load() {
-    paths = get_array<std::string>(win->getConfig(), {"mode", "files", "dirs"});
+    for (auto& p : get_array<std::string>(win->getConfig(), {"mode", "files", "dirs"})) {
+        paths.push_back(QString::fromStdString(p));
+    }
     expandPaths(paths);
 
-    icon = win->createIcon(":/res/icons/search_files_icon.svg",
-                           QColor(get<std::string>(win->getConfig(), {"colors", "results_list", "text"}).c_str()));
+    icon = win->createIcon(
+        ":/res/icons/search_files_icon.svg",
+        QColor(QString::fromStdString(get<std::string>(win->getConfig(), {"colors", "results_list", "text"}))));
 
     entries.clear();
     for (auto& dir : paths) {
         loadDirs(dir, entries);
     }
 
+    qDebug() << "Files:: " << entries.size();
+
     QStringList paths_list{};
     for (const auto& path : entries) {
-        if (fs::is_directory(path)) {
-            paths_list.push_back(path.c_str());
+        if (QFileInfo(path).isDir()) {
+            paths_list.push_back(path);
         }
     }
 
     if (dir_watcher->directories().size() > 0) {
         dir_watcher->removePaths(dir_watcher->directories());
-        dir_watcher->removePaths(dir_watcher->files());
     }
 
     dir_watcher->addPaths(paths_list);
@@ -296,7 +309,7 @@ std::optional<QIcon> FileModeHandler::getIcon() const {
 
 FileModeHandler::FileModeHandler(MainWindow* win)
     : ModeHandler(win) {
-    future_watcher = new QFutureWatcher<std::vector<std::string>>(win);
+    future_watcher = new QFutureWatcher<QStringList>(win);
     dir_watcher = new QFileSystemWatcher(win);
 
     QObject::connect(dir_watcher, &QFileSystemWatcher::directoryChanged, win, [this, win](const QString&) {
@@ -304,8 +317,8 @@ FileModeHandler::FileModeHandler(MainWindow* win)
         win->refreshResults();
     });
 
-    QObject::connect(future_watcher, &QFutureWatcher<std::vector<std::string>>::finished, [this, win]() {
-        if (win->getQuery().empty()) {
+    QObject::connect(future_watcher, &QFutureWatcher<std::vector<QString>>::finished, [this, win]() {
+        if (win->getQuery().isEmpty()) {
             return;
         }
 
@@ -345,7 +358,7 @@ void FileModeHandler::invokeQuery(const QString& query_) {
         future_watcher->cancel();
     }
 
-    auto future = QtConcurrent::run([this, query]() -> std::vector<std::string> {
+    auto future = QtConcurrent::run([this, query]() -> QStringList {
         // return spotlightSearch(paths, std::format("kMDItemDisplayName LIKE[cd] '{}*'", query.toStdString()));
         return customSearch(win, query, entries);
     });
@@ -369,20 +382,19 @@ void FileModeHandler::enterHandler() {
         return;
     }
 
-    int i = std::max(win->getCurrentResultIdx(), 0 );
+    int i = std::max(win->getCurrentResultIdx(), 0);
     widgets[i]->enterHandler();
 }
 
-std::string FileModeHandler::handleModeText() {
-    return std::format("Files");
+QString FileModeHandler::handleModeText() {
+    return "Files";
 }
 
 void FileModeHandler::handleCopy() {
     QMimeData* mime_data = new QMimeData();
 
     // Create a list with a single file URL
-    QString file_path =
-        QString::fromStdString(dynamic_cast<FileWidget*>(widgets[win->getCurrentResultIdx()])->getPath());
+    QString file_path = dynamic_cast<FileWidget*>(widgets[win->getCurrentResultIdx()])->getPath();
     QList<QUrl> urls;
     urls.append(QUrl::fromLocalFile(std::move(file_path)));
 
@@ -397,28 +409,27 @@ void FileModeHandler::handleDragAndDrop(QDrag* drag) const {
     QIcon icon = win->getFileIcon(path);
     QMimeData* mime_data = new QMimeData;
     QPixmap pixmap = icon.pixmap(64, 64); // Icon size for the drag
-    mime_data->setUrls({QUrl::fromLocalFile(QString::fromStdString(path))});
+    mime_data->setUrls({QUrl::fromLocalFile(path)});
     drag->setMimeData(mime_data);
     drag->setPixmap(pixmap);
     drag->exec(Qt::CopyAction);
 }
 
-std::string FileModeHandler::getPrefix() const {
+QString FileModeHandler::getPrefix() const {
     return " ";
 }
 
 /***************************/
 
-static std::vector<std::string> customSearch(MainWindow* win, const QString& query_,
-                                             const std::vector<std::string>& entries) {
+static QStringList customSearch(MainWindow* win, const QString& query_, const QStringList& entries) {
 
-    std::string query = query_.toLower().toStdString();
+    QString query = query_.toLower();
 
     std::vector<std::pair<int, int>> scores_per_idx{};
 
     // calculate the score for each entry.
     for (int i = 0; i < entries.size(); ++i) {
-        int score = fuzzyScore(fs::path(entries[i]).filename().string(), query);
+        int score = fuzzyScore(QFileInfo(entries[i]).fileName(), query);
 
         if (score >= 0) {
             scores_per_idx.push_back({score, i});
@@ -430,7 +441,7 @@ static std::vector<std::string> customSearch(MainWindow* win, const QString& que
         return lhs.first > rhs.first;
     });
 
-    std::vector<std::string> res{};
+    QStringList res{};
     res.reserve(scores_per_idx.size());
 
     // fill resultslist based on the scores

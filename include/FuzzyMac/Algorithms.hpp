@@ -1,5 +1,5 @@
 #pragma once
 
-#include <string>
+#include <QString>
 
-int fuzzyScore(const std::string& cand, const std::string& query);
+int fuzzyScore(const QString& cand, const QString& query);

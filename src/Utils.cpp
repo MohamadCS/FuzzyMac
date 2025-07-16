@@ -2,15 +2,17 @@
 
 #include "exprtk/exprtk.hpp"
 
-#include <wordexp.h>
+#include <QString>
+#include <QStringList>
 #include <iostream>
+#include <wordexp.h>
 
-void expandPaths(std::vector<std::string>& paths) {
+void expandPaths(QStringList& paths) {
     for (auto& input : paths) {
         wordexp_t p;
         fs::path expanded_path;
-        std::string quoted = "\"" + input + "\"";
-        if (wordexp(quoted.c_str(), &p, 0) == 0) {
+        QString quoted = "\"" + input + "\"";
+        if (wordexp(quoted.toUtf8().constData(), &p, 0) == 0) {
             if (p.we_wordc > 0) {
                 input = p.we_wordv[0]; // Take the first expanded word
             }
@@ -20,7 +22,6 @@ void expandPaths(std::vector<std::string>& paths) {
         }
     }
 }
-
 
 std::optional<double> evalMathExp(const std::string& exp) {
     exprtk::expression<double> expression;

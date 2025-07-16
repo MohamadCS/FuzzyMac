@@ -24,8 +24,8 @@ class TextWidget : public FuzzyWidget {
     Q_OBJECT;
 
 public:
-    TextWidget(MainWindow* win, QWidget* parent, const std::string& value);
-    std::string getValue() const;
+    TextWidget(MainWindow* win, QWidget* parent, const QString& value);
+    QString getValue() const;
 
 private:
     QLabel* text;
@@ -35,15 +35,15 @@ class FileWidget : public FuzzyWidget {
     Q_OBJECT;
 
 public:
-    FileWidget(MainWindow* win, QWidget* parent, const std::string& path, bool show_icon);
+    FileWidget(MainWindow* win, QWidget* parent, const QString& path, bool show_icon);
     void enterHandler() override;
     std::variant<QListWidgetItem*, FuzzyWidget*> getItem() override;
-    std::string getPath() const;
+    QString getPath() const;
     ~FileWidget() {
     }
 
 private:
-    std::string path;
+    QString path;
     bool show_icon;
 };
 
@@ -51,13 +51,13 @@ class ModeWidget : public FuzzyWidget {
     Q_OBJECT;
 
 public:
-    ModeWidget(MainWindow* win, QWidget* parent, const std::string& value, Mode mode,
+    ModeWidget(MainWindow* win, QWidget* parent, const QString& value, Mode mode,
                const std::optional<QIcon>& icon = std::nullopt);
     std::variant<QListWidgetItem*, FuzzyWidget*> getItem() override;
     void enterHandler() override;
 
 private:
-    std::string name;
+    QString name;
     std::optional<QIcon> icon;
     Mode mode;
 };
