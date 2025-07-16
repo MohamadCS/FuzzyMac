@@ -48,14 +48,13 @@ private:
 
 class ModeWidget : public FuzzyWidget {
 public:
-    ModeWidget(MainWindow* win, const std::string& value, Mode mode, const std::optional<std::string>& icon_path = std::nullopt);
+    ModeWidget(MainWindow* win, const std::string& value, Mode mode,const std::optional<QIcon>& icon = std::nullopt);
     std::variant<QListWidgetItem*, FuzzyWidget*> getItem() override;
-
     void enterHandler() override;
 
 private:
     std::string name;
-    std::optional<std::string> icon_path;
+    std::optional<QIcon> icon;
     Mode mode;
 };
 

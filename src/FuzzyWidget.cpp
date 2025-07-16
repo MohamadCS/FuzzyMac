@@ -97,13 +97,15 @@ void CalculatorWidget::enterHandler() {
     win->sleep();
 };
 
-ModeWidget::ModeWidget(MainWindow* win, const std::string& value, Mode mode, const std::optional<std::string>& icon_path)
+ModeWidget::ModeWidget(MainWindow* win, const std::string& value, Mode mode, const std::optional<QIcon>& icon)
     : FuzzyWidget(win),
-      name(value), mode(mode),icon_path(icon_path) {
+      name(value),
+      mode(mode),
+      icon(icon) {
 }
 std::variant<QListWidgetItem*, FuzzyWidget*> ModeWidget::getItem() {
-    if(icon_path) {
-        return win->createListItem(name,QIcon(icon_path.value().c_str()));
+    if (icon) {
+        return win->createListItem(name, icon.value());
     } else {
         return win->createListItem(name);
     }

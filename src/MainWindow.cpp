@@ -17,6 +17,7 @@
 #include <QKeyEvent>
 #include <QLabel>
 #include <QMessageBox>
+#include <QPainter>
 #include <QProcess>
 #include <QShortcut>
 #include <QStaticText>
@@ -110,15 +111,14 @@ void MainWindow::sleep() {
     });
 }
 
-
 void MainWindow::matchModeShortcut(const std::string& text) {
-    if(mode != Mode::APP) {
-        return ;
+    if (mode != Mode::APP) {
+        return;
     }
 
-    for(auto& [mode, handler] : mode_handler) {
+    for (auto& [mode, handler] : mode_handler) {
         auto prefix = handler->getPrefix();
-        if(!prefix.empty() && prefix == text) {
+        if (!prefix.empty() && prefix == text) {
             changeMode(mode);
             return;
         }
@@ -205,8 +205,8 @@ MainWindow::MainWindow(Mode mode, QWidget* parent)
       mode(mode),
       config(default_config) {
 
-    mode_handler.emplace(Mode::APP, std::make_unique<AppModeHandler>(this));
     mode_handler.emplace(Mode::FILE, std::make_unique<FileModeHandler>(this));
+    mode_handler.emplace(Mode::APP, std::make_unique<AppModeHandler>(this));
     // mode_handler.emplace(Mode::CLI, std::make_unique<CLIModeHandler>(this));
 
     createWidgets();
@@ -273,7 +273,6 @@ void MainWindow::loadConfig() {
     onTextChange(query_edit->text());
 }
 
-
 QListWidgetItem* MainWindow::createListItem(QWidget* widget) {
     QListWidgetItem* item = new QListWidgetItem(results_list);
     item->setSizeHint(widget->sizeHint());
@@ -314,11 +313,36 @@ void MainWindow::refreshResults() {
     onTextChange(query_edit->text());
 }
 
+QIcon MainWindow::createIcon(const std::string& path, const QColor& color) const {
+    QPixmap pixmap(path.c_str()); // Load image or SVG as pixmap
+    if (pixmap.isNull()) {
+        return QIcon();
+    }
+
+    QPixmap tinted(pixmap.size());
+    tinted.fill(Qt::transparent); // Ensure transparency preserved
+
+    QPainter painter(&tinted);
+    painter.setCompositionMode(QPainter::CompositionMode_Source);
+    painter.drawPixmap(0, 0, pixmap); // Draw original
+
+    // Apply color mask using SourceIn
+    painter.setCompositionMode(QPainter::CompositionMode_SourceIn);
+    painter.fillRect(tinted.rect(), color);
+    painter.end();
+
+    return QIcon(tinted);
+}
+
 QIcon MainWindow::getFileIcon(const std::string& path) const {
     return icon_provider.icon(QFileInfo(QString::fromStdString(path)));
 }
 
-ModeHandler* MainWindow::getModeHandler() const {
+const ModeHandler* MainWindow::getCurrentModeHandler() const {
+    return mode_handler.at(mode).get();
+}
+
+const ModeHandler* MainWindow::getModeHandler(Mode mode) const {
     return mode_handler.at(mode).get();
 }
 
@@ -363,7 +387,27 @@ void MainWindow::loadStyle() {
 
 void MainWindow::changeMode(Mode new_mode) {
     qDebug() << "changing mode";
+
+    if(new_mode == mode) {
+        return;
+    }
+
     mode = new_mode;
     query_edit->setText("");
     refreshResults();
+    QRect original = geometry();
+    int dx = original.width() * 0.05;
+    int dy = original.height() * 0.05;
+
+    QRect enlarged = QRect(original.x() - dx / 2, original.y() - dy / 2, original.width() + dx, original.height() + dy);
+
+    if(new_mode == Mode::APP) {
+        return;
+    }
+
+    QPropertyAnimation* anim = new QPropertyAnimation(this, "geometry");
+    anim->setDuration(300);
+    anim->setKeyValues({{0.0, original}, {0.2, enlarged}, {1.0, original}});
+    anim->setEasingCurve(QEasingCurve::OutBack);
+    anim->start(QAbstractAnimation::DeleteWhenStopped);
 }
