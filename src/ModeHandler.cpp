@@ -268,7 +268,7 @@ std::optional<QIcon> FileModeHandler::getIcon() const {
 
 FileModeHandler::FileModeHandler(MainWindow* win)
     : ModeHandler(win) {
-    future_watcher = new QFutureWatcher<std::vector<std::string>>();
+    future_watcher = new QFutureWatcher<std::vector<std::string>>(win);
     dir_watcher = new QFileSystemWatcher(nullptr);
 
     QObject::connect(dir_watcher, &QFileSystemWatcher::directoryChanged, win, [this, win](const QString&) {

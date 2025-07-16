@@ -4,6 +4,7 @@ compile_commands.json
 release
 run.sh
 deploy.sh
+log
 FuzzyMac.app
 res/app_icon/iconfiles/
 .DS_Store
