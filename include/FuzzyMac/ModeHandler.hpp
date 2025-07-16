@@ -23,17 +23,23 @@ public:
     virtual void unload() {};
     virtual void enterHandler() = 0;
     virtual std::string getPrefix() const;
-    virtual void handleQuickLock() = 0;
+    virtual void handleQuickLook() = 0;
     virtual std::optional<QIcon> getIcon() const;
     virtual void handleCopy();
+    virtual void freeWidgets();
     virtual std::string handleModeText();
     virtual void handleDragAndDrop(QDrag*) const;
     virtual void handlePathCopy();
     virtual void invokeQuery(const QString& query_) = 0;
-    virtual ~ModeHandler() = default;
+    virtual ~ModeHandler() {
+        delete main_widget;
+    };
 
 protected:
     MainWindow* win;
+    QWidget* parent;
+    QWidget* main_widget; // used for cleanup
+
     QListWidgetItem* createListItem();
 };
 
@@ -46,8 +52,9 @@ public:
     std::string handleModeText() override;
 
     void enterHandler() override;
-    void handleQuickLock() override;
+    void handleQuickLook() override;
     void invokeQuery(const QString& query_) override;
+    void freeWidgets() override;
 
 private:
     bool math_mode = false;
@@ -66,7 +73,7 @@ public:
     void enterHandler() override;
     void invokeQuery(const QString& query_) override;
     std::string handleModeText() override;
-    void handleQuickLock() override;
+    void handleQuickLook() override;
 
 private:
     std::vector<std::string> entries;
@@ -78,15 +85,17 @@ class FileModeHandler : public ModeHandler {
 public:
     FileModeHandler(MainWindow* win);
     ~FileModeHandler() override;
+
+    void load() override;
     void enterHandler() override;
     std::string handleModeText() override;
     void handleCopy() override;
     void handleDragAndDrop(QDrag*) const override;
-    void load() override;
     void invokeQuery(const QString& query_) override;
-    void handleQuickLock() override;
+    void handleQuickLook() override;
     std::optional<QIcon> getIcon() const override;
     std::string getPrefix() const override;
+    void freeWidgets() override;
 
 private:
     QIcon icon;
@@ -95,4 +104,5 @@ private:
     QFileSystemWatcher* dir_watcher;
     std::vector<std::string> paths;
     std::vector<std::string> entries;
+    QMutex mutex;
 };

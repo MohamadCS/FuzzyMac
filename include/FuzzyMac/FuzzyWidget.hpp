@@ -12,8 +12,7 @@ protected:
     MainWindow* win;
 
 public:
-    using QWidget::QWidget;
-    FuzzyWidget(MainWindow* win);
+    FuzzyWidget(MainWindow* win, QWidget* parent);
     virtual ~FuzzyWidget() = default;
     virtual std::variant<QListWidgetItem*, FuzzyWidget*> getItem() {
         return {};
@@ -25,7 +24,7 @@ class TextWidget : public FuzzyWidget {
     Q_OBJECT;
 
 public:
-    TextWidget(MainWindow* win, const std::string& value);
+    TextWidget(MainWindow* win, QWidget* parent, const std::string& value);
     std::string getValue() const;
 
 private:
@@ -33,8 +32,10 @@ private:
 };
 
 class FileWidget : public FuzzyWidget {
+    Q_OBJECT;
+
 public:
-    FileWidget(MainWindow* win, const std::string& path, bool show_icon);
+    FileWidget(MainWindow* win, QWidget* parent, const std::string& path, bool show_icon);
     void enterHandler() override;
     std::variant<QListWidgetItem*, FuzzyWidget*> getItem() override;
     std::string getPath() const;
@@ -47,8 +48,11 @@ private:
 };
 
 class ModeWidget : public FuzzyWidget {
+    Q_OBJECT;
+
 public:
-    ModeWidget(MainWindow* win, const std::string& value, Mode mode,const std::optional<QIcon>& icon = std::nullopt);
+    ModeWidget(MainWindow* win, QWidget* parent, const std::string& value, Mode mode,
+               const std::optional<QIcon>& icon = std::nullopt);
     std::variant<QListWidgetItem*, FuzzyWidget*> getItem() override;
     void enterHandler() override;
 
@@ -66,7 +70,7 @@ class CalculatorWidget : public FuzzyWidget {
     std::variant<QListWidgetItem*, FuzzyWidget*> getItem() override;
 
 public:
-    CalculatorWidget(MainWindow* win);
+    CalculatorWidget(MainWindow* win, QWidget* parent);
     MainWindow* win;
     QLabel* title_label;
     QLabel* answer_label;

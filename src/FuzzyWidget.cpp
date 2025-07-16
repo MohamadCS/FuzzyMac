@@ -7,13 +7,13 @@
 #include <unistd.h>
 #include <variant>
 
-FuzzyWidget::FuzzyWidget(MainWindow* win)
-    : QWidget(win),
+FuzzyWidget::FuzzyWidget(MainWindow* win, QWidget* parent)
+    : QWidget(parent),
       win(win) {
 }
 
-TextWidget::TextWidget(MainWindow* win, const std::string& value)
-    : FuzzyWidget(win) {
+TextWidget::TextWidget(MainWindow* win, QWidget* parent, const std::string& value)
+    : FuzzyWidget(win, parent) {
     text = new QLabel(value.c_str());
 }
 
@@ -41,14 +41,14 @@ std::variant<QListWidgetItem*, FuzzyWidget*> FileWidget::getItem() {
     }
 }
 
-FileWidget::FileWidget(MainWindow* win, const std::string& path, bool show_icon)
-    : FuzzyWidget(win),
+FileWidget::FileWidget(MainWindow* win, QWidget* parent, const std::string& path, bool show_icon)
+    : FuzzyWidget(win, parent),
       path(path),
       show_icon(show_icon) {
 }
 
-CalculatorWidget::CalculatorWidget(MainWindow* win)
-    : FuzzyWidget(win) {
+CalculatorWidget::CalculatorWidget(MainWindow* win, QWidget* parent)
+    : FuzzyWidget(win, parent) {
     title_label = new QLabel(this);
     answer_label = new QLabel(this);
     const auto& config = win->getConfig();
@@ -97,8 +97,9 @@ void CalculatorWidget::enterHandler() {
     win->sleep();
 };
 
-ModeWidget::ModeWidget(MainWindow* win, const std::string& value, Mode mode, const std::optional<QIcon>& icon)
-    : FuzzyWidget(win),
+ModeWidget::ModeWidget(MainWindow* win, QWidget* parent, const std::string& value, Mode mode,
+                       const std::optional<QIcon>& icon)
+    : FuzzyWidget(win, parent),
       name(value),
       mode(mode),
       icon(icon) {

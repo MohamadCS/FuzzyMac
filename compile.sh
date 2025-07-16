@@ -1,7 +1,6 @@
 cd ./build/
-cmake ..
+cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
 cmake --build .
-cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=1 .
 cd ..
 
 killall FuzzyMac 2> /dev/null

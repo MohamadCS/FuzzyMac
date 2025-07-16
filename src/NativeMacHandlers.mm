@@ -1,8 +1,4 @@
 #import <Cocoa/Cocoa.h>
-#import <CoreServices/CoreServices.h>
-#import <Foundation/Foundation.h>
-#import <QuickLook/QuickLook.h>
-#import <QuickLookUI/QuickLookUI.h>
 
 #include <QWidget>
 #include <algorithm>
@@ -15,8 +11,6 @@ extern "C" void deactivateApp() {
   [NSApp hide:nil]; // This returns focus to the previously active app
 }
 
-#import <Cocoa/Cocoa.h>
-#include <QWidget>
 
 extern "C" void centerWindow(QWidget *widget) {
   @autoreleasepool {
@@ -142,60 +136,64 @@ spotlightSearch(const std::vector<std::string> &dirs,
     return results;
   }
 }
-@interface PreviewController : NSObject <QLPreviewPanelDataSource> {
-  NSURL *_file;
-}
-- (instancetype)initWithFile:(NSURL *)file;
-- (void)showPreview;
-@end
+//
+// #import <Cocoa/Cocoa.h>
+// #import <QuickLook/QuickLook.h>
+// #import <string>
+// #import <vector>
+//
+// #import <Cocoa/Cocoa.h>
+// #import <QuickLook/QuickLook.h>
+// #import <string>
+//
+// @interface QLPreviewHelper : NSObject <QLPreviewPanelDataSource, QLPreviewPanelDelegate>
+// @property (nonatomic, strong) NSURL *fileURL;
+// @end
+//
+// @implementation QLPreviewHelper
+//
+// - (NSInteger)numberOfPreviewItemsInPreviewPanel:(QLPreviewPanel *)panel {
+//     return 1;
+// }
+//
+// - (id<QLPreviewItem>)previewPanel:(QLPreviewPanel *)panel previewItemAtIndex:(NSInteger)index {
+//     return self.fileURL;
+// }
+//
+// // Called when the panel is about to close
+// - (void)previewPanelWillClose:(QLPreviewPanel *)panel {
+//     // Stop the app’s event loop so it can exit
+//     [NSApp stop:nil];
+// }
+//
+// @end
 
-@implementation PreviewController
-- (instancetype)initWithFile:(NSURL *)file {
-  if ((self = [super init])) {
-    _file = file;
-  }
-  return self;
-}
-
-- (NSInteger)numberOfPreviewItemsInPreviewPanel:(QLPreviewPanel *)panel {
-  return 1;
-}
-
-- (id<QLPreviewItem>)previewPanel:(QLPreviewPanel *)panel
-               previewItemAtIndex:(NSInteger)index {
-  return _file;
-}
-
-- (void)showPreview {
-  QLPreviewPanel *panel = [QLPreviewPanel sharedPreviewPanel];
-  panel.dataSource = self;
-  [panel makeKeyAndOrderFront:nil];
-  [panel reloadData];
-}
-@end
-
-static PreviewController *gPreviewController = nil;
-
-extern "C" void closeQuickLook() {
-  @autoreleasepool {
-    QLPreviewPanel *panel = [QLPreviewPanel sharedPreviewPanel];
-    if ([panel isVisible]) {
-      [panel orderOut:nil]; // Close the panel
-    }
-  }
-}
-
-extern "C++" void quickLock(const std::string &filePath) {
-  @autoreleasepool {
-    closeQuickLook();
-    NSString *ns_path = [NSString stringWithUTF8String:filePath.c_str()];
-    NSURL *url = [NSURL fileURLWithPath:ns_path];
-    if (!url)
-      return;
-
-    gPreviewController = [[PreviewController alloc] initWithFile:url];
-    [gPreviewController showPreview];
-  }
+extern "C++" void quickLook(const std::string &path) {
+    // @autoreleasepool {
+    //     // Setup Cocoa app context if needed
+    //     if (NSApp == nil) {
+    //         [NSApplication sharedApplication];
+    //     }
+    //
+    //     // Create the preview helper
+    //     QLPreviewHelper *helper = [[QLPreviewHelper alloc] init];
+    //     helper.fileURL = [NSURL fileURLWithPath:[NSString stringWithUTF8String:path.c_str()]];
+    //
+    //     // Configure the QLPreviewPanel
+    //     QLPreviewPanel *panel = [QLPreviewPanel sharedPreviewPanel];
+    //     panel.delegate = helper;
+    //     panel.dataSource = helper;
+    //
+    //     [panel updateController];
+    //     [panel makeKeyAndOrderFront:nil];
+    //
+    //     // Run the app event loop so user can interact with the panel
+    //     [NSApp run];
+    //
+    //     // Cleanup: after the user closes the panel, run stops and control returns here
+    //     panel.delegate = nil;
+    //     panel.dataSource = nil;
+    // }
 }
 
 extern "C" void disableCmdQ() {

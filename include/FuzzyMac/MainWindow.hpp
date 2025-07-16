@@ -50,7 +50,6 @@ public:
 
     void changeMode(Mode mode);
 
-
     bool isWidgetCurrentSelection(QWidget* widget) const;
     const toml::table& getConfig() const;
     std::string getQuery() const;
@@ -83,7 +82,6 @@ private:
     QVBoxLayout* layout;
     QFileIconProvider icon_provider;
     QFileSystemWatcher* config_file_watcher;
-    QFutureWatcher<ResultsVec>* results_watcher;
     toml::table config;
 
     Mode mode;
@@ -95,5 +93,5 @@ private:
     void createKeybinds();
     void loadConfig();
     void connectEventHandlers();
-    void matchModeShortcut(const std::string& );
+    void matchModeShortcut(const std::string&);
 };
