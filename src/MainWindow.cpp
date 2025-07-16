@@ -65,7 +65,10 @@ void MainWindow::setupLayout() {
 
 void MainWindow::nextItem() {
     int next = std::min(results_list->count() - 1, results_list->currentRow() + 1);
-    results_list->setCurrentRow(next);
+
+    if (next != results_list->currentRow()) {
+        results_list->setCurrentRow(next);
+    }
 }
 
 void MainWindow::openItem() {
@@ -73,12 +76,15 @@ void MainWindow::openItem() {
 }
 
 void MainWindow::quickLock() {
-    mode_handler[mode]->handleQuickLock();
+    mode_handler[mode]->handleQuickLook();
 }
 
 void MainWindow::prevItem() {
     int prev = std::max(0, results_list->currentRow() - 1);
-    results_list->setCurrentRow(prev);
+
+    if (prev != results_list->currentRow()) {
+        results_list->setCurrentRow(prev);
+    }
 }
 
 void MainWindow::wakeup() {
@@ -99,7 +105,7 @@ void MainWindow::wakeup() {
 }
 
 void MainWindow::sleep() {
-    QPropertyAnimation* anim = new QPropertyAnimation(this, "windowOpacity");
+    QPropertyAnimation* anim = new QPropertyAnimation(this, "windowOpacity", this);
     anim->setDuration(150);
     anim->setStartValue(1.0);
     anim->setEndValue(0.0);
@@ -127,7 +133,6 @@ void MainWindow::matchModeShortcut(const std::string& text) {
 
 void MainWindow::onTextChange(const QString& text) {
     qDebug() << "text changed to " << text;
-
     matchModeShortcut(text.toStdString());
 
     mode_handler[mode]->invokeQuery(text);
@@ -159,20 +164,11 @@ void MainWindow::processResults(const ResultsVec& results) {
         }
     }
     qDebug() << "Finished processing results";
-
-    if (results.size() >= 1) {
-        results_list->setCurrentRow(0);
-    }
 }
 
 void MainWindow::connectEventHandlers() {
 
-    results_watcher = new QFutureWatcher<ResultsVec>(this);
     connect(query_edit, &QueryEdit::textChanged, this, &MainWindow::onTextChange);
-
-    connect(results_watcher, &QFutureWatcher<QStringList>::finished, this, [this]() {
-        processResults(results_watcher->result());
-    });
 
     connect(
         window()->windowHandle(), &QWindow::screenChanged, this, [this](QScreen* newScreen) { centerWindow(this); });
