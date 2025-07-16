@@ -1,7 +1,7 @@
 # FuzzyMac
 
 <p align="center">
-<img src="./res/icons/icon-256x256.png" alt="FuzzyMac Icon" width="150">
+<img src="./res/app_icon/icon-256x256.png" alt="FuzzyMac Icon" width="150">
 </p>
 
 <p align="center">
@@ -43,14 +43,14 @@ app=$(fd --max-depth 1 -e app . /Applications -x realpath | FuzzyMac)
 FuzzyMac runs as a background app, activated by default with ⌘ + Space.
 
 - By default:
-    *	It searches for applications in default config.
-    *	Pressing <Space> in the input box switches to file search mode.
+*	It searches for applications in default config.
+*	Pressing <Space> in the input box switches to file search mode.
 
 - 📄 Press ⌘ + Y to QuickLook a selected file.
 
 
 ## 🔍 How It Works
-I used a simple custom scoring algorithm. 
+I used a simple custom scoring algorithm.
 (previous versions relied on spotlight's indexing, which was very slow for some reason).
 
 ## ⚙️ Configuration
@@ -99,7 +99,7 @@ dirs = ["$HOME/Library/Mobile Documents/com~apple~CloudDocs/"]
 
 
 ## Installation
-If you have homebrew installed you can tap 
+If you have homebrew installed you can tap
 
 ```shell
 brew tap MohamadCS/FuzzyMac https://github.com/MohamadCS/FuzzyMac.git

@@ -22,6 +22,7 @@ public:
     virtual void unload() {};
 
     virtual void enterHandler() = 0;
+    virtual std::string getPrefix() const;
     virtual void handleQuickLock() = 0;
     virtual void handleCopy();
     virtual std::string handleModeText();
@@ -33,7 +34,6 @@ public:
 protected:
     MainWindow* win;
     QListWidgetItem* createListItem();
-
 };
 
 class AppModeHandler : public ModeHandler {
@@ -51,6 +51,7 @@ public:
 private:
     bool math_mode = false;
     std::vector<std::string> apps;
+    std::map<std::string, std::pair<Mode, std::optional<std::string>>> modes;
     std::vector<std::string> app_dirs;
     std::vector<FuzzyWidget*> widgets;
     QFileSystemWatcher* app_watcher;
@@ -77,7 +78,7 @@ private:
 class FileModeHandler : public ModeHandler {
 public:
     FileModeHandler(MainWindow* win);
-    ~FileModeHandler() override = default;
+    ~FileModeHandler() override;
     void enterHandler() override;
     std::string handleModeText() override;
     void handleCopy() override;
@@ -85,10 +86,12 @@ public:
     void load() override;
     void invokeQuery(const QString& query_) override;
     void handleQuickLock() override;
+    std::string getPrefix() const override;
 
 private:
     std::vector<FuzzyWidget*> widgets;
     QFutureWatcher<std::vector<std::string>>* future_watcher;
+    QFileSystemWatcher* dir_watcher;
     std::vector<std::string> paths;
     std::vector<std::string> entries;
 };

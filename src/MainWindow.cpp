@@ -1,6 +1,6 @@
 #include "FuzzyMac/MainWindow.hpp"
 #include "FuzzyMac/MacGlobShortcuts.hpp"
-#include "FuzzyMac/ModHandler.hpp"
+#include "FuzzyMac/ModeHandler.hpp"
 #include "FuzzyMac/NativeMacHandlers.hpp"
 #include "FuzzyMac/ParseConfig.hpp"
 #include "FuzzyMac/QueryEdit.hpp"
@@ -24,6 +24,7 @@
 #include <QtConcurrent>
 #include <filesystem>
 #include <memory>
+#include <variant>
 
 const toml::table& MainWindow::getConfig() const {
     return config;
@@ -109,17 +110,25 @@ void MainWindow::sleep() {
     });
 }
 
-void MainWindow::onTextChange(const QString& text) {
-    qDebug() << text;
-    if (mode != Mode::CLI) {
-        if (text.isEmpty()) {
-            mode = Mode::APP;
-        } else {
-            if (text.startsWith(' ')) {
-                mode = Mode::FILE;
-            }
+
+void MainWindow::matchModeShortcut(const std::string& text) {
+    if(mode != Mode::APP) {
+        return ;
+    }
+
+    for(auto& [mode, handler] : mode_handler) {
+        auto prefix = handler->getPrefix();
+        if(!prefix.empty() && prefix == text) {
+            changeMode(mode);
+            return;
         }
     }
+}
+
+void MainWindow::onTextChange(const QString& text) {
+    qDebug() << "text changed to " << text;
+
+    matchModeShortcut(text.toStdString());
 
     mode_handler[mode]->invokeQuery(text);
 
@@ -172,7 +181,6 @@ void MainWindow::connectEventHandlers() {
 #ifndef CLI_TOOL
     QObject::connect(qApp, &QGuiApplication::applicationStateChanged, this, &MainWindow::onApplicationStateChanged);
 #endif
-
 }
 
 void MainWindow::createKeybinds() {
@@ -265,9 +273,6 @@ void MainWindow::loadConfig() {
     onTextChange(query_edit->text());
 }
 
-void MainWindow::addItemToResultsList(const std::string& name, std::optional<fs::path> path) {
-    results_list->addItem(createListItem(name, path));
-}
 
 QListWidgetItem* MainWindow::createListItem(QWidget* widget) {
     QListWidgetItem* item = new QListWidgetItem(results_list);
@@ -275,11 +280,10 @@ QListWidgetItem* MainWindow::createListItem(QWidget* widget) {
     return item;
 }
 
-QListWidgetItem* MainWindow::createListItem(const std::string& name, std::optional<fs::path> path) {
+QListWidgetItem* MainWindow::createListItem(const std::string& name, const std::optional<QIcon>& icon) {
     QListWidgetItem* item = nullptr;
-    if (path.has_value()) {
-        QFileInfo file_info(QString::fromStdString(path->string()));
-        item = new QListWidgetItem(icon_provider.icon(std::move(file_info)), QString::fromStdString(name));
+    if (icon) {
+        item = new QListWidgetItem(icon.value(), QString::fromStdString(name));
     } else {
         item = new QListWidgetItem(QString::fromStdString(name));
     }
@@ -355,4 +359,11 @@ void MainWindow::loadStyle() {
                                   .arg(get<std::string>(config, {"colors", "mode_label", "text"}))
                                   .arg(get<std::string>(config, {"colors", "mode_label", "background"}))
                                   .arg(get<std::string>(config, {"font"})));
+}
+
+void MainWindow::changeMode(Mode new_mode) {
+    qDebug() << "changing mode";
+    mode = new_mode;
+    query_edit->setText("");
+    refreshResults();
 }

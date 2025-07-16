@@ -1,4 +1,4 @@
-#include "FuzzyMac/ModHandler.hpp"
+#include "FuzzyMac/ModeHandler.hpp"
 #include "FuzzyMac/ParseConfig.hpp"
 #include "FuzzyMac/ResultsPanel.hpp"
 
