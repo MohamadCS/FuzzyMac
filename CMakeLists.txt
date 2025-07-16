@@ -23,19 +23,19 @@ set(HEADERS ${CPP_HEADERS})
 
 
 set(CMAKE_PREFIX_PATH "/opt/homebrew/opt/qt@6/lib/cmake")
-find_package(Qt6 COMPONENTS Core Gui Widgets Concurrent REQUIRED)
+find_package(Qt6 COMPONENTS Core Svg Gui Widgets Concurrent REQUIRED)
 
 
 # =========================
 # GUI App Target (FuzzyMac)
 # =========================
-set(APP_ICON ${CMAKE_SOURCE_DIR}/res/icons/icon.icns)
+set(APP_ICON ${CMAKE_SOURCE_DIR}/res/app_icon/icon.icns)
 
 set_source_files_properties(${APP_ICON} PROPERTIES
     MACOSX_PACKAGE_LOCATION "Resources"
 )
 
-add_executable(FuzzyMac ${SOURCES} ${HEADERS})
+add_executable(FuzzyMac ${SOURCES} ${HEADERS} assets.qrc)
 
 target_compile_definitions(FuzzyMac PRIVATE)
 target_sources(FuzzyMac PRIVATE ${APP_ICON})
@@ -43,6 +43,7 @@ target_sources(FuzzyMac PRIVATE ${APP_ICON})
 target_link_libraries(FuzzyMac PRIVATE 
     Qt6::Core 
     Qt6::Gui
+    Qt6::Svg
     Qt6::Widgets 
     Qt6::Concurrent
     "-framework Cocoa"

@@ -46,6 +46,19 @@ private:
     bool show_icon;
 };
 
+class ModeWidget : public FuzzyWidget {
+public:
+    ModeWidget(MainWindow* win, const std::string& value, Mode mode, const std::optional<std::string>& icon_path = std::nullopt);
+    std::variant<QListWidgetItem*, FuzzyWidget*> getItem() override;
+
+    void enterHandler() override;
+
+private:
+    std::string name;
+    std::optional<std::string> icon_path;
+    Mode mode;
+};
+
 class CalculatorWidget : public FuzzyWidget {
     Q_OBJECT;
 

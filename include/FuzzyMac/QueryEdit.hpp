@@ -13,6 +13,7 @@ public:
 
 signals:
     void requestAppCopy();
+    void requestMainMode();
 
 private:
     void keyPressEvent(QKeyEvent* event) override;

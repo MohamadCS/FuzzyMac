@@ -35,7 +35,7 @@ void FileWidget::enterHandler() {
 
 std::variant<QListWidgetItem*, FuzzyWidget*> FileWidget::getItem() {
     if (show_icon) {
-        return win->createListItem(fs::path(path).filename(), path);
+        return win->createListItem(fs::path(path).filename(), win->getFileIcon(path));
     } else {
         return win->createListItem(fs::path(path).filename());
     }
@@ -96,3 +96,19 @@ void CalculatorWidget::enterHandler() {
     clipboard->setText(answer_label->text());
     win->sleep();
 };
+
+ModeWidget::ModeWidget(MainWindow* win, const std::string& value, Mode mode, const std::optional<std::string>& icon_path)
+    : FuzzyWidget(win),
+      name(value), mode(mode),icon_path(icon_path) {
+}
+std::variant<QListWidgetItem*, FuzzyWidget*> ModeWidget::getItem() {
+    if(icon_path) {
+        return win->createListItem(name,QIcon(icon_path.value().c_str()));
+    } else {
+        return win->createListItem(name);
+    }
+}
+
+void ModeWidget::enterHandler() {
+    win->changeMode(mode);
+}

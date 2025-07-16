@@ -44,10 +44,11 @@ public:
     void sleep();
 
     void refreshResults();
-    void addItemToResultsList(const std::string& name, std::optional<fs::path> path = std::nullopt);
-    QListWidgetItem* createListItem(const std::string& name, std::optional<fs::path> path = std::nullopt);
+    QListWidgetItem* createListItem(const std::string& name, const std::optional<QIcon>& icon = std::nullopt);
     QListWidgetItem* createListItem(QWidget* widget);
     void clearResultList();
+
+    void changeMode(Mode mode);
 
     bool isWidgetCurrentSelection(QWidget* widget) const;
     const toml::table& getConfig() const;
@@ -91,4 +92,5 @@ private:
     void createKeybinds();
     void loadConfig();
     void connectEventHandlers();
+    void matchModeShortcut(const std::string& );
 };

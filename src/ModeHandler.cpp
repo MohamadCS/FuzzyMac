@@ -1,7 +1,7 @@
+#include "FuzzyMac/ModeHandler.hpp"
 #include "FuzzyMac/Algorithms.hpp"
 #include "FuzzyMac/FuzzyWidget.hpp"
 #include "FuzzyMac/MainWindow.hpp"
-#include "FuzzyMac/ModHandler.hpp"
 #include "FuzzyMac/NativeMacHandlers.hpp"
 #include "FuzzyMac/ParseConfig.hpp"
 #include "FuzzyMac/Utils.hpp"
@@ -13,6 +13,7 @@
 #include <filesystem>
 #include <iostream>
 #include <optional>
+#include <utility>
 #include <wordexp.h>
 
 #include <QApplication>
@@ -46,12 +47,17 @@ void ModeHandler::handlePathCopy() {
 void ModeHandler::handleDragAndDrop(QDrag* drag) {
 }
 
+std::string ModeHandler::getPrefix() const {
+    return "";
+}
+
 /***************************/
 
 AppModeHandler::AppModeHandler(MainWindow* win)
     : ModeHandler(win),
       app_watcher(new QFileSystemWatcher(nullptr)) {
-    QObject::connect(app_watcher, &QFileSystemWatcher::directoryChanged, win, [this, win](const QString&) {
+    modes.insert_or_assign("Search files", std::make_pair(Mode::FILE, ":/res/icons/search_files_icon.svg"));
+    QObject::connect(app_watcher, &QFileSystemWatcher::directoryChanged, win, [this, win](const QString& path) {
         load();
         win->refreshResults();
     });
@@ -66,6 +72,8 @@ std::string AppModeHandler::handleModeText() {
 }
 void AppModeHandler::handleQuickLock() {
 }
+
+
 
 void AppModeHandler::load() {
     auto paths = get_array<std::string>(win->getConfig(), {"mode", "apps", "dirs"});
@@ -102,6 +110,15 @@ void AppModeHandler::load() {
         apps.push_back(path);
         widgets.push_back(new FileWidget(win, path, get<bool>(win->getConfig(), {"mode", "apps", "show_icons"})));
     }
+
+    std::vector<std::string> keys;
+    keys.reserve(modes.size());
+    std::transform(modes.begin(), modes.end(), std::back_inserter(keys), [](const auto& pair) { return pair.first; });
+
+    for (const auto& key : keys) {
+        widgets.push_back(new ModeWidget(win, key, modes[key].first, modes[key].second));
+    }
+
     win->processResults(widgets);
 }
 
@@ -138,6 +155,15 @@ void AppModeHandler::invokeQuery(const QString& query) {
 
     for (const auto& path : search_results) {
         widgets.push_back(new FileWidget(win, path, get<bool>(win->getConfig(), {"mode", "apps", "show_icons"})));
+    }
+
+    std::vector<std::string> keys;
+    keys.reserve(modes.size());
+    std::transform(modes.begin(), modes.end(), std::back_inserter(keys), [](const auto& pair) { return pair.first; });
+    auto modes_results = customSearch(win, query, keys);
+
+    for (const auto& key : modes_results) {
+        widgets.push_back(new ModeWidget(win, key, modes[key].first, modes[key].second));
     }
 
     qDebug() << "Finished invoking";
@@ -212,22 +238,43 @@ void FileModeHandler::load() {
     paths = get_array<std::string>(win->getConfig(), {"mode", "files", "dirs"});
     expandPaths(paths);
 
+    entries.clear();
     for (auto& dir : paths) {
         loadDirs(dir, entries);
     }
+
+    QStringList paths_list{};
+    for (const auto& path : entries) {
+        if (fs::is_directory(path)) {
+            paths_list.push_back(path.c_str());
+        }
+    }
+
+    if (dir_watcher->directories().size() > 0) {
+        dir_watcher->removePaths(dir_watcher->directories());
+        dir_watcher->removePaths(dir_watcher->files());
+    }
+
+    dir_watcher->addPaths(paths_list);
 }
 
 FileModeHandler::FileModeHandler(MainWindow* win)
     : ModeHandler(win) {
-    watcher = new QFutureWatcher<std::vector<std::string>>();
+    future_watcher = new QFutureWatcher<std::vector<std::string>>();
+    dir_watcher = new QFileSystemWatcher(nullptr);
 
-    QObject::connect(watcher, &QFutureWatcher<std::vector<std::string>>::finished, [this, win]() {
+    QObject::connect(dir_watcher, &QFileSystemWatcher::directoryChanged, win, [this, win](const QString&) {
+        load();
+        win->refreshResults();
+    });
+
+    QObject::connect(future_watcher, &QFutureWatcher<std::vector<std::string>>::finished, [this, win]() {
         if (win->getQuery().empty()) {
             return;
         }
 
         widgets.clear();
-        auto results = watcher->result();
+        auto results = future_watcher->result();
         for (const auto& file : results) {
             if (widgets.size() >= 25) {
                 break;
@@ -247,27 +294,30 @@ FileModeHandler::FileModeHandler(MainWindow* win)
     load();
 }
 
+FileModeHandler::~FileModeHandler() {
+    delete dir_watcher;
+}
+
 void FileModeHandler::invokeQuery(const QString& query_) {
     qDebug() << "Invoking File query";
 
     auto query = query_.trimmed();
 
     if (query.isEmpty()) {
+        win->processResults({});
         return;
     }
 
-    if (watcher->isRunning()) {
-        watcher->cancel();
+    if (future_watcher->isRunning()) {
+        future_watcher->cancel();
     }
-
-    widgets.clear();
 
     auto future = QtConcurrent::run([this, query]() -> std::vector<std::string> {
         // return spotlightSearch(paths, std::format("kMDItemDisplayName LIKE[cd] '{}*'", query.toStdString()));
         return customSearch(win, query, entries);
     });
 
-    watcher->setFuture(future);
+    future_watcher->setFuture(future);
 
     qDebug() << "Finished Invoking";
 }
@@ -318,6 +368,10 @@ void FileModeHandler::handleDragAndDrop(QDrag* drag) {
     drag->setMimeData(mime_data);
     drag->setPixmap(pixmap);
     drag->exec(Qt::CopyAction);
+}
+
+std::string FileModeHandler::getPrefix() const {
+    return " ";
 }
 
 /***************************/

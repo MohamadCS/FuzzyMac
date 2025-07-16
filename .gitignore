@@ -5,6 +5,5 @@ release
 run.sh
 deploy.sh
 FuzzyMac.app
-res/icons/tahoe_icon
-res/icons/bigsur_icon
+res/app_icon/iconfiles/
 .DS_Store
