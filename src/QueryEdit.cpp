@@ -3,10 +3,22 @@
 #include "FuzzyMac/ParseConfig.hpp"
 
 #include <QApplication>
+
 void QueryEdit::keyPressEvent(QKeyEvent* event) {
+
+    if (QKeySequence(event->modifiers() | event->key()) == QKeySequence(Qt::ControlModifier | Qt::Key_Backspace)) {
+        setText("");
+        return;
+    }
+
     if (QKeySequence(event->modifiers() | event->key()) == QKeySequence::Copy) {
         emit requestAppCopy();
         return;
+    }
+
+    if (text().isEmpty() && event->key() == Qt::Key_Backspace) {
+        MainWindow* win = qobject_cast<MainWindow*>(window());
+        win->changeMode(Mode::APP);
     }
 
     // Default behavior for all other keys

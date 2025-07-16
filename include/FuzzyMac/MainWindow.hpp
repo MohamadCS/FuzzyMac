@@ -14,15 +14,18 @@
 #include <QPainterPath>
 #include <QProcess>
 #include <QString>
-#include <QTimer>
 #include <QVBoxLayout>
 
 #include <memory>
 #include <optional>
+#include <variant>
 
 namespace fs = std::filesystem;
 
 class ModeHandler;
+class FuzzyWidget;
+
+using ResultsVec = std::vector<FuzzyWidget*>;
 
 enum class Mode {
     CLI,
@@ -41,15 +44,23 @@ public:
     void sleep();
 
     void refreshResults();
-    void addToResultList(const std::string& name, std::optional<fs::path> path = std::nullopt);
-    QListWidgetItem* createListItem(const std::string& name, std::optional<fs::path> path = std::nullopt);
+    QListWidgetItem* createListItem(const std::string& name, const std::optional<QIcon>& icon = std::nullopt);
+    QListWidgetItem* createListItem(QWidget* widget);
     void clearResultList();
 
+    void changeMode(Mode mode);
+
+
+    bool isWidgetCurrentSelection(QWidget* widget) const;
     const toml::table& getConfig() const;
+    std::string getQuery() const;
     QIcon getFileIcon(const std::string& path) const;
+    QIcon createIcon(const std::string& path, const QColor& color) const;
     int getCurrentResultIdx() const;
     int getResultsNum() const;
-    ModeHandler* getModeHandler() const;
+    void processResults(const ResultsVec&);
+    const ModeHandler* getCurrentModeHandler() const;
+    const ModeHandler* getModeHandler(Mode mode) const;
 
 private slots:
     void nextItem();
@@ -72,7 +83,7 @@ private:
     QVBoxLayout* layout;
     QFileIconProvider icon_provider;
     QFileSystemWatcher* config_file_watcher;
-    QFutureWatcher<std::vector<QListWidgetItem*>>* results_watcher;
+    QFutureWatcher<ResultsVec>* results_watcher;
     toml::table config;
 
     Mode mode;
@@ -81,8 +92,8 @@ private:
     void loadStyle();
     void createWidgets();
     void setupLayout();
-    void setupStyles();
     void createKeybinds();
     void loadConfig();
     void connectEventHandlers();
+    void matchModeShortcut(const std::string& );
 };
