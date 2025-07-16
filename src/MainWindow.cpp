@@ -189,7 +189,7 @@ void MainWindow::createKeybinds() {
     if (mode != Mode::CLI) {
         registerGlobalHotkey(this);
         new QShortcut(Qt::Key_Escape, this, [this]() { this->sleep(); });
-        disableCmdQ();
+        // disableCmdQ();
     }
 
     new QShortcut(QKeySequence(Qt::MetaModifier | Qt::Key_N), this, SLOT(nextItem()));
@@ -388,26 +388,27 @@ void MainWindow::loadStyle() {
 void MainWindow::changeMode(Mode new_mode) {
     qDebug() << "changing mode";
 
-    if(new_mode == mode) {
+    if (new_mode == mode) {
         return;
     }
 
     mode = new_mode;
     query_edit->setText("");
     refreshResults();
+
+    if (new_mode == Mode::APP) {
+        return;
+    }
+
     QRect original = geometry();
     int dx = original.width() * 0.05;
     int dy = original.height() * 0.05;
 
     QRect enlarged = QRect(original.x() - dx / 2, original.y() - dy / 2, original.width() + dx, original.height() + dy);
 
-    if(new_mode == Mode::APP) {
-        return;
-    }
-
     QPropertyAnimation* anim = new QPropertyAnimation(this, "geometry");
     anim->setDuration(300);
-    anim->setKeyValues({{0.0, original}, {0.2, enlarged}, {1.0, original}});
+    anim->setKeyValues({{0.0, original}, {0.5, enlarged}, {1.0, original}});
     anim->setEasingCurve(QEasingCurve::OutBack);
     anim->start(QAbstractAnimation::DeleteWhenStopped);
 }
