@@ -1,7 +1,7 @@
 # FuzzyMac
 
 <p align="center">
-<img src="./res/icons/icon-256x256.png" alt="FuzzyMac Icon" width="150">
+<img src="./res/app_icon/icon-256x256.png" alt="FuzzyMac Icon" width="150">
 </p>
 
 <p align="center">
@@ -82,18 +82,15 @@ app=$(fd --max-depth 1 -e app . /Applications -x realpath | FuzzyMac)
 FuzzyMac runs as a background app, activated by default with ⌘ + Space.
 
 - By default:
-    *	It searches for applications in default config.
-    *	Pressing <Space> in the input box switches to file search mode.
-
-- 🔍 File search uses macOS’s native Spotlight API for maximum speed.
+*	It searches for applications in default config.
+*	Pressing <Space> in the input box switches to file search mode.
 
 - 📄 Press ⌘ + Y to QuickLook a selected file.
 
 
 ## 🔍 How It Works
--	In CLI and application search modes, FuzzyMac uses a simple, custom scoring algorithm.
--	In file search mode, it leverages macOS Spotlight to quickly find matching files.
-
+I used a simple custom scoring algorithm.
+(previous versions relied on spotlight's indexing, which was very slow for some reason).
 
 ## ⚙️ Configuration
 
@@ -140,6 +137,35 @@ dirs = ["$HOME/Library/Mobile Documents/com~apple~CloudDocs/"]
 ```
 
 
+## Installation
+If you have homebrew installed you can tap
+
+```shell
+brew tap MohamadCS/FuzzyMac https://github.com/MohamadCS/FuzzyMac.git
+brew install --cask MohamadCS/FuzzyMac/fuzzymac
+
+```
+
+
+## 🛠️ Building from Source
+
+### ✅ Requirements
+-	macOS with Homebrew
+-	Qt 6 installed via Homebrew:
+```
+brew install qt@6
+```
+
+### 🔨 Build with CMake
+
+```
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=Release ..
+cmake --build .
+```
+
+This builds both the CLI and GUI versions.
 
 
 ## TODO
