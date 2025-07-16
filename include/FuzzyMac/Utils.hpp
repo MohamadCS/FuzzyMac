@@ -5,7 +5,8 @@
 #include <vector>
 #include <filesystem>
 #include <optional>
-
+#include <QStringList>
 namespace fs = std::filesystem;
-void expandPaths(std::vector<std::string>& paths);
+
+void expandPaths(QStringList& paths);
 std::optional<double> evalMathExp(const std::string& exp);

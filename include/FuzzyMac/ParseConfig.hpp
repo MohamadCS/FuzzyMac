@@ -4,6 +4,7 @@
 
 #include <QString>
 
+#include <QList>
 #include <initializer_list>
 #include <string>
 
@@ -82,8 +83,7 @@ T get(const toml::table& user, std::initializer_list<std::string> keys, T fallba
 }
 
 template <typename T>
-std::vector<T> get_array(const toml::table& user, std::initializer_list<std::string> keys,
-                         std::vector<T> fallback = {}) {
+QList<T> get_array(const toml::table& user, std::initializer_list<std::string> keys, QList<T> fallback = {}) {
     const toml::node* node = &user;
     for (const auto& key : keys) {
         if (auto tbl = node->as_table()) {
@@ -113,7 +113,7 @@ std::vector<T> get_array(const toml::table& user, std::initializer_list<std::str
 
     if (node) {
         if (const auto* arr = node->as_array()) {
-            std::vector<T> result;
+            QList<T> result;
             for (const auto& element : *arr) {
                 if (auto val = element.value<T>()) {
                     result.push_back(*val);

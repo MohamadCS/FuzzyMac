@@ -44,7 +44,7 @@ public:
     void sleep();
 
     void refreshResults();
-    QListWidgetItem* createListItem(const std::string& name, const std::optional<QIcon>& icon = std::nullopt);
+    QListWidgetItem* createListItem(const QString& name, const std::optional<QIcon>& icon = std::nullopt);
     QListWidgetItem* createListItem(QWidget* widget);
     void clearResultList();
 
@@ -52,9 +52,9 @@ public:
 
     bool isWidgetCurrentSelection(QWidget* widget) const;
     const toml::table& getConfig() const;
-    std::string getQuery() const;
-    QIcon getFileIcon(const std::string& path) const;
-    QIcon createIcon(const std::string& path, const QColor& color) const;
+    QString getQuery() const;
+    QIcon getFileIcon(const QString& path) const;
+    QIcon createIcon(const QString& path, const QColor& color) const;
     int getCurrentResultIdx() const;
     int getResultsNum() const;
     void processResults(const ResultsVec&);
@@ -93,5 +93,5 @@ private:
     void createKeybinds();
     void loadConfig();
     void connectEventHandlers();
-    void matchModeShortcut(const std::string&);
+    void matchModeShortcut(const QString&);
 };

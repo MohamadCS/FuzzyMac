@@ -1,6 +1,6 @@
 cask "fuzzymac" do
   version "0.0.1"
-  sha256 "3e169d15af97b5f1a7323688fed6ad87e58c30be68a7b76439bc6dba512da610"
+  sha256 "9915565c07654997fd146086c2ef12d3c710709f4e6e13eee6be0467bab68247"
 
   url "https://github.com/MohamadCS/FuzzyMac/releases/download/v0.0.1-alpha/FuzzyMac.zip"
   name "FuzzyMac"

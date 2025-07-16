@@ -12,7 +12,6 @@
 #include <QVBoxLayout>
 
 #include <optional>
-#include <string>
 #include <toml++/toml.h>
 
 class ModeHandler {
@@ -22,12 +21,12 @@ public:
     virtual void load() = 0;
     virtual void unload() {};
     virtual void enterHandler() = 0;
-    virtual std::string getPrefix() const;
+    virtual QString getPrefix() const;
     virtual void handleQuickLook() = 0;
     virtual std::optional<QIcon> getIcon() const;
     virtual void handleCopy();
     virtual void freeWidgets();
-    virtual std::string handleModeText();
+    virtual QString handleModeText();
     virtual void handleDragAndDrop(QDrag*) const;
     virtual void handlePathCopy();
     virtual void invokeQuery(const QString& query_) = 0;
@@ -49,7 +48,7 @@ public:
     AppModeHandler(MainWindow* win);
     ~AppModeHandler() override;
     void load() override;
-    std::string handleModeText() override;
+    QString handleModeText() override;
 
     void enterHandler() override;
     void handleQuickLook() override;
@@ -58,9 +57,9 @@ public:
 
 private:
     bool math_mode = false;
-    std::vector<std::string> apps;
-    std::map<std::string, Mode> modes;
-    std::vector<std::string> app_dirs;
+    QStringList apps;
+    std::map<QString, Mode> modes;
+    QStringList app_dirs;
     std::vector<FuzzyWidget*> widgets;
     QFileSystemWatcher* app_watcher;
 };
@@ -72,11 +71,11 @@ public:
     void load() override;
     void enterHandler() override;
     void invokeQuery(const QString& query_) override;
-    std::string handleModeText() override;
+    QString handleModeText() override;
     void handleQuickLook() override;
 
 private:
-    std::vector<std::string> entries;
+    QStringList entries;
     std::vector<TextWidget*> widgets;
     bool loaded = false;
 };
@@ -88,21 +87,21 @@ public:
 
     void load() override;
     void enterHandler() override;
-    std::string handleModeText() override;
+    QString handleModeText() override;
     void handleCopy() override;
     void handleDragAndDrop(QDrag*) const override;
     void invokeQuery(const QString& query_) override;
     void handleQuickLook() override;
     std::optional<QIcon> getIcon() const override;
-    std::string getPrefix() const override;
+    QString getPrefix() const override;
     void freeWidgets() override;
 
 private:
     QIcon icon;
     std::vector<FuzzyWidget*> widgets;
-    QFutureWatcher<std::vector<std::string>>* future_watcher;
+    QFutureWatcher<QStringList>* future_watcher;
     QFileSystemWatcher* dir_watcher;
-    std::vector<std::string> paths;
-    std::vector<std::string> entries;
+    QStringList paths;
+    QStringList entries;
     QMutex mutex;
 };

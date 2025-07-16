@@ -12,36 +12,36 @@ FuzzyWidget::FuzzyWidget(MainWindow* win, QWidget* parent)
       win(win) {
 }
 
-TextWidget::TextWidget(MainWindow* win, QWidget* parent, const std::string& value)
+TextWidget::TextWidget(MainWindow* win, QWidget* parent, const QString& value)
     : FuzzyWidget(win, parent) {
-    text = new QLabel(value.c_str());
+    text = new QLabel(value);
 }
 
-std::string TextWidget::getValue() const {
-    return text->text().toStdString();
+QString TextWidget::getValue() const {
+    return text->text();
 }
 
-std::string FileWidget::getPath() const {
+QString FileWidget::getPath() const {
     return path;
 }
 
 void FileWidget::enterHandler() {
     QProcess* process = new QProcess(nullptr);
     QStringList args;
-    args << QString::fromStdString(path);
+    args << path;
     process->start("open", args);
     win->sleep();
 }
 
 std::variant<QListWidgetItem*, FuzzyWidget*> FileWidget::getItem() {
     if (show_icon) {
-        return win->createListItem(fs::path(path).filename(), win->getFileIcon(path));
+        return win->createListItem(QFileInfo(path).fileName(), win->getFileIcon(path));
     } else {
-        return win->createListItem(fs::path(path).filename());
+        return win->createListItem(QFileInfo(path).fileName());
     }
 }
 
-FileWidget::FileWidget(MainWindow* win, QWidget* parent, const std::string& path, bool show_icon)
+FileWidget::FileWidget(MainWindow* win, QWidget* parent, const QString& path, bool show_icon)
     : FuzzyWidget(win, parent),
       path(path),
       show_icon(show_icon) {
@@ -97,7 +97,7 @@ void CalculatorWidget::enterHandler() {
     win->sleep();
 };
 
-ModeWidget::ModeWidget(MainWindow* win, QWidget* parent, const std::string& value, Mode mode,
+ModeWidget::ModeWidget(MainWindow* win, QWidget* parent, const QString& value, Mode mode,
                        const std::optional<QIcon>& icon)
     : FuzzyWidget(win, parent),
       name(value),
