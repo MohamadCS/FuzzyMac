@@ -1,5 +1,9 @@
 #import <Cocoa/Cocoa.h>
 
+#include <QDebug>
+#include <QPointer>
+#include <QString>
+#include <QVBoxLayout>
 #include <QWidget>
 #include <algorithm>
 #include <objc/objc-runtime.h>
@@ -10,7 +14,6 @@ extern "C" void deactivateApp() {
 
   [NSApp hide:nil]; // This returns focus to the previously active app
 }
-
 
 extern "C" void centerWindow(QWidget *widget) {
   @autoreleasepool {

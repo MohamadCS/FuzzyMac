@@ -7,6 +7,26 @@
 #include <iostream>
 #include <wordexp.h>
 
+QString convertToReadableFileSize(qint64 size) {
+    constexpr qint64 KB = 1024;
+    constexpr qint64 MB = 1024 * KB;
+    constexpr qint64 GB = 1024 * MB;
+    constexpr qint64 TB = 1024 * GB;
+
+    if (size < KB) {
+        return QString::number(size) + " B";
+    } else if (size < MB) {
+        return QString::number(size / double(KB), 'f', 2) + " KB";
+    } else if (size < GB) {
+        return QString::number(size / double(MB), 'f', 2) + " MB";
+    } else if (size < TB) {
+        return QString::number(size / double(GB), 'f', 2) + " GB";
+
+    } else {
+        return QString::number(size / double(TB), 'f', 2) + " TB";
+    }
+}
+
 void expandPaths(QStringList& paths) {
     for (auto& input : paths) {
         wordexp_t p;
