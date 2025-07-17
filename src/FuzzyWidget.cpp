@@ -2,6 +2,7 @@
 #include "FuzzyMac/MainWindow.hpp"
 #include "FuzzyMac/ParseConfig.hpp"
 
+
 #include <QApplication>
 #include <QClipboard>
 #include <unistd.h>
@@ -40,6 +41,8 @@ std::variant<QListWidgetItem*, FuzzyWidget*> FileWidget::getItem() {
         return win->createListItem(QFileInfo(path).fileName());
     }
 }
+
+
 
 FileWidget::FileWidget(MainWindow* win, QWidget* parent, const QString& path, bool show_icon)
     : FuzzyWidget(win, parent),
