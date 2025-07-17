@@ -71,7 +71,6 @@ class CalculatorWidget : public FuzzyWidget {
 
 public:
     CalculatorWidget(MainWindow* win, QWidget* parent);
-    MainWindow* win;
     QLabel* title_label;
     QLabel* answer_label;
 };
