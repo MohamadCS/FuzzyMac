@@ -54,8 +54,8 @@ void MainWindow::setupLayout() {
     mode_label->setAlignment(Qt::AlignCenter | Qt::AlignVCenter);
 
     results_list->setDragEnabled(true);
-    results_list->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    results_list->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    // results_list->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    // results_list->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     results_list->setSelectionMode(QAbstractItemView::SingleSelection);
 
     central->setLayout(layout);
