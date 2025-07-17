@@ -1,6 +1,7 @@
 #include "FuzzyMac/ModeHandler.hpp"
 #include "FuzzyMac/Algorithms.hpp"
 #include "FuzzyMac/FuzzyWidget.hpp"
+#include "FuzzyMac/InfoPanel.hpp"
 #include "FuzzyMac/MainWindow.hpp"
 #include "FuzzyMac/ParseConfig.hpp"
 #include "FuzzyMac/Utils.hpp"
@@ -276,7 +277,6 @@ void FileModeHandler::load() {
 
     paths.clear();
     entries.clear();
-
     for (auto& p : get_array<std::string>(win->getConfig(), {"mode", "files", "dirs"})) {
         paths.push_back(QString::fromStdString(p));
     }
@@ -420,6 +420,16 @@ void FileModeHandler::handleDragAndDrop(QDrag* drag) const {
 
 QString FileModeHandler::getPrefix() const {
     return " ";
+}
+
+InfoPanelContent* FileModeHandler::getInfoPanelContent() const {
+    if (win->getResultsNum() == 0) {
+        return nullptr;
+    }
+
+    int i = std::max(win->getCurrentResultIdx(), 0);
+
+    return new FileInfoPanel(main_widget, win, dynamic_cast<FileWidget*>(widgets[i])->getPath());
 }
 
 /***************************/

@@ -1,4 +1,5 @@
 #include "FuzzyMac/MainWindow.hpp"
+#include "FuzzyMac/InfoPanel.hpp"
 #include "FuzzyMac/MacGlobShortcuts.hpp"
 #include "FuzzyMac/ModeHandler.hpp"
 #include "FuzzyMac/NativeMacHandlers.hpp"
@@ -38,24 +39,34 @@ void MainWindow::createWidgets() {
     query_edit = new QueryEdit(central);
     results_list = new ResultsPanel(central);
     mode_label = new QLabel(central);
+    info_panel = new InfoPanel(central, this);
+
     // timer->setSingleShot(true);
 }
 
 void MainWindow::setupLayout() {
     setWindowFlag(Qt::WindowStaysOnTopHint);
-    resize(600, 400);
+    resize(700, 500);
     QApplication::setQuitOnLastWindowClosed(false);
     makeWindowFloating(this);
 
+    QHBoxLayout* content_layout = new QHBoxLayout(central);
+
     layout->addWidget(query_edit, 0);
     layout->addWidget(mode_label, 0);
-    layout->addWidget(results_list, 0);
+    info_panel->setMinimumWidth(400);
+    results_list->setMinimumWidth(250);
+    content_layout->addWidget(results_list, 0);
+    content_layout->addWidget(info_panel, 0);
+    content_layout->setSpacing(0);
+    layout->addLayout(content_layout);
+
     layout->setSpacing(0);
     mode_label->setAlignment(Qt::AlignCenter | Qt::AlignVCenter);
 
     results_list->setDragEnabled(true);
     // results_list->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    // results_list->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    results_list->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     results_list->setSelectionMode(QAbstractItemView::SingleSelection);
 
     central->setLayout(layout);
@@ -69,6 +80,7 @@ void MainWindow::nextItem() {
     if (next != results_list->currentRow()) {
         results_list->setCurrentRow(next);
     }
+    setInfoPanelContent(mode_handler[mode]->getInfoPanelContent());
 }
 
 void MainWindow::openItem() {
@@ -85,6 +97,8 @@ void MainWindow::prevItem() {
     if (prev != results_list->currentRow()) {
         results_list->setCurrentRow(prev);
     }
+
+    setInfoPanelContent(mode_handler[mode]->getInfoPanelContent());
 }
 
 void MainWindow::wakeup() {
@@ -179,6 +193,7 @@ void MainWindow::processResults(const ResultsVec& results) {
     if (results_list->count()) {
         results_list->setCurrentRow(0);
     }
+    setInfoPanelContent(mode_handler[mode]->getInfoPanelContent());
 }
 
 void MainWindow::connectEventHandlers() {
@@ -188,6 +203,9 @@ void MainWindow::connectEventHandlers() {
     connect(
         window()->windowHandle(), &QWindow::screenChanged, this, [this](QScreen* newScreen) { centerWindow(this); });
     connect(results_list, &QListWidget::itemDoubleClicked, this, [this](QListWidgetItem* item) { openItem(); });
+    connect(results_list, &QListWidget::itemClicked, this, [this](QListWidgetItem* item) {
+        setInfoPanelContent(mode_handler[mode]->getInfoPanelContent());
+    });
 
 #ifndef CLI_TOOL
     QObject::connect(qApp, &QGuiApplication::applicationStateChanged, this, &MainWindow::onApplicationStateChanged);
@@ -388,12 +406,14 @@ void MainWindow::loadStyle() {
             background: %2;
             font-weight: 500;
             font-family: %3;
-            border-radius: 10px;
+            padding: 2px;
+            border-bottom: 2px solid %4;
         }
     )")
                                   .arg(get<std::string>(config, {"colors", "mode_label", "text"}))
                                   .arg(get<std::string>(config, {"colors", "mode_label", "background"}))
-                                  .arg(get<std::string>(config, {"font"})));
+                                  .arg(get<std::string>(config, {"font"}))
+                                  .arg(get<std::string>(config, {"colors", "inner_border_color"})));
 }
 
 void MainWindow::changeMode(Mode new_mode) {
@@ -425,4 +445,15 @@ void MainWindow::changeMode(Mode new_mode) {
         anim->setEasingCurve(QEasingCurve::OutBack);
         anim->start(QAbstractAnimation::DeleteWhenStopped);
     }
+}
+
+void MainWindow::setInfoPanelContent(InfoPanelContent* content) {
+    info_panel->setContent(content);
+
+    if (content == nullptr) {
+        info_panel->hide();
+        return;
+    }
+
+    info_panel->show();
 }

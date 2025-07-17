@@ -24,6 +24,8 @@ namespace fs = std::filesystem;
 
 class ModeHandler;
 class FuzzyWidget;
+class InfoPanel;
+class InfoPanelContent;
 
 using ResultsVec = std::vector<FuzzyWidget*>;
 
@@ -55,6 +57,7 @@ public:
     QString getQuery() const;
     QIcon getFileIcon(const QString& path) const;
     QIcon createIcon(const QString& path, const QColor& color) const;
+    void setInfoPanelContent(InfoPanelContent* content);
     int getCurrentResultIdx() const;
     int getResultsNum() const;
     void processResults(const ResultsVec&);
@@ -80,6 +83,7 @@ private:
     QLabel* mode_label;
     ResultsPanel* results_list;
     QVBoxLayout* layout;
+    InfoPanel* info_panel;
     QFileIconProvider icon_provider;
     QFileSystemWatcher* config_file_watcher;
     toml::table config;
