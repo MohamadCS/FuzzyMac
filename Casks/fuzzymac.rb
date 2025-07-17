@@ -6,6 +6,7 @@ cask "fuzzymac" do
   name "FuzzyMac"
   desc "GUI fuzzy finder for macOS"
   homepage "https://github.com/MohamadCS/FuzzyMac"
+  depends_on formula: "qt@6"
 
   app "FuzzyMac.app"
 

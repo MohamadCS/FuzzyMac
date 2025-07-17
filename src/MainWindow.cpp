@@ -88,14 +88,19 @@ void MainWindow::prevItem() {
 }
 
 void MainWindow::wakeup() {
-    setWindowOpacity(0.0);
-    show();
 
-    QPropertyAnimation* anim = new QPropertyAnimation(this, "windowOpacity", this);
-    anim->setDuration(150);
-    anim->setStartValue(0.0);
-    anim->setEndValue(1.0);
-    anim->start();
+    if (get<bool>(config, {"animations"})) {
+        setWindowOpacity(0.0);
+        show();
+        QPropertyAnimation* anim = new QPropertyAnimation(this, "windowOpacity", this);
+        anim->setDuration(150);
+        anim->setStartValue(0.0);
+        anim->setEndValue(1.0);
+        anim->start();
+    } else {
+        setWindowOpacity(1);
+        show();
+    }
 
     raise();
     activateWindow();
@@ -105,16 +110,22 @@ void MainWindow::wakeup() {
 }
 
 void MainWindow::sleep() {
-    QPropertyAnimation* anim = new QPropertyAnimation(this, "windowOpacity", this);
-    anim->setDuration(150);
-    anim->setStartValue(1.0);
-    anim->setEndValue(0.0);
-    anim->start();
 
-    connect(anim, &QPropertyAnimation::finished, this, [this]() {
+    auto sleep_ = [this]() {
         deactivateApp();
         hide();
-    });
+    };
+
+    if (get<bool>(config, {"animations"})) {
+        QPropertyAnimation* anim = new QPropertyAnimation(this, "windowOpacity", this);
+        anim->setDuration(150);
+        anim->setStartValue(1.0);
+        anim->setEndValue(0.0);
+        anim->start();
+        connect(anim, &QPropertyAnimation::finished, this, sleep_);
+    } else {
+        sleep_();
+    }
 }
 
 void MainWindow::matchModeShortcut(const QString& text) {
@@ -164,6 +175,10 @@ void MainWindow::processResults(const ResultsVec& results) {
         }
     }
     qDebug() << "Finished processing results";
+
+    if (results_list->count()) {
+        results_list->setCurrentRow(0);
+    }
 }
 
 void MainWindow::connectEventHandlers() {
@@ -396,15 +411,18 @@ void MainWindow::changeMode(Mode new_mode) {
         return;
     }
 
-    QRect original = geometry();
-    int dx = original.width() * 0.05;
-    int dy = original.height() * 0.05;
+    if (get<bool>(config, {"animations"})) {
+        QRect original = geometry();
+        int dx = original.width() * 0.05;
+        int dy = original.height() * 0.05;
 
-    QRect enlarged = QRect(original.x() - dx / 2, original.y() - dy / 2, original.width() + dx, original.height() + dy);
+        QRect enlarged =
+            QRect(original.x() - dx / 2, original.y() - dy / 2, original.width() + dx, original.height() + dy);
 
-    QPropertyAnimation* anim = new QPropertyAnimation(this, "geometry");
-    anim->setDuration(300);
-    anim->setKeyValues({{0.0, original}, {0.5, enlarged}, {1.0, original}});
-    anim->setEasingCurve(QEasingCurve::OutBack);
-    anim->start(QAbstractAnimation::DeleteWhenStopped);
+        QPropertyAnimation* anim = new QPropertyAnimation(this, "geometry");
+        anim->setDuration(300);
+        anim->setKeyValues({{0.0, original}, {0.5, enlarged}, {1.0, original}});
+        anim->setEasingCurve(QEasingCurve::OutBack);
+        anim->start(QAbstractAnimation::DeleteWhenStopped);
+    }
 }

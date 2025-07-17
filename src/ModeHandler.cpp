@@ -273,6 +273,10 @@ static void loadDirs(const QString& d, QStringList& paths) {
 }
 
 void FileModeHandler::load() {
+
+    paths.clear();
+    entries.clear();
+
     for (auto& p : get_array<std::string>(win->getConfig(), {"mode", "files", "dirs"})) {
         paths.push_back(QString::fromStdString(p));
     }
@@ -282,7 +286,6 @@ void FileModeHandler::load() {
         ":/res/icons/search_files_icon.svg",
         QColor(QString::fromStdString(get<std::string>(win->getConfig(), {"colors", "results_list", "text"}))));
 
-    entries.clear();
     for (auto& dir : paths) {
         loadDirs(dir, entries);
     }
