@@ -45,3 +45,12 @@ QString ModeHandler::getPrefix() const {
 }
 
 
+
+InfoPanelContent* ModeHandler::getInfoPanelContent() const {
+    return nullptr;
+}
+
+
+ModeHandler::~ModeHandler() {
+    delete main_widget;
+};

@@ -1,7 +1,6 @@
 #include "FuzzyMac/AppModeHandler.hpp"
 #include "FuzzyMac/Algorithms.hpp"
 #include "FuzzyMac/FuzzyWidget.hpp"
-#include "FuzzyMac/ParseConfig.hpp"
 #include "FuzzyMac/Utils.hpp"
 
 #include <QDrag>
@@ -43,7 +42,7 @@ void AppModeHandler::load() {
     freeWidgets();
 
     QStringList paths;
-    for (const auto& p : get_array<std::string>(win->getConfig(), {"mode", "apps", "dirs"})) {
+    for (const auto& p : win->getConfigManager().getList<std::string>({"mode", "apps", "dirs"})) {
         paths.push_back(QString::fromStdString(p));
     }
     expandPaths(paths);
@@ -75,7 +74,7 @@ void AppModeHandler::load() {
     app_watcher->addPaths(paths_list);
 
     paths = {};
-    for (const auto& p : get_array<std::string>(win->getConfig(), {"mode", "apps", "apps"})) {
+    for (const auto& p : win->getConfigManager().getList<std::string>( {"mode", "apps", "apps"})) {
         paths.push_back(QString::fromStdString(p.c_str()));
     }
     expandPaths(paths);
@@ -84,7 +83,7 @@ void AppModeHandler::load() {
     for (const auto& path : paths) {
         apps.push_back(path);
         widgets.push_back(
-            new FileWidget(win, main_widget, path, get<bool>(win->getConfig(), {"mode", "apps", "show_icons"})));
+            new FileWidget(win, main_widget, path, win->getConfigManager().get<bool>({"mode", "apps", "show_icons"})));
     }
 
     QStringList keys;
@@ -139,7 +138,7 @@ void AppModeHandler::invokeQuery(const QString& query) {
 
     for (const auto& path : search_results) {
         widgets.push_back(
-            new FileWidget(win, main_widget, path, get<bool>(win->getConfig(), {"mode", "apps", "show_icons"})));
+            new FileWidget(win, main_widget, path, win->getConfigManager().get<bool>({"mode", "apps", "show_icons"})));
     }
 
     QStringList keys;

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "ConfigManager.hpp"
+#include "FuzzyMac/ConfigManager.hpp"
 #include "FuzzyMac/QueryEdit.hpp"
 #include "FuzzyMac/ResultsPanel.hpp"
 #include "toml++/toml.h"
@@ -50,8 +52,7 @@ public:
 
     void changeMode(Mode mode);
 
-    bool isWidgetCurrentSelection(QWidget* widget) const;
-    const toml::table& getConfig() const;
+    const ConfigManager& getConfigManager() const;
     QString getQuery() const;
     QIcon getFileIcon(const QString& path) const;
     QIcon createIcon(const QString& path, const QColor& color) const;
@@ -86,19 +87,15 @@ private:
     ResultsPanel* results_list;
     InfoPanel* info_panel;
 
-
     // Helper QStructs, Life time is managed by MainWindow
     QFileIconProvider icon_provider;
-    QFileSystemWatcher* config_file_watcher;
 
     // Mode handling
     ModeHandlerFactory* mode_factory;
     std::map<Mode, std::unique_ptr<ModeHandler>> mode_handler;
     Mode mode;
 
-    // Config
-    toml::table config;
-
+    ConfigManager* config_manager;
 
     void loadStyle();
     void createWidgets();

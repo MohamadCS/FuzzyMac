@@ -1,7 +1,5 @@
 #include "FuzzyMac/FuzzyWidget.hpp"
 #include "FuzzyMac/MainWindow.hpp"
-#include "FuzzyMac/ParseConfig.hpp"
-
 
 #include <QApplication>
 #include <QClipboard>
@@ -42,8 +40,6 @@ std::variant<QListWidgetItem*, FuzzyWidget*> FileWidget::getItem() {
     }
 }
 
-
-
 FileWidget::FileWidget(MainWindow* win, QWidget* parent, const QString& path, bool show_icon)
     : FuzzyWidget(win, parent),
       path(path),
@@ -54,7 +50,7 @@ CalculatorWidget::CalculatorWidget(MainWindow* win, QWidget* parent)
     : FuzzyWidget(win, parent) {
     title_label = new QLabel(this);
     answer_label = new QLabel(this);
-    const auto& config = win->getConfig();
+    const auto& config = win->getConfigManager();
     title_label->setAlignment(Qt::AlignVCenter | Qt::AlignCenter);
     title_label->setStyleSheet(QString(R"(
         QLabel {
@@ -64,8 +60,8 @@ CalculatorWidget::CalculatorWidget(MainWindow* win, QWidget* parent)
             font-size: 20px;
         }
     )")
-                                   .arg(get<std::string>(config, {"colors", "mode_label", "text"}))
-                                   .arg(get<std::string>(config, {"font"})));
+                                   .arg(config.get<std::string>({"colors", "mode_label", "text"}))
+                                   .arg(config.get<std::string>({"font"})));
 
     answer_label->setStyleSheet(QString(R"(
         QLabel {
@@ -75,8 +71,8 @@ CalculatorWidget::CalculatorWidget(MainWindow* win, QWidget* parent)
             font-size: 30px;
         }
     )")
-                                    .arg(get<std::string>(config, {"colors", "mode_label", "text"}))
-                                    .arg(get<std::string>(config, {"font"})));
+                                    .arg(config.get<std::string>({"colors", "mode_label", "text"}))
+                                    .arg(config.get<std::string>({"font"})));
 
     title_label->setAlignment(Qt::AlignVCenter | Qt::AlignCenter);
     answer_label->setAlignment(Qt::AlignVCenter | Qt::AlignCenter);

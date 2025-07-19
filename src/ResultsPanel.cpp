@@ -1,6 +1,5 @@
 #include "FuzzyMac/ResultsPanel.hpp"
 #include "FuzzyMac/ModeHandler.hpp"
-#include "FuzzyMac/ParseConfig.hpp"
 
 #include <QDrag>
 #include <QMimeData>
@@ -16,7 +15,7 @@ void ResultsPanel::startDrag(Qt::DropActions supportedActions) {
 
 void ResultsPanel::loadConfig() {
     MainWindow* win = qobject_cast<MainWindow*>(window());
-    auto& config = win->getConfig();
+    auto& config = win->getConfigManager();
     setIconSize(QSize(40, 40));
 
     QPalette p = palette();
@@ -68,11 +67,11 @@ void ResultsPanel::loadConfig() {
                 background: transparent;
             }
             )")
-                      .arg(get<std::string>(config, {"colors", "results_list", "selection_background"}))
-                      .arg(get<std::string>(config, {"colors", "results_list", "selection"}))
-                      .arg(get<std::string>(config, {"colors", "results_list", "text"}))
-                      .arg(get<std::string>(config, {"colors", "results_list", "background"}))
-                      .arg(get<std::string>(config, {"font"}))
-                      .arg(get<std::string>(config, {"colors", "results_list", "scrollbar_color"}))
-                      .arg(get<std::string>(config, {"colors", "results_list", "scrollbar_hold_color"})));
+                      .arg(config.get<std::string>({"colors", "results_list", "selection_background"}))
+                      .arg(config.get<std::string>({"colors", "results_list", "selection"}))
+                      .arg(config.get<std::string>({"colors", "results_list", "text"}))
+                      .arg(config.get<std::string>({"colors", "results_list", "background"}))
+                      .arg(config.get<std::string>({"font"}))
+                      .arg(config.get<std::string>({"colors", "results_list", "scrollbar_color"}))
+                      .arg(config.get<std::string>({"colors", "results_list", "scrollbar_hold_color"})));
 }

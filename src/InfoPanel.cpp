@@ -1,5 +1,4 @@
 #include "FuzzyMac/InfoPanel.hpp"
-#include "FuzzyMac/ParseConfig.hpp"
 
 #include <QStyle>
 
@@ -9,10 +8,10 @@ InfoPanel::InfoPanel(QWidget* parent, MainWindow* win)
       content(nullptr) {
     layout = new QHBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
-    autoFillBackground();
 }
 
 void InfoPanel::setContent(InfoPanelContent* new_content) {
+
     if (content) {
         layout->removeWidget(content);
         content->deleteLater();

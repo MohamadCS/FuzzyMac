@@ -41,7 +41,7 @@ static void loadDirs(const QString& d, QStringList& paths) {
 
 void FileModeHandler::load() {
 
-    if(future_watcher->isRunning()) {
+    if (future_watcher->isRunning()) {
         future_watcher->cancel();
         future_watcher->waitForFinished();
     }
@@ -50,14 +50,15 @@ void FileModeHandler::load() {
     entries.clear();
     freeWidgets();
 
-    for (auto& p : get_array<std::string>(win->getConfig(), {"mode", "files", "dirs"})) {
+    auto& cfg = win->getConfigManager();
+
+    for (auto& p : cfg.getList<std::string>({"mode", "files", "dirs"})) {
         paths.push_back(QString::fromStdString(p));
     }
     expandPaths(paths);
 
-    icon = win->createIcon(
-        ":/res/icons/search_files_icon.svg",
-        QColor(QString::fromStdString(get<std::string>(win->getConfig(), {"colors", "results_list", "text"}))));
+    icon = win->createIcon(":/res/icons/search_files_icon.svg",
+                           QColor(QString::fromStdString(cfg.get<std::string>({"colors", "results_list", "text"}))));
 
     for (auto& dir : paths) {
         loadDirs(dir, entries);
@@ -105,8 +106,8 @@ FileModeHandler::FileModeHandler(MainWindow* win)
                 break;
             }
 
-            widgets.push_back(
-                new FileWidget(win, main_widget, file, get<bool>(win->getConfig(), {"mode", "files", "show_icons"})));
+            widgets.push_back(new FileWidget(
+                win, main_widget, file, win->getConfigManager().get<bool>({"mode", "files", "show_icons"})));
         }
 
         win->processResults(widgets);
@@ -208,6 +209,8 @@ FileInfoPanel::FileInfoPanel(QWidget* parent, MainWindow* win, QString path)
 
     image_watcher = new QFutureWatcher<QImage>(this);
 
+    auto& cfg = win->getConfigManager();
+
     QString sheet = QString(R"(
             color : %1;
             background: %2;
@@ -217,9 +220,9 @@ FileInfoPanel::FileInfoPanel(QWidget* parent, MainWindow* win, QString path)
             padding: 5px;
             border: red;
     )")
-                        .arg(get<std::string>(win->getConfig(), {"colors", "mode_label", "text"}))
-                        .arg(get<std::string>(win->getConfig(), {"colors", "mode_label", "background"}))
-                        .arg(get<std::string>(win->getConfig(), {"font"}));
+                        .arg(cfg.get<std::string>({"colors", "mode_label", "text"}))
+                        .arg(cfg.get<std::string>({"colors", "mode_label", "background"}))
+                        .arg(cfg.get<std::string>({"font"}));
 
     QFileInfo info{path};
 
@@ -244,7 +247,14 @@ FileInfoPanel::FileInfoPanel(QWidget* parent, MainWindow* win, QString path)
     layout->setContentsMargins(0, 0, 0, 0);
     layout->addWidget(thumb, 0);
 
-    auto future = QtConcurrent::run([this, path]() -> QImage { return getThumbnailImage(path, 128, 128); });
+    auto future = QtConcurrent::run([this, path]() -> QImage {
+        auto image = getThumbnailImage(path, 128, 128);
+        if (image.isNull()) {
+            return this->win->getFileIcon(path).pixmap(128, 128).toImage();
+        }
+        return image;
+    });
+
     image_watcher->setFuture(future);
 
     QWidget* center = new QWidget(this);
@@ -262,19 +272,18 @@ FileInfoPanel::FileInfoPanel(QWidget* parent, MainWindow* win, QString path)
 
         data_label->setWordWrap(true);
         data_label->setStyleSheet(sheet);
-        data_label->setAlignment(Qt::AlignLeft);
+        data_label->setAlignment(Qt::AlignRight);
 
         name_label->setWordWrap(true);
         name_label->setStyleSheet(sheet);
 
         label_layout->addWidget(name_label);
-        label_layout->addWidget(data_label);
+        label_layout->addWidget(data_label, 1);
 
         QFrame* line = new QFrame(this);
         line->setFrameShape(QFrame::HLine);
         line->setFrameShadow(QFrame::Plain);
-        line->setStyleSheet(
-            QString(R"( color : %1;)").arg(get<std::string>(win->getConfig(), {"colors", "inner_border_color"})));
+        line->setStyleSheet(QString(R"( color : %1;)").arg(cfg.get<std::string>({"colors", "inner_border_color"})));
 
         layout->addLayout(label_layout);
         layout->addWidget(line);
@@ -288,7 +297,7 @@ FileInfoPanel::FileInfoPanel(QWidget* parent, MainWindow* win, QString path)
             background-color: %2;
             border-left: 2 solid %3;
     )")
-                      .arg(get<std::string>(win->getConfig(), {"colors", "mode_label", "background"}))
-                      .arg(get<std::string>(win->getConfig(), {"colors", "mode_label", "background"}))
-                      .arg(get<std::string>(win->getConfig(), {"colors", "inner_border_color"})));
+                      .arg(cfg.get<std::string>({"colors", "mode_label", "background"}))
+                      .arg(cfg.get<std::string>({"colors", "mode_label", "background"}))
+                      .arg(cfg.get<std::string>({"colors", "inner_border_color"})));
 }
