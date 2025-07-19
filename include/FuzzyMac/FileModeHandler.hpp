@@ -3,7 +3,6 @@
 #include "FuzzyMac/ModeHandler.hpp"
 #include "FuzzyMac/InfoPanel.hpp"
 #include "FuzzyMac/MainWindow.hpp"
-#include "FuzzyMac/ParseConfig.hpp"
 
 #include <QDrag>
 #include <QFileIconProvider>

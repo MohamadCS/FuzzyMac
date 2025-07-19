@@ -43,9 +43,6 @@ set_source_files_properties(NativeMacHandlers.mm PROPERTIES
 )
 
 
-
-
-
 add_executable(FuzzyMac ${SOURCES} ${HEADERS} assets.qrc)
 
 target_compile_definitions(FuzzyMac PRIVATE)

@@ -1,6 +1,5 @@
 #include "FuzzyMac/QueryEdit.hpp"
 #include "FuzzyMac/MainWindow.hpp"
-#include "FuzzyMac/ParseConfig.hpp"
 
 #include <QApplication>
 
@@ -27,7 +26,7 @@ void QueryEdit::keyPressEvent(QKeyEvent* event) {
 
 void QueryEdit::loadConfig() {
     MainWindow* win = qobject_cast<MainWindow*>(window());
-    const auto& config = win->getConfig();
+    const auto& config = win->getConfigManager();
     setStyleSheet(QString(R"(
                                     QLineEdit {
                                         selection-background-color : %1;
@@ -39,9 +38,9 @@ void QueryEdit::loadConfig() {
                                         font-size: 30px;
                                         font-family: %5;
                                     })")
-                      .arg(get<std::string>(config, {"colors", "query_input", "selection_background"}))
-                      .arg(get<std::string>(config, {"colors", "query_input", "selection"}))
-                      .arg(get<std::string>(config, {"colors", "query_input", "text"}))
-                      .arg(get<std::string>(config, {"colors", "query_input", "background"}))
-                      .arg(get<std::string>(config, {"font"})));
+                      .arg(config.get<std::string>({"colors", "query_input", "selection_background"}))
+                      .arg(config.get<std::string>({"colors", "query_input", "selection"}))
+                      .arg(config.get<std::string>({"colors", "query_input", "text"}))
+                      .arg(config.get<std::string>({"colors", "query_input", "background"}))
+                      .arg(config.get<std::string>({"font"})));
 }

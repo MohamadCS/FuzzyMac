@@ -1,52 +1,44 @@
 #pragma once
 
 #include <toml++/toml.h>
+#include <QObject>
 
-#include <QString>
-
-#include <QList>
 #include <initializer_list>
 #include <string>
 
+#include <QFileSystemWatcher>
+#include <QList>
+
 // Generic get with fallback from default
 
-const toml::table default_config = toml::parse(R"toml(
-font = "JetBrainsMono Nerd Font"
+class ConfigManager : public QObject {
+    Q_OBJECT
 
-[colors.query_input]
-selection = "#cecacd"
-selection_background = "#cecacd"
-text = "#575279"
-background = "#faf4ed"
+public:
+    ConfigManager();
 
-[colors.results_list]
-selection = "#575279"
-selection_background = "#dfdad9"
-text = "#575279"
-background = "#faf4ed"
+    void load();
 
+    template <typename T>
+        T get(std::initializer_list<std::string> keys, T fallback = T{}) const;
 
-[mode.apps]
+    template <typename T>
+        QList<T> getList(std::initializer_list<std::string> keys, QList<T> fallback = {}) const;
 
-dirs = [ 
-  "/Applications/",
-  "/System/Applications",
-  "/Applications/Utilities/",
-  "/System/Applications/Utilities",
-]
-show_icons = true
+signals:
+    void configChange();
 
-apps = ["/System/Library/CoreServices/Finder.app"]
+private:
+    toml::table tbl;
+    QString config_path;
+    QFileSystemWatcher watcher;
 
-[mode.files]
-show_icons = true
-
-dirs = ["$HOME/Library/Mobile Documents/com~apple~CloudDocs/"]
-)toml");
+    static inline toml::table default_config ;
+};
 
 template <typename T>
-T get(const toml::table& user, std::initializer_list<std::string> keys, T fallback = T{}) {
-    const toml::node* node = &user;
+T ConfigManager::get(std::initializer_list<std::string> keys, T fallback) const {
+    const toml::node* node = &tbl;
     for (const auto& key : keys) {
         if (auto tbl = node->as_table()) {
             node = tbl->get(key);
@@ -60,7 +52,7 @@ T get(const toml::table& user, std::initializer_list<std::string> keys, T fallba
 
     // If not found in user, look in default
     if (!node) {
-        node = &::default_config;
+        node = &default_config;
         for (const auto& key : keys) {
             if (auto tbl = node->as_table()) {
                 node = tbl->get(key);
@@ -83,8 +75,8 @@ T get(const toml::table& user, std::initializer_list<std::string> keys, T fallba
 }
 
 template <typename T>
-QList<T> get_array(const toml::table& user, std::initializer_list<std::string> keys, QList<T> fallback = {}) {
-    const toml::node* node = &user;
+QList<T> ConfigManager::getList(std::initializer_list<std::string> keys, QList<T> fallback) const {
+    const toml::node* node = &tbl;
     for (const auto& key : keys) {
         if (auto tbl = node->as_table()) {
             node = tbl->get(key);
@@ -98,7 +90,7 @@ QList<T> get_array(const toml::table& user, std::initializer_list<std::string> k
 
     // If not found in user, look in default
     if (!node) {
-        node = &::default_config;
+        node = &default_config;
         for (const auto& key : keys) {
             if (auto tbl = node->as_table()) {
                 node = tbl->get(key);

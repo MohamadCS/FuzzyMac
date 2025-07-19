@@ -24,19 +24,14 @@ public:
     virtual QString getPrefix() const;
     virtual void handleQuickLook() = 0;
     virtual std::optional<QIcon> getIcon() const;
-    virtual InfoPanelContent* getInfoPanelContent() const {
-        return nullptr;
-    }
-
+    virtual InfoPanelContent* getInfoPanelContent() const;
     virtual void handleCopy();
     virtual void freeWidgets();
     virtual QString handleModeText();
     virtual void handleDragAndDrop(QDrag*) const;
     virtual void handlePathCopy();
     virtual void invokeQuery(const QString& query_) = 0;
-    virtual ~ModeHandler() {
-        delete main_widget;
-    };
+    virtual ~ModeHandler();
 
 protected:
     MainWindow* win;

@@ -1,15 +1,14 @@
 #include "FuzzyMac/MainWindow.hpp"
 #include "FuzzyMac/Animations.hpp"
+#include "FuzzyMac/ConfigManager.hpp"
 #include "FuzzyMac/FuzzyWidget.hpp"
 #include "FuzzyMac/InfoPanel.hpp"
 #include "FuzzyMac/MacGlobShortcuts.hpp"
 #include "FuzzyMac/ModeHandler.hpp"
 #include "FuzzyMac/ModeHandlerFactory.hpp"
 #include "FuzzyMac/NativeMacHandlers.hpp"
-#include "FuzzyMac/ParseConfig.hpp"
 #include "FuzzyMac/QueryEdit.hpp"
 #include "FuzzyMac/ResultsPanel.hpp"
-#include "FuzzyMac/Utils.hpp"
 
 #include "toml++/impl/parser.hpp"
 
@@ -27,14 +26,11 @@
 #include <QStaticText>
 #include <QWindow>
 #include <QtConcurrent>
-#include <filesystem>
 #include <memory>
 #include <variant>
 
-namespace fs = std::filesystem;
-
-const toml::table& MainWindow::getConfig() const {
-    return config;
+const ConfigManager& MainWindow::getConfigManager() const {
+    return *config_manager;
 }
 
 void MainWindow::createWidgets() {
@@ -70,7 +66,6 @@ void MainWindow::setupLayout() {
     mode_label->setAlignment(Qt::AlignCenter | Qt::AlignVCenter);
 
     results_list->setDragEnabled(true);
-    // results_list->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     results_list->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     results_list->setSelectionMode(QAbstractItemView::SingleSelection);
 
@@ -108,7 +103,7 @@ void MainWindow::prevItem() {
 
 void MainWindow::wakeup() {
 
-    if (get<bool>(config, {"animations"})) {
+    if (config_manager->get<bool>({"animations"})) {
         obacityAnimator(this, 0.0, 1.0, 150);
     }
 
@@ -127,7 +122,7 @@ void MainWindow::sleep() {
         hide();
     };
 
-    if (get<bool>(config, {"animations"})) {
+    if (config_manager->get<bool>({"animations"})) {
         auto* anim = obacityAnimator(this, 1.0, 0.0, 150);
         connect(anim, &QPropertyAnimation::finished, this, sleep_);
     } else {
@@ -150,29 +145,30 @@ void MainWindow::matchModeShortcut(const QString& text) {
 }
 
 void MainWindow::onTextChange(const QString& text) {
-    qDebug() << "text changed to " << text;
+
+    // try to see if the current text is a prefix defined by some mode
     matchModeShortcut(text);
 
+    // let the mode handle the query
     mode_handler[mode]->invokeQuery(text);
 
-    // replace mode text info if available
+    // replace the mode label text if possible
     if (const auto& mode_text = mode_handler[mode]->handleModeText(); !mode_text.isEmpty()) {
         mode_label->setText(QString("%1").arg(mode_text));
         mode_label->show();
     } else {
         mode_label->hide();
     }
-
-    qDebug() << "Finished On text change";
 }
 
 void MainWindow::processResults(const ResultsVec& results) {
 
-    qDebug() << "Processing Results";
     results_list->clear();
-    qDebug() << results.size();
+
     for (auto obj : results) {
         auto item = obj->getItem();
+
+        // Create list items
         if (std::holds_alternative<QListWidgetItem*>(item)) {
             results_list->addItem(std::get<QListWidgetItem*>(item));
         } else {
@@ -181,11 +177,13 @@ void MainWindow::processResults(const ResultsVec& results) {
             results_list->setItemWidget(item, obj);
         }
     }
-    qDebug() << "Finished processing results";
 
+    // try to select the first entry
     if (results_list->count()) {
         results_list->setCurrentRow(0);
     }
+
+    // update info panel;
     setInfoPanelContent(mode_handler[mode]->getInfoPanelContent());
 }
 
@@ -199,6 +197,8 @@ void MainWindow::connectEventHandlers() {
     connect(results_list, &QListWidget::itemClicked, this, [this](QListWidgetItem* item) {
         setInfoPanelContent(mode_handler[mode]->getInfoPanelContent());
     });
+
+    connect(config_manager, &ConfigManager::configChange, this, [this]() { loadConfig(); });
 
 #ifndef CLI_TOOL
     QObject::connect(qApp, &QGuiApplication::applicationStateChanged, this, &MainWindow::onApplicationStateChanged);
@@ -226,7 +226,7 @@ MainWindow::MainWindow(Mode mode, QWidget* parent)
     : QMainWindow(parent),
       mode(mode),
       mode_factory(new ModeHandlerFactory),
-      config(default_config) {
+      config_manager(new ConfigManager) {
 
     for (auto mode : {Mode::APP, Mode::FILE}) {
         mode_handler[mode] = mode_factory->create(mode, this);
@@ -244,16 +244,11 @@ MainWindow::MainWindow(Mode mode, QWidget* parent)
     } else {
         wakeup();
     }
-
-    fs::path home_path = std::getenv("HOME");
-    fs::path config_path = home_path / ".config" / "FuzzyMac" / "config.toml";
-    config_file_watcher = new QFileSystemWatcher(this);
-    config_file_watcher->addPath(QString::fromStdString(config_path));
-    connect(config_file_watcher, &QFileSystemWatcher::fileChanged, this, [this]() { loadConfig(); });
 }
 
 MainWindow::~MainWindow() {
     delete mode_factory;
+    delete config_manager;
 }
 
 #ifndef CLI_TOOL
@@ -265,35 +260,10 @@ void MainWindow::onApplicationStateChanged(Qt::ApplicationState state) {
 #endif
 
 void MainWindow::loadConfig() {
-
-    QStringList p_{"$HOME/.config/FuzzyMac/config.toml"};
-    expandPaths(p_);
-    QString config_path = p_[0];
-
-    if (QFileInfo(config_path).exists()) {
-        toml::table new_config = config;
-        // reload config file
-        try {
-            new_config = toml::parse_file(config_path.toStdString());
-        } catch (const toml::parse_error& err) {
-            new_config = config;
-        }
-        config = new_config;
-    }
-
-    // reload widgets
     query_edit->loadConfig();
     results_list->loadConfig();
-
     loadStyle();
-
-    int curr_selection = results_list->currentRow();
-    QString curr_query = query_edit->text();
-
-    // reload the mode handler
     mode_handler[mode]->load();
-
-    // simulate a text change in order to update results
     onTextChange(query_edit->text());
 }
 
@@ -374,26 +344,15 @@ QString MainWindow::getQuery() const {
     return query_edit->text();
 }
 
-bool MainWindow::isWidgetCurrentSelection(QWidget* widget) const {
-    QListWidgetItem* selectedItem = results_list->currentItem();
-    if (selectedItem) {
-        QWidget* curr_selection = results_list->itemWidget(selectedItem);
-        if (curr_selection == widget) {
-            return true;
-        }
-    }
-    return false;
-}
-
 void MainWindow::loadStyle() {
-    auto border_size = get<int>(config, {"border_size"});
+    auto border_size = config_manager->get<int>({"border_size"});
     layout->setContentsMargins(border_size, border_size, border_size, border_size);
     setStyleSheet(QString(R"(
         QMainWindow {
             background: %1;
         }
     )")
-                      .arg(get<std::string>(config, {"colors", "background"})));
+                      .arg(config_manager->get<std::string>({"colors", "background"})));
 
     mode_label->setStyleSheet(QString(R"(
         QLabel {
@@ -405,29 +364,26 @@ void MainWindow::loadStyle() {
             border-bottom: 2px solid %4;
         }
     )")
-                                  .arg(get<std::string>(config, {"colors", "mode_label", "text"}))
-                                  .arg(get<std::string>(config, {"colors", "mode_label", "background"}))
-                                  .arg(get<std::string>(config, {"font"}))
-                                  .arg(get<std::string>(config, {"colors", "inner_border_color"})));
+                                  .arg(config_manager->get<std::string>({"colors", "mode_label", "text"}))
+                                  .arg(config_manager->get<std::string>({"colors", "mode_label", "background"}))
+                                  .arg(config_manager->get<std::string>({"font"}))
+                                  .arg(config_manager->get<std::string>({"colors", "inner_border_color"})));
 }
 
 void MainWindow::changeMode(Mode new_mode) {
-    qDebug() << "changing mode";
 
+    // there is no need to change;
     if (new_mode == mode) {
         return;
     }
 
-    // mode_handler[mode]->freeWidgets();
     mode = new_mode;
+
     query_edit->setText("");
     refreshResults();
 
-    if (new_mode == Mode::APP) {
-        return;
-    }
-
-    if (get<bool>(config, {"animations"})) {
+    // animate if transitioning to a new mode
+    if (new_mode != Mode::APP && config_manager->get<bool>({"animations"})) {
         bounceAnimator(this, 0.05, 300);
     }
 }
@@ -435,6 +391,7 @@ void MainWindow::changeMode(Mode new_mode) {
 void MainWindow::setInfoPanelContent(InfoPanelContent* content) {
     info_panel->setContent(content);
 
+    // if there is no info, hide the panel
     if (content == nullptr) {
         info_panel->hide();
         return;
