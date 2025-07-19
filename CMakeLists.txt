@@ -3,6 +3,7 @@ project(FuzzyMac LANGUAGES C CXX OBJCXX)
 
 
 set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_OBJCXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_AUTOMOC ON) 
@@ -36,6 +37,15 @@ set_source_files_properties(${APP_ICON} PROPERTIES
     MACOSX_PACKAGE_LOCATION "Resources"
 )
 
+
+set_source_files_properties(NativeMacHandlers.mm PROPERTIES
+    COMPILE_FLAGS "-fno-objc-arc"
+)
+
+
+
+
+
 add_executable(FuzzyMac ${SOURCES} ${HEADERS} assets.qrc)
 
 target_compile_definitions(FuzzyMac PRIVATE)
@@ -50,6 +60,9 @@ target_link_libraries(FuzzyMac PRIVATE
     "-framework Cocoa"
     "-framework Carbon"
     "-framework AppKit"
+    "-framework QuickLook"
+    "-framework QuickLookThumbnailing"
+    "-framework QuickLookUI"
 )
 
 set_target_properties(FuzzyMac PROPERTIES

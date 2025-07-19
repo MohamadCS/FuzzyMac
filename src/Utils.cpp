@@ -30,7 +30,6 @@ QString convertToReadableFileSize(qint64 size) {
 void expandPaths(QStringList& paths) {
     for (auto& input : paths) {
         wordexp_t p;
-        fs::path expanded_path;
         QString quoted = "\"" + input + "\"";
         if (wordexp(quoted.toUtf8().constData(), &p, 0) == 0) {
             if (p.we_wordc > 0) {
