@@ -1,4 +1,6 @@
 #include "FuzzyMac/MainWindow.hpp"
+#include "FuzzyMac/AppModeHandler.hpp"
+#include "FuzzyMac/FileModeHandler.hpp"
 #include "FuzzyMac/InfoPanel.hpp"
 #include "FuzzyMac/MacGlobShortcuts.hpp"
 #include "FuzzyMac/ModeHandler.hpp"
@@ -218,7 +220,7 @@ void MainWindow::createKeybinds() {
     if (mode != Mode::CLI) {
         registerGlobalHotkey(this);
         new QShortcut(Qt::Key_Escape, this, [this]() { this->sleep(); });
-        disableCmdQ();
+        // disableCmdQ();
     }
 
     new QShortcut(QKeySequence(Qt::MetaModifier | Qt::Key_N), this, SLOT(nextItem()));
