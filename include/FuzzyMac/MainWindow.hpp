@@ -18,11 +18,9 @@
 
 #include <memory>
 #include <optional>
-#include <variant>
-
-namespace fs = std::filesystem;
 
 class ModeHandler;
+class ModeHandlerFactory;
 class FuzzyWidget;
 class InfoPanel;
 class InfoPanelContent;
@@ -78,18 +76,29 @@ private slots:
 
 protected:
 private:
+    // for layout
     QWidget* central;
+    QVBoxLayout* layout;
+
+    // main widgets, life time is managed by MainWindow
     QueryEdit* query_edit;
     QLabel* mode_label;
     ResultsPanel* results_list;
-    QVBoxLayout* layout;
     InfoPanel* info_panel;
+
+
+    // Helper QStructs, Life time is managed by MainWindow
     QFileIconProvider icon_provider;
     QFileSystemWatcher* config_file_watcher;
+
+    // Mode handling
+    ModeHandlerFactory* mode_factory;
+    std::map<Mode, std::unique_ptr<ModeHandler>> mode_handler;
+    Mode mode;
+
+    // Config
     toml::table config;
 
-    Mode mode;
-    std::map<Mode, std::unique_ptr<ModeHandler>> mode_handler;
 
     void loadStyle();
     void createWidgets();
