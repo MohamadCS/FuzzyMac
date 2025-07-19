@@ -1,7 +1,7 @@
 #include "FuzzyMac/AppModeHandler.hpp"
 #include "FuzzyMac/Algorithms.hpp"
-#include "FuzzyMac/ParseConfig.hpp"
 #include "FuzzyMac/FuzzyWidget.hpp"
+#include "FuzzyMac/ParseConfig.hpp"
 #include "FuzzyMac/Utils.hpp"
 
 #include <QDrag>
@@ -20,8 +20,9 @@
 #include <QLabel>
 
 AppModeHandler::AppModeHandler(MainWindow* win)
-    : ModeHandler(win),
-      app_watcher(new QFileSystemWatcher(win)) {
+    : ModeHandler(win) {
+
+    app_watcher = new QFileSystemWatcher(win);
     modes.insert_or_assign("Search files", Mode::FILE);
     QObject::connect(app_watcher, &QFileSystemWatcher::directoryChanged, win, [this, win](const QString& path) {
         load();
@@ -29,9 +30,7 @@ AppModeHandler::AppModeHandler(MainWindow* win)
     });
 }
 
-AppModeHandler::~AppModeHandler() {
-    delete app_watcher;
-};
+AppModeHandler::~AppModeHandler() {};
 
 QString AppModeHandler::handleModeText() {
     return "";
@@ -40,14 +39,14 @@ void AppModeHandler::handleQuickLook() {
 }
 
 void AppModeHandler::load() {
+    apps.clear();
+    freeWidgets();
+
     QStringList paths;
     for (const auto& p : get_array<std::string>(win->getConfig(), {"mode", "apps", "dirs"})) {
         paths.push_back(QString::fromStdString(p));
     }
     expandPaths(paths);
-
-    apps.clear();
-    freeWidgets();
 
     // reload apps in defined app dirs
     for (const auto& path : paths) {
@@ -111,13 +110,12 @@ void AppModeHandler::enterHandler() {
 }
 
 void AppModeHandler::freeWidgets() {
-    delete main_widget;
+    main_widget->deleteLater();
     widgets.clear();
     main_widget = new QWidget();
 }
 
 void AppModeHandler::invokeQuery(const QString& query) {
-    qDebug() << "Invoking App query";
 
     // clear all widgets from memory
     freeWidgets();
@@ -154,6 +152,5 @@ void AppModeHandler::invokeQuery(const QString& query) {
             new ModeWidget(win, main_widget, key, modes[key], win->getModeHandler(modes[key])->getIcon()));
     }
 
-    qDebug() << "Finished invoking";
     win->processResults(widgets);
 }
