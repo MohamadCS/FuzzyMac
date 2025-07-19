@@ -98,6 +98,7 @@ FileModeHandler::FileModeHandler(MainWindow* win)
             return;
         }
 
+        freeWidgets();
         auto results = future_watcher->result();
         for (const auto& file : results) {
             if (widgets.size() >= 25) {

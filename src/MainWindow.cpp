@@ -1,9 +1,10 @@
 #include "FuzzyMac/MainWindow.hpp"
-#include "FuzzyMac/AppModeHandler.hpp"
-#include "FuzzyMac/FileModeHandler.hpp"
+#include "FuzzyMac/Animations.hpp"
+#include "FuzzyMac/FuzzyWidget.hpp"
 #include "FuzzyMac/InfoPanel.hpp"
 #include "FuzzyMac/MacGlobShortcuts.hpp"
 #include "FuzzyMac/ModeHandler.hpp"
+#include "FuzzyMac/ModeHandlerFactory.hpp"
 #include "FuzzyMac/NativeMacHandlers.hpp"
 #include "FuzzyMac/ParseConfig.hpp"
 #include "FuzzyMac/QueryEdit.hpp"
@@ -29,6 +30,8 @@
 #include <filesystem>
 #include <memory>
 #include <variant>
+
+namespace fs = std::filesystem;
 
 const toml::table& MainWindow::getConfig() const {
     return config;
@@ -106,18 +109,10 @@ void MainWindow::prevItem() {
 void MainWindow::wakeup() {
 
     if (get<bool>(config, {"animations"})) {
-        setWindowOpacity(0.0);
-        show();
-        QPropertyAnimation* anim = new QPropertyAnimation(this, "windowOpacity", this);
-        anim->setDuration(150);
-        anim->setStartValue(0.0);
-        anim->setEndValue(1.0);
-        anim->start();
-    } else {
-        setWindowOpacity(1);
-        show();
+        obacityAnimator(this, 0.0, 1.0, 150);
     }
 
+    show();
     raise();
     activateWindow();
     centerWindow(this);
@@ -133,11 +128,7 @@ void MainWindow::sleep() {
     };
 
     if (get<bool>(config, {"animations"})) {
-        QPropertyAnimation* anim = new QPropertyAnimation(this, "windowOpacity", this);
-        anim->setDuration(150);
-        anim->setStartValue(1.0);
-        anim->setEndValue(0.0);
-        anim->start();
+        auto* anim = obacityAnimator(this, 1.0, 0.0, 150);
         connect(anim, &QPropertyAnimation::finished, this, sleep_);
     } else {
         sleep_();
@@ -234,11 +225,12 @@ void MainWindow::createKeybinds() {
 MainWindow::MainWindow(Mode mode, QWidget* parent)
     : QMainWindow(parent),
       mode(mode),
+      mode_factory(new ModeHandlerFactory),
       config(default_config) {
 
-    mode_handler.emplace(Mode::FILE, std::make_unique<FileModeHandler>(this));
-    mode_handler.emplace(Mode::APP, std::make_unique<AppModeHandler>(this));
-    // mode_handler.emplace(Mode::CLI, std::make_unique<CLIModeHandler>(this));
+    for (auto mode : {Mode::APP, Mode::FILE}) {
+        mode_handler[mode] = mode_factory->create(mode, this);
+    }
 
     createWidgets();
     setupLayout();
@@ -261,6 +253,7 @@ MainWindow::MainWindow(Mode mode, QWidget* parent)
 }
 
 MainWindow::~MainWindow() {
+    delete mode_factory;
 }
 
 #ifndef CLI_TOOL
@@ -435,18 +428,7 @@ void MainWindow::changeMode(Mode new_mode) {
     }
 
     if (get<bool>(config, {"animations"})) {
-        QRect original = geometry();
-        int dx = original.width() * 0.05;
-        int dy = original.height() * 0.05;
-
-        QRect enlarged =
-            QRect(original.x() - dx / 2, original.y() - dy / 2, original.width() + dx, original.height() + dy);
-
-        QPropertyAnimation* anim = new QPropertyAnimation(this, "geometry");
-        anim->setDuration(300);
-        anim->setKeyValues({{0.0, original}, {0.5, enlarged}, {1.0, original}});
-        anim->setEasingCurve(QEasingCurve::OutBack);
-        anim->start(QAbstractAnimation::DeleteWhenStopped);
+        bounceAnimator(this, 0.05, 300);
     }
 }
 
