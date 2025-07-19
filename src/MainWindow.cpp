@@ -425,6 +425,7 @@ void MainWindow::changeMode(Mode new_mode) {
         return;
     }
 
+    // mode_handler[mode]->freeWidgets();
     mode = new_mode;
     query_edit->setText("");
     refreshResults();

@@ -127,7 +127,6 @@ extern "C++" QImage getThumbnailImage(const QString& filePath, int width, int he
         sem->acquire();
 
         [request release];
-
         delete sem;
         return result;
     }

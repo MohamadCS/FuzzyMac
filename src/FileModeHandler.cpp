@@ -1,6 +1,6 @@
 #include "FuzzyMac/FileModeHandler.hpp"
-#include "FuzzyMac/NativeMacHandlers.hpp"
 #include "FuzzyMac/Algorithms.hpp"
+#include "FuzzyMac/NativeMacHandlers.hpp"
 #include "FuzzyMac/Utils.hpp"
 
 #include <QDrag>
@@ -35,11 +35,16 @@ static void loadDirs(const QString& d, QStringList& paths) {
         if (entry.isDir() && !entry.isSymLink()) {
             loadDirs(abs_path, paths);
         }
-        paths.push_back(std::move(abs_path));
+        paths.push_back(abs_path);
     }
 }
 
 void FileModeHandler::load() {
+
+    if(future_watcher->isRunning()) {
+        future_watcher->cancel();
+        future_watcher->waitForFinished();
+    }
 
     paths.clear();
     entries.clear();
@@ -93,7 +98,6 @@ FileModeHandler::FileModeHandler(MainWindow* win)
             return;
         }
 
-        freeWidgets();
         auto results = future_watcher->result();
         for (const auto& file : results) {
             if (widgets.size() >= 25) {
@@ -111,7 +115,6 @@ FileModeHandler::FileModeHandler(MainWindow* win)
 }
 
 FileModeHandler::~FileModeHandler() {
-    delete dir_watcher;
 }
 
 void FileModeHandler::invokeQuery(const QString& query_) {
@@ -219,7 +222,6 @@ FileInfoPanel::FileInfoPanel(QWidget* parent, MainWindow* win, QString path)
 
     QFileInfo info{path};
 
-
     std::vector<std::pair<QString, QString>> file_info{
         {"File Name", info.fileName()},
         {"Path", info.path()},
@@ -241,19 +243,16 @@ FileInfoPanel::FileInfoPanel(QWidget* parent, MainWindow* win, QString path)
     layout->setContentsMargins(0, 0, 0, 0);
     layout->addWidget(thumb, 0);
 
-    auto future = QtConcurrent::run([this, path]() -> QImage { return getThumbnailImage(path,128,128); });
+    auto future = QtConcurrent::run([this, path]() -> QImage { return getThumbnailImage(path, 128, 128); });
     image_watcher->setFuture(future);
 
     QWidget* center = new QWidget(this);
 
     center->setStyleSheet(sheet);
-    layout->addWidget(center,1);
-
-
-
+    layout->addWidget(center, 1);
 
     for (auto [name, data] : file_info) {
-        auto* label_layout = new QHBoxLayout();
+        auto* label_layout = new QHBoxLayout;
         label_layout->setSpacing(0);
         label_layout->setContentsMargins(0, 0, 0, 0);
 
