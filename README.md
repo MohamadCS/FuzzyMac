@@ -176,4 +176,6 @@ This builds both the CLI and GUI versions.
 - [x] Add application icon view.
 - [x] Add configuration support.
 - [x] Watch for changes in configured application directories.
-- [ ] Display full file paths in the UI.
+- [x] Display full file paths in the UI.
+- [ ] Add clipboard history support.
+- [ ] Add quick settings support.

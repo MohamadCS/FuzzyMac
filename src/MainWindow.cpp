@@ -147,7 +147,9 @@ void MainWindow::matchModeShortcut(const QString& text) {
 void MainWindow::onTextChange(const QString& text) {
 
     // try to see if the current text is a prefix defined by some mode
-    matchModeShortcut(text);
+    if (mode != Mode::CLI) {
+        matchModeShortcut(text);
+    }
 
     // let the mode handle the query
     mode_handler[mode]->invokeQuery(text);
@@ -228,9 +230,14 @@ MainWindow::MainWindow(Mode mode, QWidget* parent)
       mode_factory(new ModeHandlerFactory),
       config_manager(new ConfigManager) {
 
+#ifndef CLI_TOOL
     for (auto mode : {Mode::APP, Mode::FILE}) {
         mode_handler[mode] = mode_factory->create(mode, this);
     }
+#else
+    mode_handler[Mode::CLI] = mode_factory->create(Mode::CLI, this);
+    mode = Mode::CLI;
+#endif
 
     createWidgets();
     setupLayout();
@@ -239,8 +246,7 @@ MainWindow::MainWindow(Mode mode, QWidget* parent)
     createKeybinds();
 
     if (mode != Mode::CLI) {
-        deactivateApp();
-        hide();
+        sleep();
     } else {
         wakeup();
     }

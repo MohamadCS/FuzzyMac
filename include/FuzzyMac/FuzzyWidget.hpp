@@ -14,9 +14,7 @@ protected:
 public:
     FuzzyWidget(MainWindow* win, QWidget* parent);
     virtual ~FuzzyWidget() = default;
-    virtual std::variant<QListWidgetItem*, FuzzyWidget*> getItem() {
-        return {};
-    };
+    virtual std::variant<QListWidgetItem*, FuzzyWidget*> getItem() = 0;
     virtual void enterHandler() {};
 };
 
@@ -25,6 +23,8 @@ class TextWidget : public FuzzyWidget {
 
 public:
     TextWidget(MainWindow* win, QWidget* parent, const QString& value);
+
+    std::variant<QListWidgetItem*, FuzzyWidget*> getItem() override; 
     QString getValue() const;
 
 private:
