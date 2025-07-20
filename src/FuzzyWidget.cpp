@@ -20,6 +20,11 @@ QString TextWidget::getValue() const {
     return text->text();
 }
 
+std::variant<QListWidgetItem*, FuzzyWidget*> TextWidget::getItem() {
+    return win->createListItem(text->text());
+}
+
+
 QString FileWidget::getPath() const {
     return path;
 }

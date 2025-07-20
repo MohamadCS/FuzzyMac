@@ -25,6 +25,8 @@ void CLIModeHandler::load() {
         return;
     }
 
+    loaded = true;
+
     entries = {};
     std::string line;
 
@@ -32,7 +34,8 @@ void CLIModeHandler::load() {
         entries.push_back(line.c_str());
         widgets.push_back(new TextWidget(win, main_widget, line.c_str()));
     }
-    loaded = true;
+
+    qDebug() << entries.size();
 }
 
 void CLIModeHandler::enterHandler() {
@@ -51,7 +54,7 @@ void CLIModeHandler::invokeQuery(const QString& query_) {
     ResultsVec res{};
     res.reserve(entries.size());
 
-    for (auto& entry : entries) {
+    for (auto& entry : results) {
         res.push_back(new TextWidget(win, main_widget, entry));
     }
 
@@ -64,4 +67,3 @@ void CLIModeHandler::handleQuickLook() {
 QString CLIModeHandler::handleModeText() {
     return "Results";
 }
-

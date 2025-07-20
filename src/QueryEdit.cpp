@@ -15,10 +15,13 @@ void QueryEdit::keyPressEvent(QKeyEvent* event) {
         return;
     }
 
+#ifndef CLI_TOOL
     if (text().isEmpty() && event->key() == Qt::Key_Backspace) {
         MainWindow* win = qobject_cast<MainWindow*>(window());
         win->changeMode(Mode::APP);
     }
+
+#endif
 
     // Default behavior for all other keys
     QLineEdit::keyPressEvent(event);
