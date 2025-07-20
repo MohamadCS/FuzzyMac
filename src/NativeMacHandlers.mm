@@ -19,6 +19,13 @@
 #include <QuickLook/QuickLook.h>
 #include <QuickLookUI/QuickLookUI.h>
 
+
+
+extern "C++" int getClipboardCount() {
+    @autoreleasepool {
+        return [[NSPasteboard generalPasteboard] changeCount];
+    }
+}
 extern "C" void deactivateApp() {
     @autoreleasepool {
         [NSApp hide:nil]; // This returns focus to the previously active app
@@ -131,3 +138,5 @@ extern "C++" QImage getThumbnailImage(const QString& filePath, int width, int he
         return result;
     }
 }
+
+

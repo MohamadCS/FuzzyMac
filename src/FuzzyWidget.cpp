@@ -68,6 +68,7 @@ CalculatorWidget::CalculatorWidget(MainWindow* win, QWidget* parent)
                                    .arg(config.get<std::string>({"colors", "mode_label", "text"}))
                                    .arg(config.get<std::string>({"font"})));
 
+
     answer_label->setStyleSheet(QString(R"(
         QLabel {
             color : %1;

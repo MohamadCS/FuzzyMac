@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <optional>
+#include <unordered_map>
 #include <wordexp.h>
 
 #include <QApplication>
@@ -22,7 +23,6 @@ AppModeHandler::AppModeHandler(MainWindow* win)
     : ModeHandler(win) {
 
     app_watcher = new QFileSystemWatcher(win);
-    modes.insert_or_assign("Search files", Mode::FILE);
     QObject::connect(app_watcher, &QFileSystemWatcher::directoryChanged, win, [this, win](const QString& path) {
         load();
         win->refreshResults();
@@ -74,7 +74,7 @@ void AppModeHandler::load() {
     app_watcher->addPaths(paths_list);
 
     paths = {};
-    for (const auto& p : win->getConfigManager().getList<std::string>( {"mode", "apps", "apps"})) {
+    for (const auto& p : win->getConfigManager().getList<std::string>({"mode", "apps", "apps"})) {
         paths.push_back(QString::fromStdString(p.c_str()));
     }
     expandPaths(paths);
@@ -84,15 +84,6 @@ void AppModeHandler::load() {
         apps.push_back(path);
         widgets.push_back(
             new FileWidget(win, main_widget, path, win->getConfigManager().get<bool>({"mode", "apps", "show_icons"})));
-    }
-
-    QStringList keys;
-    keys.reserve(modes.size());
-    std::transform(modes.begin(), modes.end(), std::back_inserter(keys), [](const auto& pair) { return pair.first; });
-
-    for (const auto& key : keys) {
-        widgets.push_back(
-            new ModeWidget(win, main_widget, key, modes[key], win->getModeHandler(modes[key])->getIcon()));
     }
 
     win->processResults(widgets);
@@ -134,21 +125,29 @@ void AppModeHandler::invokeQuery(const QString& query) {
         widgets.push_back(calc_widget);
     }
 
-    auto search_results = customSearch(win, query, apps);
+    auto search_results = filter(win, query, apps);
+
+
+    auto modes_widgets = win->getModesWidgets();
+    std::unordered_map<QString, FuzzyWidget*> search_to_widget{};
+
+    QStringList modes_search_phrases{};
+    modes_search_phrases.reserve(modes_widgets.size());
+
+    for (auto* widget : modes_widgets) {
+        modes_search_phrases.push_back(widget->getSearchPhrase());
+        search_to_widget.insert({widget->getSearchPhrase(), widget});
+    }
+
+    auto modes_results = filter(win, query, modes_search_phrases);
+
+    for (const auto& key : modes_results) {
+        widgets.push_back(search_to_widget[key]);
+    }
 
     for (const auto& path : search_results) {
         widgets.push_back(
-            new FileWidget(win, main_widget, path, win->getConfigManager().get<bool>({"mode", "apps", "show_icons"})));
-    }
-
-    QStringList keys;
-    keys.reserve(modes.size());
-    std::transform(modes.begin(), modes.end(), std::back_inserter(keys), [](const auto& pair) { return pair.first; });
-    auto modes_results = customSearch(win, query, keys);
-
-    for (const auto& key : modes_results) {
-        widgets.push_back(
-            new ModeWidget(win, main_widget, key, modes[key], win->getModeHandler(modes[key])->getIcon()));
+                new FileWidget(win, main_widget, path, win->getConfigManager().get<bool>({"mode", "apps", "show_icons"})));
     }
 
     win->processResults(widgets);

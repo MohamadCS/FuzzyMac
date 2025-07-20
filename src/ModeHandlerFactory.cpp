@@ -2,6 +2,7 @@
 #include "FuzzyMac/AppModeHandler.hpp"
 #include "FuzzyMac/CLIModeHandler.hpp"
 #include "FuzzyMac/FileModeHandler.hpp"
+#include "FuzzyMac/ClipModeHandler.hpp"
 
 std::unique_ptr<ModeHandler> ModeHandlerFactory::create(Mode mode, MainWindow* win) {
     switch (mode) {
@@ -11,6 +12,8 @@ std::unique_ptr<ModeHandler> ModeHandlerFactory::create(Mode mode, MainWindow* w
             return std::make_unique<FileModeHandler>(win);
         case Mode::CLI:
             return std::make_unique<CLIModeHandler>(win);
+        case Mode::CLIP:
+            return std::make_unique<ClipModeHandler>(win);
         default:
             return nullptr;
     }

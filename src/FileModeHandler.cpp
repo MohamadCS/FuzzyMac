@@ -1,5 +1,6 @@
 #include "FuzzyMac/FileModeHandler.hpp"
 #include "FuzzyMac/Algorithms.hpp"
+#include "FuzzyMac/FuzzyWidget.hpp"
 #include "FuzzyMac/NativeMacHandlers.hpp"
 #include "FuzzyMac/Utils.hpp"
 
@@ -22,6 +23,7 @@ void FileModeHandler::freeWidgets() {
 
     main_widget->deleteLater();
     widgets.clear();
+
 
     main_widget = new QWidget(nullptr);
 }
@@ -64,7 +66,6 @@ void FileModeHandler::load() {
         loadDirs(dir, entries);
     }
 
-    qDebug() << "Files:: " << entries.size();
 
     QStringList paths_list{};
     for (const auto& path : entries) {
@@ -120,7 +121,6 @@ FileModeHandler::~FileModeHandler() {
 }
 
 void FileModeHandler::invokeQuery(const QString& query_) {
-    qDebug() << "Invoking File query";
 
     auto query = query_.trimmed();
 
@@ -135,12 +135,11 @@ void FileModeHandler::invokeQuery(const QString& query_) {
 
     auto future = QtConcurrent::run([this, query]() -> QStringList {
         // return spotlightSearch(paths, std::format("kMDItemDisplayName LIKE[cd] '{}*'", query.toStdString()));
-        return customSearch(win, query, entries);
+        return filter(win, query, entries);
     });
 
     future_watcher->setFuture(future);
 
-    qDebug() << "Finished Invoking";
 }
 
 void FileModeHandler::handleQuickLook() {
@@ -204,12 +203,27 @@ InfoPanelContent* FileModeHandler::getInfoPanelContent() const {
     return new FileInfoPanel(main_widget, win, dynamic_cast<FileWidget*>(widgets[i])->getPath());
 }
 
+std::vector<FuzzyWidget*> FileModeHandler::createMainModeWidgets() {
+    return {
+        new ModeWidget(win, main_widget, "Search Files ...", Mode::FILE, icon),
+    };
+}
+
 FileInfoPanel::FileInfoPanel(QWidget* parent, MainWindow* win, QString path)
     : InfoPanelContent(parent, win) {
 
     image_watcher = new QFutureWatcher<QImage>(this);
 
     auto& cfg = win->getConfigManager();
+
+    setAutoFillBackground(true);
+    setStyleSheet(QString(R"(
+            color : %1;
+            background-color: %1;
+            border-left: 2 solid %2;
+    )")
+                      .arg(cfg.get<std::string>({"colors", "mode_label", "background"}))
+                      .arg(cfg.get<std::string>({"colors", "inner_border_color"})));
 
     QString sheet = QString(R"(
             color : %1;
@@ -218,7 +232,7 @@ FileInfoPanel::FileInfoPanel(QWidget* parent, MainWindow* win, QString path)
             font-family: %3;
             font-size: 12px;
             padding: 5px;
-            border: red;
+            border: transparent;
     )")
                         .arg(cfg.get<std::string>({"colors", "mode_label", "text"}))
                         .arg(cfg.get<std::string>({"colors", "mode_label", "background"}))
@@ -290,14 +304,4 @@ FileInfoPanel::FileInfoPanel(QWidget* parent, MainWindow* win, QString path)
     }
 
     setLayout(layout);
-
-    setAutoFillBackground(true);
-    setStyleSheet(QString(R"(
-            color : %1;
-            background-color: %2;
-            border-left: 2 solid %3;
-    )")
-                      .arg(cfg.get<std::string>({"colors", "mode_label", "background"}))
-                      .arg(cfg.get<std::string>({"colors", "mode_label", "background"}))
-                      .arg(cfg.get<std::string>({"colors", "inner_border_color"})));
 }

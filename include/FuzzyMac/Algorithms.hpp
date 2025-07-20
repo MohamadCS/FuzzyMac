@@ -4,4 +4,4 @@
 #include <QString>
 
 int fuzzyScore(const QString& cand, const QString& query);
-QStringList customSearch(MainWindow* win, const QString& query_, const QStringList& entries);
+QStringList filter(MainWindow* win, const QString& query_, const QStringList& entries);

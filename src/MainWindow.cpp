@@ -16,6 +16,7 @@
 #include <QDebug>
 #include <QEvent>
 #include <QFont>
+#include <QClipboard>
 #include <QGuiApplication>
 #include <QKeyEvent>
 #include <QLabel>
@@ -37,12 +38,12 @@ void MainWindow::createWidgets() {
     central = new QWidget(this);
     layout = new QVBoxLayout(central);
 
+
     query_edit = new QueryEdit(central);
     results_list = new ResultsPanel(central);
     mode_label = new QLabel(central);
     info_panel = new InfoPanel(central, this);
 
-    // timer->setSingleShot(true);
 }
 
 void MainWindow::setupLayout() {
@@ -76,29 +77,36 @@ void MainWindow::setupLayout() {
 
 void MainWindow::nextItem() {
     int next = std::min(results_list->count() - 1, results_list->currentRow() + 1);
+    if (next == results_list->currentRow()) {
+        return;
+    }
 
     if (next != results_list->currentRow()) {
         results_list->setCurrentRow(next);
     }
-    setInfoPanelContent(mode_handler[mode]->getInfoPanelContent());
+    setInfoPanelContent(mode_handlers[mode]->getInfoPanelContent());
 }
 
 void MainWindow::openItem() {
-    mode_handler[mode]->enterHandler();
+    mode_handlers[mode]->enterHandler();
 }
 
 void MainWindow::quickLock() {
-    mode_handler[mode]->handleQuickLook();
+    mode_handlers[mode]->handleQuickLook();
 }
 
 void MainWindow::prevItem() {
     int prev = std::max(0, results_list->currentRow() - 1);
 
+    if (prev == results_list->currentRow()) {
+        return;
+    }
+
     if (prev != results_list->currentRow()) {
         results_list->setCurrentRow(prev);
     }
 
-    setInfoPanelContent(mode_handler[mode]->getInfoPanelContent());
+    setInfoPanelContent(mode_handlers[mode]->getInfoPanelContent());
 }
 
 void MainWindow::wakeup() {
@@ -135,7 +143,7 @@ void MainWindow::matchModeShortcut(const QString& text) {
         return;
     }
 
-    for (auto& [mode, handler] : mode_handler) {
+    for (auto& [mode, handler] : mode_handlers) {
         auto prefix = handler->getPrefix();
         if (!prefix.isEmpty() && prefix == text) {
             changeMode(mode);
@@ -152,10 +160,10 @@ void MainWindow::onTextChange(const QString& text) {
     }
 
     // let the mode handle the query
-    mode_handler[mode]->invokeQuery(text);
+    mode_handlers[mode]->invokeQuery(query_edit->text());
 
     // replace the mode label text if possible
-    if (const auto& mode_text = mode_handler[mode]->handleModeText(); !mode_text.isEmpty()) {
+    if (const auto& mode_text = mode_handlers[mode]->handleModeText(); !mode_text.isEmpty()) {
         mode_label->setText(QString("%1").arg(mode_text));
         mode_label->show();
     } else {
@@ -186,7 +194,7 @@ void MainWindow::processResults(const ResultsVec& results) {
     }
 
     // update info panel;
-    setInfoPanelContent(mode_handler[mode]->getInfoPanelContent());
+    setInfoPanelContent(mode_handlers[mode]->getInfoPanelContent());
 }
 
 void MainWindow::connectEventHandlers() {
@@ -197,7 +205,7 @@ void MainWindow::connectEventHandlers() {
         window()->windowHandle(), &QWindow::screenChanged, this, [this](QScreen* newScreen) { centerWindow(this); });
     connect(results_list, &QListWidget::itemDoubleClicked, this, [this](QListWidgetItem* item) { openItem(); });
     connect(results_list, &QListWidget::itemClicked, this, [this](QListWidgetItem* item) {
-        setInfoPanelContent(mode_handler[mode]->getInfoPanelContent());
+        setInfoPanelContent(mode_handlers[mode]->getInfoPanelContent());
     });
 
     connect(config_manager, &ConfigManager::configChange, this, [this]() { loadConfig(); });
@@ -231,8 +239,8 @@ MainWindow::MainWindow(Mode mode, QWidget* parent)
       config_manager(new ConfigManager) {
 
 #ifndef CLI_TOOL
-    for (auto mode : {Mode::APP, Mode::FILE}) {
-        mode_handler[mode] = mode_factory->create(mode, this);
+    for (auto mode : {Mode::APP, Mode::FILE, Mode::CLIP}) {
+        mode_handlers[mode] = mode_factory->create(mode, this);
     }
 #else
     mode_handler[Mode::CLI] = mode_factory->create(Mode::CLI, this);
@@ -269,7 +277,7 @@ void MainWindow::loadConfig() {
     query_edit->loadConfig();
     results_list->loadConfig();
     loadStyle();
-    mode_handler[mode]->load();
+    mode_handlers[mode]->load();
     onTextChange(query_edit->text());
 }
 
@@ -291,7 +299,7 @@ QListWidgetItem* MainWindow::createListItem(const QString& name, const std::opti
 }
 
 void MainWindow::copyToClipboard() {
-    mode_handler[mode]->handleCopy();
+    mode_handlers[mode]->handleCopy();
 }
 
 void MainWindow::copyPathToClipboard() {
@@ -339,11 +347,11 @@ QIcon MainWindow::getFileIcon(const QString& path) const {
 }
 
 const ModeHandler* MainWindow::getCurrentModeHandler() const {
-    return mode_handler.at(mode).get();
+    return mode_handlers.at(mode).get();
 }
 
 const ModeHandler* MainWindow::getModeHandler(Mode mode) const {
-    return mode_handler.at(mode).get();
+    return mode_handlers.at(mode).get();
 }
 
 QString MainWindow::getQuery() const {
@@ -405,3 +413,13 @@ void MainWindow::setInfoPanelContent(InfoPanelContent* content) {
 
     info_panel->show();
 }
+
+std::vector<FuzzyWidget*> MainWindow::getModesWidgets() const {
+    std::vector<FuzzyWidget*> res{};
+    for (auto& [_, handler] : mode_handlers) {
+        auto widgets = handler->createMainModeWidgets();
+        res.insert(res.end(), widgets.begin(), widgets.end());
+    }
+
+    return res;
+} 

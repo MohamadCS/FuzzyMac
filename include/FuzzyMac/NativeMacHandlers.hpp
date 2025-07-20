@@ -18,7 +18,9 @@ extern "C++" std::vector<std::string> spotlightSearch(const std::vector<std::str
 
 extern "C++" void quickLook(const std::string& filePath);
 
-
 extern "C++" QImage getThumbnailImage(const QString& filePath, int width, int height);
+
+extern "C++" int getClipboardCount();
+
 
 

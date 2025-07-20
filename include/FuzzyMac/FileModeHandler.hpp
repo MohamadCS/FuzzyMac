@@ -31,6 +31,8 @@ public:
     void invokeQuery(const QString& query_) override;
     void handleQuickLook() override;
     std::optional<QIcon> getIcon() const override;
+
+    std::vector<FuzzyWidget*> createMainModeWidgets() override; 
     QString getPrefix() const override;
     void freeWidgets() override;
 
