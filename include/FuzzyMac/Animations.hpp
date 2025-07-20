@@ -1,6 +1,4 @@
-#include "QPropertyAnimation"
-
-
+#include <QPropertyAnimation>
 #include <QWidget>
 
 QPropertyAnimation* obacityAnimator(QWidget* widget, const QVariant& start_val, const QVariant& end_val, int duration); 

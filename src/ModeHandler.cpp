@@ -15,7 +15,6 @@
 #include <QGuiApplication>
 #include <QLabel>
 
-
 ModeHandler::ModeHandler(MainWindow* win)
     : win(win),
       main_widget(new QWidget(nullptr)) {
@@ -44,12 +43,13 @@ QString ModeHandler::getPrefix() const {
     return "";
 }
 
-
-
 InfoPanelContent* ModeHandler::getInfoPanelContent() const {
     return nullptr;
 }
 
+std::vector<FuzzyWidget*> ModeHandler::createMainModeWidgets() {
+    return {};
+}
 
 ModeHandler::~ModeHandler() {
     delete main_widget;

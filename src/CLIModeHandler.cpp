@@ -16,6 +16,7 @@
 #include <QFileIconProvider>
 #include <QGuiApplication>
 #include <QLabel>
+
 CLIModeHandler::CLIModeHandler(MainWindow* win)
     : ModeHandler(win) {
 }
@@ -49,7 +50,7 @@ void CLIModeHandler::enterHandler() {
 }
 
 void CLIModeHandler::invokeQuery(const QString& query_) {
-    auto results = customSearch(win, query_, entries);
+    auto results = filter(win, query_, entries);
 
     ResultsVec res{};
     res.reserve(entries.size());
