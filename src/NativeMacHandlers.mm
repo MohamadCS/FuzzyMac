@@ -1,9 +1,9 @@
 #include "FuzzyMac/NativeMacHandlers.hpp"
 
 #include <QDebug>
+#include <QImage>
 #include <QPointer>
 #include <QString>
-#include <QImage>
 #include <QVBoxLayout>
 #include <QWidget>
 #include <algorithm>
@@ -12,24 +12,21 @@
 #include <string>
 #include <vector>
 
-
-#import <QuickLookThumbnailing/QuickLookThumbnailing.h>
 #import <AppKit/AppKit.h>
 #include <Cocoa/Cocoa.h>
 #include <QuickLook/QuickLook.h>
+#import <QuickLookThumbnailing/QuickLookThumbnailing.h>
 #include <QuickLookUI/QuickLookUI.h>
 
-
-
 extern "C++" int getClipboardCount() {
-    @autoreleasepool {
-        return [[NSPasteboard generalPasteboard] changeCount];
-    }
+  @autoreleasepool {
+    return [[NSPasteboard generalPasteboard] changeCount];
+  }
 }
 extern "C" void deactivateApp() {
-    @autoreleasepool {
-        [NSApp hide:nil]; // This returns focus to the previously active app
-    }
+  @autoreleasepool {
+    [NSApp hide:nil]; // This returns focus to the previously active app
+  }
 }
 
 extern "C" void centerWindow(QWidget *widget) {
@@ -86,57 +83,54 @@ extern "C" void disableCmdQ() {
   }
 }
 
+extern "C++" QImage getThumbnailImage(const QString &filePath, int width,
+                                      int height) {
+  @autoreleasepool {
 
+    NSURL *url = [NSURL
+        fileURLWithPath:[NSString stringWithString:filePath.toNSString()]];
 
+    auto *generator = [QLThumbnailGenerator sharedGenerator];
 
+    auto *request = [[[QLThumbnailGenerationRequest alloc]
+          initWithFileAtURL:url
+                       size:CGSizeMake(width, height)
+                      scale:[NSScreen mainScreen].backingScaleFactor
+        representationTypes:
+            QLThumbnailGenerationRequestRepresentationTypeThumbnail]
+        autorelease];
 
-extern "C++" QImage getThumbnailImage(const QString& filePath, int width, int height) {
-    @autoreleasepool {
+    // allow modification inside the block
+    __block QImage result;
+    std::binary_semaphore *sem = new std::binary_semaphore{0};
 
-        NSURL* url = [NSURL fileURLWithPath:[NSString stringWithString:filePath.toNSString()]];
-        
-        auto* generator = [QLThumbnailGenerator sharedGenerator];
+    [generator
+        generateBestRepresentationForRequest:request
+                           completionHandler:^(
+                               QLThumbnailRepresentation *thumbnail,
+                               NSError *) {
+                             if (thumbnail && thumbnail.CGImage) {
+                               size_t w = CGImageGetWidth(thumbnail.CGImage);
+                               size_t h = CGImageGetHeight(thumbnail.CGImage);
+                               QImage img(w, h,
+                                          QImage::Format_ARGB32_Premultiplied);
+                               CGContextRef ctx = CGBitmapContextCreate(
+                                   img.bits(), w, h, 8, img.bytesPerLine(),
+                                   CGImageGetColorSpace(thumbnail.CGImage),
+                                   kCGImageAlphaPremultipliedFirst |
+                                       kCGBitmapByteOrder32Host);
+                               CGContextDrawImage(ctx, CGRectMake(0, 0, w, h),
+                                                  thumbnail.CGImage);
+                               CGContextRelease(ctx);
+                               result = std::move(img);
+                             }
 
-        auto* request = [[QLThumbnailGenerationRequest alloc] initWithFileAtURL:url
-            size:CGSizeMake(width, height)
-            scale:[NSScreen mainScreen].backingScaleFactor
-            representationTypes:QLThumbnailGenerationRequestRepresentationTypeThumbnail
-        ];
-        
+                             sem->release();
+                           }];
 
+    sem->acquire();
 
-
-        NSLog(@"Generator inited");
-
-        // allow modification inside the block
-        __block QImage result;
-        std::binary_semaphore* sem = new std::binary_semaphore{0};
-
-        [generator generateBestRepresentationForRequest:request
-                   completionHandler:^(QLThumbnailRepresentation *thumbnail, NSError*) {
-            if (thumbnail && thumbnail.CGImage) {
-                size_t w = CGImageGetWidth(thumbnail.CGImage);
-                size_t h = CGImageGetHeight(thumbnail.CGImage);
-                QImage img(w, h, QImage::Format_ARGB32_Premultiplied);
-                CGContextRef ctx = CGBitmapContextCreate(
-                        img.bits(), w, h, 8, img.bytesPerLine(),
-                        CGImageGetColorSpace(thumbnail.CGImage),
-                        kCGImageAlphaPremultipliedFirst | kCGBitmapByteOrder32Host
-                        );
-                CGContextDrawImage(ctx, CGRectMake(0, 0, w, h), thumbnail.CGImage);
-                CGContextRelease(ctx);
-                result = std::move(img);
-            }
-
-            sem->release();
-        }];
-
-        sem->acquire();
-
-        [request release];
-        delete sem;
-        return result;
-    }
+    delete sem;
+    return result;
+  }
 }
-
-

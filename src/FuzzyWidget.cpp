@@ -24,8 +24,6 @@ std::variant<QListWidgetItem*, FuzzyWidget*> TextWidget::getItem() {
     return win->createListItem(text->text());
 }
 
-
-
 QString FileWidget::getPath() const {
     return path;
 }
@@ -69,7 +67,6 @@ CalculatorWidget::CalculatorWidget(MainWindow* win, QWidget* parent)
                                    .arg(config.get<std::string>({"colors", "mode_label", "text"}))
                                    .arg(config.get<std::string>({"font"})));
 
-
     answer_label->setStyleSheet(QString(R"(
         QLabel {
             color : %1;
@@ -103,12 +100,13 @@ void CalculatorWidget::enterHandler() {
     win->sleep();
 };
 
-ModeWidget::ModeWidget(MainWindow* win, QWidget* parent, const QString& value, Mode mode,
+ModeWidget::ModeWidget(MainWindow* win, QWidget* parent, const QString& value, Mode mode, std::function<void()> fn,
                        const std::optional<QIcon>& icon)
     : FuzzyWidget(win, parent),
       name(value),
       mode(mode),
-      icon(icon) {
+      icon(icon),
+      customeEnterHandler{std::move(fn)} {
 }
 std::variant<QListWidgetItem*, FuzzyWidget*> ModeWidget::getItem() {
     if (icon) {
@@ -119,5 +117,5 @@ std::variant<QListWidgetItem*, FuzzyWidget*> ModeWidget::getItem() {
 }
 
 void ModeWidget::enterHandler() {
-    win->changeMode(mode);
+    customeEnterHandler();
 }

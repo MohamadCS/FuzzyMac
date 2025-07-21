@@ -1,5 +1,6 @@
 #include "FuzzyMac/ClipModeHandler.hpp"
 #include "FuzzyMac/Algorithms.hpp"
+#include "FuzzyMac/FuzzyWidget.hpp"
 #include "FuzzyMac/ModeHandler.hpp"
 #include "FuzzyMac/NativeMacHandlers.hpp"
 #include <QClipboard>
@@ -8,13 +9,14 @@
 #include <QLabel>
 #include <QMimeData>
 #include <QStandardPaths>
-#include <algorithm>
-#include <ranges>
+#include <optional>
 #include <variant>
 
-static ClipboardManager::Entry::Content getClipboardData() {
+static std::optional<ClipboardManager::Entry::Content> getClipboardData() {
     QClipboard* clipboard = QGuiApplication::clipboard();
     const QMimeData* mime = clipboard->mimeData();
+
+    // detect similar content
 
     if (mime->hasUrls()) {
         qDebug() << "url";
@@ -26,46 +28,59 @@ static ClipboardManager::Entry::Content getClipboardData() {
         return mime->text();
     }
 
-    return {};
+    return std::nullopt;
 }
 
 ClipModeHandler::ClipModeHandler(MainWindow* win)
     : ModeHandler(win),
-      clipboard_count{getClipboardCount()} {
+      clipboard_count{getClipboardCount()},
+      suppress_next_change(false) {
     QString dataDir = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
     QDir().mkpath(dataDir); // ensure directory exists
     path = dataDir + "/clipboard.json";
     qDebug() << path;
 
-    QObject::connect(&timer, &QTimer::timeout, [this,win]() {
+    QObject::connect(&timer, &QTimer::timeout, [this, win]() {
         int new_count = getClipboardCount();
-        if (clipboard_count != new_count) {
+        if (suppress_next_change) {
+            suppress_next_change = false;
             clipboard_count = new_count;
-            clipboard_manager.addEntry(getClipboardData(), "app");
-            qDebug() << clipboard_count;
-            invokeQuery(win->getQuery());
+            return;
         }
 
-        timer.start(1000);
+        if (clipboard_count != new_count) {
+            clipboard_count = new_count;
+            auto content = getClipboardData();
+            if (content.has_value()) {
+                dirty = true;
+                clipboard_manager.addEntry(content.value(), "app");
+                win->refreshResults();
+            }
+        }
     });
 
     QObject::connect(&save_timer, &QTimer::timeout, [this]() {
-        clipboard_manager.saveToFile(path);
-
-        save_timer.start(1000);
+        if (dirty) {
+            clipboard_manager.saveToFile(path);
+        }
+        dirty = false;
     });
 
     timer.start(1000);
-    save_timer.start(1000);
+    save_timer.start(10000);
 
     load();
 }
 
 void ClipModeHandler::load() {
+    freeWidgets();
     clipboard_manager.loadFromFile(path);
 }
 
 void ClipModeHandler::enterHandler() {
+    if (win->getResultsNum() == 0) {
+        return;
+    }
 
     QClipboard* clipboard = QGuiApplication::clipboard();
     QMimeData* mime_data = new QMimeData();
@@ -81,17 +96,30 @@ void ClipModeHandler::enterHandler() {
         mime_data->setUrls(urls);
     }
 
+    // swap entries
+    // suppress next change
+    //
+
+    auto& entries = clipboard_manager.getEntries();
+    auto* widget = dynamic_cast<ClipboardWidget*>(widgets[win->getCurrentResultIdx()]);
+    auto entry = entries[widget->getIdx()];
+    entries.erase(entries.begin() + widget->getIdx());
+    entries.push_back(entry);
+
+    suppress_next_change = true;
 
     clipboard->setMimeData(mime_data);
-    clipboard_count++;
 
     win->sleep();
+    win->refreshResults();
 }
 
 void ClipModeHandler::handleQuickLook() {
 }
 
 void ClipModeHandler::invokeQuery(const QString& query) {
+    freeWidgets();
+
     std::vector<int> idx_vec;
     auto& entries = clipboard_manager.getEntries();
     QStringList list;
@@ -105,16 +133,14 @@ void ClipModeHandler::invokeQuery(const QString& query) {
         }
     }
 
-    widgets.clear();
-
     if (query.isEmpty()) {
         for (int i = entries.size() - 1; i >= 0; --i) {
-            widgets.push_back(new ClipboardWidget(win, main_widget, &entries[i].value));
+            widgets.push_back(new ClipboardWidget(win, main_widget, &entries[i].value, i));
         }
     } else {
         filter(win, query, list, &idx_vec);
         for (int i = 0; i < idx_vec.size(); ++i) {
-            widgets.push_back(new ClipboardWidget(win, main_widget, &entries[idx_vec[i]].value));
+            widgets.push_back(new ClipboardWidget(win, main_widget, &entries[idx_vec[i]].value, idx_vec[i]));
         }
     }
 
@@ -189,6 +215,7 @@ ClipboardManager::Entry ClipboardManager::Entry::fromJson(const QJsonObject& obj
 
     return e;
 }
+
 void ClipboardManager::addEntry(const Entry::Content& value, const QString& app) {
     entries.push_back(Entry{
         .value = value,
@@ -209,14 +236,19 @@ QString ClipModeHandler::handleModeText() {
     return "Clipboard";
 }
 
-ClipboardWidget::ClipboardWidget(MainWindow* win, QWidget* parent, ClipboardManager::Entry::Content* value)
+ClipboardWidget::ClipboardWidget(MainWindow* win, QWidget* parent, ClipboardManager::Entry::Content* value, int idx)
     : FuzzyWidget(win, parent),
-      content(value) {
+      content(value),
+      idx(idx) {
     if (std::holds_alternative<QString>(*value)) {
-        text = new QLabel(std::get<QString>(*value).left(30).replace('\n', " ⏎ "));
+        text = new QLabel(std::get<QString>(*value).left(30).replace('\n', " ⏎ "), this);
     } else {
-        text = new QLabel(std::get<QList<QUrl>>(*value).first().toString().left(30).replace('\n', " ⏎ ") + "...");
+        text = new QLabel(std::get<QList<QUrl>>(*value).first().toString().left(30).replace('\n', " ⏎ ") + "...", this);
     }
+}
+
+int ClipboardWidget::getIdx() const {
+    return idx;
 }
 
 ClipboardManager::Entry::Content& ClipboardWidget::getContent() const {
@@ -225,4 +257,49 @@ ClipboardManager::Entry::Content& ClipboardWidget::getContent() const {
 
 std::variant<QListWidgetItem*, FuzzyWidget*> ClipboardWidget::getItem() {
     return win->createListItem(text->text());
+}
+
+void ClipboardManager::clear() {
+    entries.clear();
+}
+
+std::vector<FuzzyWidget*> ClipModeHandler::createMainModeWidgets() {
+    const auto& icons = win->getIcons();
+    return {
+        new ModeWidget(
+            win,
+            main_widget,
+            "Open Clipboard",
+            Mode::CLIP,
+            [this]() { win->changeMode(Mode::CLIP); },
+            icons.at("clipboard")),
+
+        new ModeWidget(
+            win,
+            main_widget,
+            "Clear Clipboard",
+            Mode::CLIP,
+            [this]() {
+                QMessageBox::StandardButton reply;
+                reply = QMessageBox::question(win,
+                                              "Confirm Action",
+                                              "Are you sure you want to clear clipboard?",
+                                              QMessageBox::Yes | QMessageBox::No);
+                if (reply == QMessageBox::No) {
+                    return;
+                }
+
+                freeWidgets();
+                clipboard_manager.clear();
+                clipboard_manager.saveToFile(path);
+            },
+            icons.at("clear_clipboard")),
+    };
+}
+
+void ClipModeHandler::freeWidgets() {
+    main_widget->deleteLater();
+    widgets.clear();
+
+    main_widget = new QWidget(nullptr);
 }

@@ -1,5 +1,11 @@
 <RCC>
   <qresource prefix="/">
-    <file>./res/icons/search_files_icon.svg</file>
+    <file>./res/icons/file_search.svg</file>
+  </qresource>
+  <qresource prefix="/">
+    <file>./res/icons/clipboard.svg</file>
+  </qresource>
+  <qresource prefix="/">
+    <file>./res/icons/clipboard_clear.svg</file>
   </qresource>
 </RCC>

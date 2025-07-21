@@ -24,7 +24,6 @@ void FileModeHandler::freeWidgets() {
     main_widget->deleteLater();
     widgets.clear();
 
-
     main_widget = new QWidget(nullptr);
 }
 
@@ -49,7 +48,6 @@ void FileModeHandler::load() {
     }
 
     paths.clear();
-    entries.clear();
     freeWidgets();
 
     auto& cfg = win->getConfigManager();
@@ -59,13 +57,9 @@ void FileModeHandler::load() {
     }
     expandPaths(paths);
 
-    icon = win->createIcon(":/res/icons/search_files_icon.svg",
-                           QColor(QString::fromStdString(cfg.get<std::string>({"colors", "results_list", "text"}))));
-
     for (auto& dir : paths) {
         loadDirs(dir, entries);
     }
-
 
     QStringList paths_list{};
     for (const auto& path : entries) {
@@ -79,10 +73,6 @@ void FileModeHandler::load() {
     }
 
     dir_watcher->addPaths(paths_list);
-}
-
-std::optional<QIcon> FileModeHandler::getIcon() const {
-    return icon;
 }
 
 FileModeHandler::FileModeHandler(MainWindow* win)
@@ -139,7 +129,6 @@ void FileModeHandler::invokeQuery(const QString& query_) {
     });
 
     future_watcher->setFuture(future);
-
 }
 
 void FileModeHandler::handleQuickLook() {
@@ -205,7 +194,13 @@ InfoPanelContent* FileModeHandler::getInfoPanelContent() const {
 
 std::vector<FuzzyWidget*> FileModeHandler::createMainModeWidgets() {
     return {
-        new ModeWidget(win, main_widget, "Search Files ...", Mode::FILE, icon),
+        new ModeWidget(
+            win,
+            main_widget,
+            "Search Files",
+            Mode::FILE,
+            [this]() { win->changeMode(Mode::FILE); },
+            win->getIcons()["search_files"]),
     };
 }
 
