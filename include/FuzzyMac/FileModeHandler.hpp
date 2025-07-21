@@ -30,14 +30,12 @@ public:
     void handleDragAndDrop(QDrag*) const override;
     void invokeQuery(const QString& query_) override;
     void handleQuickLook() override;
-    std::optional<QIcon> getIcon() const override;
 
     std::vector<FuzzyWidget*> createMainModeWidgets() override; 
     QString getPrefix() const override;
     void freeWidgets() override;
 
 private:
-    QIcon icon;
     std::vector<FuzzyWidget*> widgets;
     QFutureWatcher<QStringList>* future_watcher;
     QFileSystemWatcher* dir_watcher;

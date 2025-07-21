@@ -30,6 +30,7 @@ class InfoPanelContent;
 
 using ResultsVec = std::vector<FuzzyWidget*>;
 
+
 enum class Mode {
     CLI = 0,
     APP,
@@ -62,6 +63,9 @@ public:
     void setInfoPanelContent(InfoPanelContent* content);
     int getCurrentResultIdx() const;
     int getResultsNum() const;
+
+    std::map<QString,QIcon> getIcons();
+
     void processResults(const ResultsVec&);
     const ModeHandler* getCurrentModeHandler() const;
     const ModeHandler* getModeHandler(Mode mode) const;
@@ -90,6 +94,7 @@ private:
     QLabel* mode_label;
     ResultsPanel* results_list;
     InfoPanel* info_panel;
+    std::map<QString, QIcon> icons;
 
     // Helper QStructs, Life time is managed by MainWindow
     QFileIconProvider icon_provider;

@@ -3,6 +3,7 @@
 
 #include <QLabel>
 #include <QWidget>
+#include <functional>
 #include <variant>
 
 class FuzzyWidget : public QWidget {
@@ -34,8 +35,6 @@ private:
     QLabel* text;
 };
 
-
-
 class FileWidget : public FuzzyWidget {
     Q_OBJECT;
 
@@ -56,7 +55,7 @@ class ModeWidget : public FuzzyWidget {
     Q_OBJECT;
 
 public:
-    ModeWidget(MainWindow* win, QWidget* parent, const QString& value, Mode mode,
+    ModeWidget(MainWindow* win, QWidget* parent, const QString& value, Mode mode, std::function<void()> enter_handler,
                const std::optional<QIcon>& icon = std::nullopt);
     std::variant<QListWidgetItem*, FuzzyWidget*> getItem() override;
     void enterHandler() override;
@@ -68,6 +67,7 @@ public:
 private:
     QString name;
     std::optional<QIcon> icon;
+    std::function<void()> customeEnterHandler;
     Mode mode;
 };
 

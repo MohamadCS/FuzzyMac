@@ -13,10 +13,10 @@
 #include "toml++/impl/parser.hpp"
 
 #include <QApplication>
+#include <QClipboard>
 #include <QDebug>
 #include <QEvent>
 #include <QFont>
-#include <QClipboard>
 #include <QGuiApplication>
 #include <QKeyEvent>
 #include <QLabel>
@@ -38,12 +38,10 @@ void MainWindow::createWidgets() {
     central = new QWidget(this);
     layout = new QVBoxLayout(central);
 
-
     query_edit = new QueryEdit(central);
     results_list = new ResultsPanel(central);
     mode_label = new QLabel(central);
     info_panel = new InfoPanel(central, this);
-
 }
 
 void MainWindow::setupLayout() {
@@ -359,6 +357,25 @@ QString MainWindow::getQuery() const {
 }
 
 void MainWindow::loadStyle() {
+
+    icons = {
+        {"clipboard",
+         createIcon(
+             ":/res/icons/clipboard.svg",
+             QColor(QString::fromStdString(getConfigManager().get<std::string>({"colors", "results_list", "text"}))))},
+
+        {"clear_clipboard",
+         createIcon(
+             ":/res/icons/clipboard_clear.svg",
+             QColor(QString::fromStdString(getConfigManager().get<std::string>({"colors", "results_list", "text"}))))},
+
+        {"search_files",
+         createIcon(
+             ":/res/icons/file_search.svg",
+             QColor(QString::fromStdString(getConfigManager().get<std::string>({"colors", "results_list", "text"}))))},
+
+    };
+
     auto border_size = config_manager->get<int>({"border_size"});
     layout->setContentsMargins(border_size, border_size, border_size, border_size);
     setStyleSheet(QString(R"(
@@ -422,4 +439,9 @@ std::vector<FuzzyWidget*> MainWindow::getModesWidgets() const {
     }
 
     return res;
-} 
+}
+
+
+std::map<QString,QIcon> MainWindow::getIcons() {
+    return icons;
+}
