@@ -34,6 +34,8 @@ private:
     QLabel* text;
 };
 
+
+
 class FileWidget : public FuzzyWidget {
     Q_OBJECT;
 

@@ -8,11 +8,13 @@
 #include <QFileSystemWatcher>
 #include <QJsonArray>
 #include <QJsonObject>
+#include <variant>
 
 class ClipboardManager {
 public:
     struct Entry {
-        QString value;
+        using Content = std::variant<QString, QList<QUrl>>;
+        Content value;
         QString app;
         QDateTime timestamp;
         QJsonObject toJson() const;
@@ -21,12 +23,26 @@ public:
 
     void loadFromFile(const QString& path);
     void saveToFile(const QString& path) const;
-    void addEntry(const QString& value, const QString& app);
+    void addEntry(const Entry::Content& value, const QString& app);
 
-    QStringList getEntriesValues() const;
+    QList<Entry>& getEntries();
 
 private:
     QList<Entry> entries;
+};
+
+class ClipboardWidget : public FuzzyWidget {
+    Q_OBJECT;
+
+public:
+    ClipboardWidget(MainWindow* win, QWidget* parent, ClipboardManager::Entry::Content* value);
+
+    std::variant<QListWidgetItem*, FuzzyWidget*> getItem() override;
+    ClipboardManager::Entry::Content& getContent() const;
+
+private:
+    QLabel* text;
+    ClipboardManager::Entry::Content* content;
 };
 
 class ClipModeHandler : public ModeHandler {

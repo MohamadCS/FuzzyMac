@@ -25,6 +25,7 @@ std::variant<QListWidgetItem*, FuzzyWidget*> TextWidget::getItem() {
 }
 
 
+
 QString FileWidget::getPath() const {
     return path;
 }

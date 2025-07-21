@@ -37,8 +37,7 @@ int fuzzyScore(const QString& cand, const QString& query) {
     return sub_seq_score + prefix_score * 10;
 }
 
-
-QStringList filter(MainWindow* win, const QString& query_, const QStringList& entries) {
+QStringList filter(MainWindow* win, const QString& query_, const QStringList& entries, std::vector<int>* idx_vec) {
 
     QString query = query_.toLower();
 
@@ -65,6 +64,9 @@ QStringList filter(MainWindow* win, const QString& query_, const QStringList& en
     for (int i = 0; i < scores_per_idx.size(); ++i) {
         int idx = scores_per_idx[i].second;
         res.push_back(entries[idx]);
+        if (idx_vec) {
+            idx_vec->push_back(idx);
+        }
     }
 
     return res;
