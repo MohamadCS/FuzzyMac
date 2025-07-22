@@ -52,5 +52,4 @@ public:
     FileInfoPanel(QWidget* parent, MainWindow* win, QString path);
 private:
     QFutureWatcher<QImage>* image_watcher; 
-    QLabel* path;
 };

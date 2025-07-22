@@ -140,36 +140,35 @@ extern "C++" QImage getThumbnailImage(const QString &filePath, int width,
 #import <LocalAuthentication/LocalAuthentication.h>
 
 extern "C++" bool authenticateWithTouchID() {
-  NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+  @autoreleasepool {
 
-  LAContext *context = [[LAContext alloc] init];
-  NSError *authError = nil;
+    LAContext *context = [[[LAContext alloc] init] autorelease];
+    NSError *authError = nil;
 
-  bool canEvaluate =
-      [context canEvaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics
-                           error:&authError];
+    bool canEvaluate = [context
+        canEvaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics
+                    error:&authError];
 
-  if (!canEvaluate) {
-    [context release];
-    [pool drain];
-    return false;
+    if (!canEvaluate) {
+      [context release];
+
+      return false;
+    }
+
+    __block BOOL success = NO;
+    std::binary_semaphore *sem = new std::binary_semaphore{0};
+
+    [context evaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics
+            localizedReason:@"Unlock clipboard history"
+                      reply:^(BOOL didSucceed, NSError *_Nullable error) {
+                        success = didSucceed;
+                        sem->release();
+                      }];
+
+    sem->acquire();
+    delete sem;
+    return success;
   }
-
-  __block BOOL success = NO;
-  std::binary_semaphore *sem = new std::binary_semaphore{0};
-
-  [context evaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics
-          localizedReason:@"Unlock clipboard history"
-                    reply:^(BOOL didSucceed, NSError *_Nullable error) {
-                      success = didSucceed;
-                      sem->release();
-                    }];
-
-  sem->acquire();
-  delete sem;
-  [context release];
-  [pool drain];
-  return success;
 }
 
 extern "C++" std::string getFrontmostAppName() {

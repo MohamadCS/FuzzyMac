@@ -92,7 +92,9 @@ void MainWindow::nextItem() {
 }
 
 void MainWindow::openItem() {
-    mode_handlers[mode]->enterHandler();
+    if (getResultsNum() > 0 && getCurrentResultIdx() != -1) {
+        mode_handlers[mode]->enterHandler();
+    }
 }
 
 void MainWindow::quickLock() {

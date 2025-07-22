@@ -91,11 +91,13 @@ void AppModeHandler::load() {
 
 void AppModeHandler::enterHandler() {
 
-    if (win->getResultsNum() == 0) {
+    if (win->getResultsNum() == 0 || win->getCurrentResultIdx() < 0) {
         return;
     }
 
     int i = std::max(win->getCurrentResultIdx(), 0);
+    qDebug() << i;
+    qDebug() << win->getResultsNum();
     widgets[i]->enterHandler();
 }
 
@@ -127,10 +129,7 @@ void AppModeHandler::invokeQuery(const QString& query) {
 
     auto search_results = filter(win, query, apps);
 
-
-
     // BUG: Mode widgets make memory consumption like a 1GB for some reason.
-
 
     auto modes_widgets = win->getModesWidgets();
     std::unordered_map<QString, FuzzyWidget*> search_to_widget{};
@@ -138,15 +137,15 @@ void AppModeHandler::invokeQuery(const QString& query) {
     QStringList modes_search_phrases{};
     modes_search_phrases.reserve(modes_widgets.size());
     for (auto* widget : modes_widgets) {
+        widget->setParent(main_widget);
         modes_search_phrases.push_back(widget->getSearchPhrase());
         search_to_widget.insert({widget->getSearchPhrase(), widget});
     }
     auto modes_results = filter(win, query, modes_search_phrases);
 
-
     for (const auto& path : search_results) {
         widgets.push_back(
-                new FileWidget(win, main_widget, path, win->getConfigManager().get<bool>({"mode", "apps", "show_icons"})));
+            new FileWidget(win, main_widget, path, win->getConfigManager().get<bool>({"mode", "apps", "show_icons"})));
     }
 
     for (const auto& key : modes_results) {

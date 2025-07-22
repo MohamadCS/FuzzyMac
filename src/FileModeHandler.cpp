@@ -196,7 +196,7 @@ std::vector<FuzzyWidget*> FileModeHandler::createMainModeWidgets() {
     return {
         new ModeWidget(
             win,
-            main_widget,
+            nullptr,
             "Search Files",
             Mode::FILE,
             [this]() { win->changeMode(Mode::FILE); },
@@ -246,7 +246,12 @@ FileInfoPanel::FileInfoPanel(QWidget* parent, MainWindow* win, QString path)
 
     auto* thumb = new QLabel(this);
     connect(image_watcher, &QFutureWatcher<QImage>::finished, [this, thumb]() {
-        thumb->setPixmap(QPixmap::fromImage(image_watcher->result()));
+        const auto& image = image_watcher->result();
+        if (image.isNull()) {
+            return;
+        } else {
+            thumb->setPixmap(QPixmap::fromImage(image));
+        }
     });
 
     thumb->setAlignment(Qt::AlignVCenter | Qt::AlignCenter);
@@ -257,8 +262,7 @@ FileInfoPanel::FileInfoPanel(QWidget* parent, MainWindow* win, QString path)
     layout->addWidget(thumb, 0);
 
     auto future = QtConcurrent::run([this, path]() -> QImage {
-        auto image = getThumbnailImage(path, 128, 128);
-        return image;
+        return getThumbnailImage(path, 128, 128);
     });
 
     image_watcher->setFuture(future);
@@ -286,7 +290,6 @@ FileInfoPanel::FileInfoPanel(QWidget* parent, MainWindow* win, QString path)
 
         label_layout->addWidget(name_label);
         label_layout->addWidget(data_label, 1);
-
 
         QFrame* line = new QFrame(this);
         line->setFrameShape(QFrame::HLine);
