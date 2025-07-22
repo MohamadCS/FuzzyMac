@@ -105,6 +105,7 @@ private:
     Mode mode;
 
     ConfigManager* config_manager;
+    bool show_info_panel;
 
     // loads the MainWindow Style
     void loadStyle();

@@ -19,7 +19,22 @@ QPropertyAnimation* bounceAnimator(QWidget* widget, const QVariant& scale_factor
     auto* anim = new QPropertyAnimation(widget, "geometry");
     anim->setDuration(duration);
     anim->setKeyValues({{0.0, original}, {0.5, enlarged}, {1.0, original}});
-    anim->setEasingCurve(QEasingCurve::OutBack);
+    anim->setEasingCurve(QEasingCurve::OutQuad);
     anim->start(QAbstractAnimation::DeleteWhenStopped);
+    return anim;
+}
+
+QPropertyAnimation* resizeAnimation(QWidget* widget, const QSize& final_size, int duration) {
+    QRect start = widget->geometry();
+    QRect end = QRect(start.center() - QPoint(final_size.width() / 2, final_size.height() / 2), final_size);
+
+    // Create animation
+    QPropertyAnimation* anim = new QPropertyAnimation(widget, "geometry");
+    anim->setDuration(duration); // milliseconds
+    anim->setStartValue(start);
+    anim->setEndValue(end);
+    anim->setEasingCurve(QEasingCurve::OutQuad);
+    anim->start(QAbstractAnimation::DeleteWhenStopped);
+
     return anim;
 }
