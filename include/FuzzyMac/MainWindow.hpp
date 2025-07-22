@@ -9,7 +9,6 @@
 #include <QFileIconProvider>
 #include <QFileSystemWatcher>
 #include <QFutureWatcher>
-#include <QTimer>
 #include <QLineEdit>
 #include <QListWidget>
 #include <QMainWindow>
@@ -17,6 +16,7 @@
 #include <QPainterPath>
 #include <QProcess>
 #include <QString>
+#include <QTimer>
 #include <QVBoxLayout>
 
 #include <memory>
@@ -29,7 +29,6 @@ class InfoPanel;
 class InfoPanelContent;
 
 using ResultsVec = std::vector<FuzzyWidget*>;
-
 
 enum class Mode {
     CLI = 0,
@@ -64,7 +63,7 @@ public:
     int getCurrentResultIdx() const;
     int getResultsNum() const;
 
-    std::map<QString,QIcon> getIcons();
+    std::map<QString, QIcon> getIcons();
 
     void processResults(const ResultsVec&);
     const ModeHandler* getCurrentModeHandler() const;
@@ -107,7 +106,7 @@ private:
 
     ConfigManager* config_manager;
 
-    // loads the MainWindow Style 
+    // loads the MainWindow Style
     void loadStyle();
 
     // creates all main widgets
@@ -120,7 +119,7 @@ private:
 
     void connectEventHandlers();
 
-    // finds the first mode that defines a shortcut  
+    // finds the first mode that defines a shortcut
     // and switches to it
     void matchModeShortcut(const QString&);
 };

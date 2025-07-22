@@ -294,7 +294,7 @@ std::vector<FuzzyWidget*> ClipModeHandler::createMainModeWidgets() {
     return {
         new ModeWidget(
             win,
-            main_widget,
+            nullptr,
             "Open Clipboard",
             Mode::CLIP,
             [this]() { win->changeMode(Mode::CLIP); },
@@ -302,7 +302,7 @@ std::vector<FuzzyWidget*> ClipModeHandler::createMainModeWidgets() {
 
         new ModeWidget(
             win,
-            main_widget,
+            nullptr,
             "Clear Clipboard",
             Mode::CLIP,
             [this]() {
