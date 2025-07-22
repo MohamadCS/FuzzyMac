@@ -26,16 +26,18 @@ void ResultsPanel::loadConfig() {
             selection-background-color : %1;
             selection-color : %2;
             color: %3;
+            margin: 0px;
             background: %4;
-            border: none;
             padding: 0px;
+            border : none;
             font-size: 15px;
             font-weight: 300;
             font-family: %5;
         }
         QScrollBar:vertical {
             border: none;
-            background: transparent;
+            background:  %4;
+            margin: 0px;
             width: 12px;  
             padding: 2px;
             border-radius: 4px;
@@ -56,6 +58,7 @@ void ResultsPanel::loadConfig() {
                 border-radius: 4px;
             }
             QScrollBar::handle:vertical:hover {
+                margin: 0px;
                 background: %7;  
             }
             QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
@@ -73,5 +76,6 @@ void ResultsPanel::loadConfig() {
                       .arg(config.get<std::string>({"colors", "results_list", "background"}))
                       .arg(config.get<std::string>({"font"}))
                       .arg(config.get<std::string>({"colors", "results_list", "scrollbar_color"}))
-                      .arg(config.get<std::string>({"colors", "results_list", "scrollbar_hold_color"})));
+                      .arg(config.get<std::string>({"colors", "results_list", "scrollbar_hold_color"}))
+                      );
 }

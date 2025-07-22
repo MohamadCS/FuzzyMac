@@ -14,7 +14,6 @@
 
 #include <QApplication>
 #include <QClipboard>
-#include <QPixmapCache>
 #include <QDebug>
 #include <QEvent>
 #include <QFont>
@@ -23,6 +22,7 @@
 #include <QLabel>
 #include <QMessageBox>
 #include <QPainter>
+#include <QPixmapCache>
 #include <QProcess>
 #include <QShortcut>
 #include <QStaticText>
@@ -36,22 +36,27 @@ const ConfigManager& MainWindow::getConfigManager() const {
 }
 
 void MainWindow::createWidgets() {
-    central = new QWidget(this);
-    layout = new QVBoxLayout(central);
+    border_widget = new QWidget(this);
+    main_widget = new QWidget(border_widget);
 
-    query_edit = new QueryEdit(central);
-    results_list = new ResultsPanel(central);
-    mode_label = new QLabel(central);
-    info_panel = new InfoPanel(central, this);
-}
+    layout = new QVBoxLayout(main_widget);
 
-void MainWindow::setupLayout() {
+    query_edit = new QueryEdit(main_widget);
+    results_list = new ResultsPanel(main_widget);
+    mode_label = new QLabel(main_widget);
+    info_panel = new InfoPanel(main_widget, this);
+
+    QVBoxLayout* border_layout = new QVBoxLayout(border_widget);
+    border_widget->setLayout(border_layout);
+
+    border_layout->addWidget(main_widget);
+
     setWindowFlag(Qt::WindowStaysOnTopHint);
     resize(700, 500);
     QApplication::setQuitOnLastWindowClosed(false);
     makeWindowFloating(this);
 
-    QHBoxLayout* content_layout = new QHBoxLayout(central);
+    QHBoxLayout* content_layout = new QHBoxLayout;
 
     layout->addWidget(query_edit, 0);
     layout->addWidget(mode_label, 0);
@@ -60,6 +65,8 @@ void MainWindow::setupLayout() {
     content_layout->setSpacing(0);
     layout->addLayout(content_layout);
 
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(0);
     layout->setSpacing(0);
     mode_label->setAlignment(Qt::AlignCenter | Qt::AlignVCenter);
 
@@ -67,8 +74,8 @@ void MainWindow::setupLayout() {
     results_list->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     results_list->setSelectionMode(QAbstractItemView::SingleSelection);
 
-    central->setLayout(layout);
-    setCentralWidget(central);
+    main_widget->setLayout(layout);
+    setCentralWidget(border_widget);
     wakeup();
 }
 
@@ -245,7 +252,6 @@ MainWindow::MainWindow(Mode mode, QWidget* parent)
 #endif
 
     createWidgets();
-    setupLayout();
     connectEventHandlers();
     loadConfig();
     createKeybinds();
@@ -382,19 +388,26 @@ void MainWindow::loadStyle() {
     };
 
     auto border_size = config_manager->get<int>({"border_size"});
-    layout->setContentsMargins(border_size, border_size, border_size, border_size);
-    setStyleSheet(QString(R"(
-        QMainWindow {
+    border_widget->layout()->setContentsMargins(border_size, border_size, border_size, border_size);
+    border_widget->setStyleSheet(QString(R"(
             background: %1;
-        }
+            padding: 0px;
     )")
-                      .arg(config_manager->get<std::string>({"colors", "background"})));
+                                     .arg(config_manager->get<std::string>({"colors", "outer_border"})));
+
+    main_widget->setStyleSheet(QString(R"(
+            background: %1;
+            margin: 0px;
+            padding: 0px;
+    )")
+                                   .arg(config_manager->get<std::string>({"colors", "inner_border"})));
 
     mode_label->setStyleSheet(QString(R"(
         QLabel {
             color : %1;
             background: %2;
             font-weight: 500;
+            margin: 0px;
             font-family: %3;
             padding: 2px;
             border-bottom: 2px solid %4;
@@ -403,7 +416,7 @@ void MainWindow::loadStyle() {
                                   .arg(config_manager->get<std::string>({"colors", "mode_label", "text"}))
                                   .arg(config_manager->get<std::string>({"colors", "mode_label", "background"}))
                                   .arg(config_manager->get<std::string>({"font"}))
-                                  .arg(config_manager->get<std::string>({"colors", "inner_border_color"})));
+                                  .arg(config_manager->get<std::string>({"colors", "inner_border"})));
 }
 
 void MainWindow::changeMode(Mode new_mode) {

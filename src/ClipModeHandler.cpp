@@ -9,6 +9,7 @@
 #include <QGuiApplication>
 #include <QLabel>
 #include <QMimeData>
+#include <QPlainTextEdit>
 #include <QScrollArea>
 #include <QStandardPaths>
 #include <iterator>
@@ -352,7 +353,7 @@ ClipboardInfoPanel::ClipboardInfoPanel(QWidget* parent, MainWindow* win, const C
             border-left: 2 solid %2;
     )")
                       .arg(cfg.get<std::string>({"colors", "mode_label", "background"}))
-                      .arg(cfg.get<std::string>({"colors", "inner_border_color"})));
+                      .arg(cfg.get<std::string>({"colors", "inner_border"})));
 
     QString sheet = QString(R"(
             color : %1;
@@ -369,25 +370,86 @@ ClipboardInfoPanel::ClipboardInfoPanel(QWidget* parent, MainWindow* win, const C
 
     auto* layout = new QVBoxLayout(this);
     layout->setSpacing(0);
-    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setContentsMargins(1, 0, 0, 0);
 
     // creating content area
-    QScrollArea* content_area = new QScrollArea(this);
 
-    QLabel* content_text = new QLabel(this);
-    content_area->setWidget(content_text);
-    content_area->setWidgetResizable(true);
+    QPlainTextEdit* content_text = new QPlainTextEdit(this);
 
     content_text->setStyleSheet(sheet);
-    content_text->setWordWrap(true);
+    content_text->setReadOnly(true);
+    content_text->setStyleSheet(QString(R"(
+                                QPlainTextEdit {
+                                    selection-background-color : %1;
+                                    selection-color : %2;
+                                    color: %3;
+                                    background: %4;
+                                    border : none;
+                                    padding: 12px;
+                                    font-size: 15;
+                                    font-family: %5;
+                                }
+                                  QScrollBar:vertical {
+                                            border: none;
+                                            background: %4;
+                                            width: 12px;  
+                                            padding: 2px;
+                                            border-radius: 4px;
+                                        }
+                                        QScrollBar::handle:vertical {
+                                            background: %6;  
+                                            min-height: 20px; 
+                                            border-radius: 4px;
+                                        }
+                                        QScrollBar::handle:vertical:hover {
+                                            background: %7;  
+                                        }
+                                        QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+                                            background: transparent;
+                                            height: 0px;           
+                                            border: none;
+                                        }
+                                        QScrollBar::up-arrow:vertical, QScrollBar::down-arrow:vertical {
+                                            background: transparent;
+                                        }
 
-    content_area->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
-    content_area->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
-    content_text->setTextInteractionFlags(Qt::TextSelectableByMouse);
-    content_text->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+                                        QScrollBar:horizontal {
+                                            border: none;
+                                            background: %4;
+                                            width: 12px;  
+                                            padding: 2px;
+                                            border-radius: 4px;
+                                        }
+                                        QScrollBar::handle:horizontal {
+                                            background: %6;  
+                                            min-height: 20px; 
+                                            border-radius: 4px;
+                                        }
+                                        QScrollBar::handle:horizontal:hover {
+                                            background: %7;  
+                                        }
+                                        QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
+                                            background: transparent;
+                                            height: 0px;           
+                                            border: none;
+                                        }
+                                        QScrollBar::up-arrow:horizontal, QScrollBar::down-arrow:horizontal {
+                                            background: transparent;
+                                        }
+                                    )")
+                                    .arg(cfg.get<std::string>({"colors", "query_input", "selection_background"}))
+                                    .arg(cfg.get<std::string>({"colors", "query_input", "selection"}))
+                                    .arg(cfg.get<std::string>({"colors", "query_input", "text"}))
+                                    .arg(cfg.get<std::string>({"colors", "query_input", "background"}))
+                                    .arg(cfg.get<std::string>({"font"}))
+                                    .arg(cfg.get<std::string>({"colors", "results_list", "scrollbar_color"}))
+                                    .arg(cfg.get<std::string>({"colors", "results_list", "scrollbar_hold_color"})));
+
+    content_text->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+    content_text->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
 
     if (std::holds_alternative<QString>(entry.value)) {
-        content_text->setText(std::get<QString>(entry.value));
+        content_text->setPlainText(std::get<QString>(entry.value));
     } else {
         QString text{};
         for (const auto& url : std::get<QList<QUrl>>(entry.value)) {
@@ -396,10 +458,10 @@ ClipboardInfoPanel::ClipboardInfoPanel(QWidget* parent, MainWindow* win, const C
             text.append("\n");
         }
 
-        content_text->setText(text);
+        content_text->setPlainText(text);
     }
 
-    layout->addWidget(content_area, 1);
+    layout->addWidget(content_text, 1);
     // end content area
 
     // creating info widgets
@@ -429,68 +491,11 @@ ClipboardInfoPanel::ClipboardInfoPanel(QWidget* parent, MainWindow* win, const C
         QFrame* line = new QFrame(this);
         line->setFrameShape(QFrame::HLine);
         line->setFrameShadow(QFrame::Plain);
-        line->setStyleSheet(QString(R"( color : %1;)").arg(cfg.get<std::string>({"colors", "inner_border_color"})));
+        line->setStyleSheet(QString(R"( color : %1;)").arg(cfg.get<std::string>({"colors", "inner_border"})));
 
-        layout->addLayout(label_layout);
         layout->addWidget(line);
+        layout->addLayout(label_layout);
     }
-
-    content_area->setStyleSheet(QString(R"(
-        QScrollArea {
-            color: transparent;
-            background: transparent;
-            border: none;
-        }
-        QScrollBar:vertical {
-            border: none;
-            background: transparent;
-            width: 12px;  
-            padding: 2px;
-            border-radius: 4px;
-        }
-        QScrollBar::handle:vertical {
-            background: %1;  
-            min-height: 20px; 
-            border-radius: 4px;
-        }
-        QScrollBar::handle:vertical:hover {
-            background: %2;  
-        }
-        QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
-            background: transparent;
-            height: 0px;           
-            border: none;
-        }
-        QScrollBar::up-arrow:vertical, QScrollBar::down-arrow:vertical {
-            background: transparent;
-        }
-
-        QScrollBar:horizontal {
-            border: none;
-            background: transparent;
-            width: 12px;  
-            padding: 2px;
-            border-radius: 4px;
-        }
-        QScrollBar::handle:horizontal {
-            background: %1;  
-            min-height: 20px; 
-            border-radius: 4px;
-        }
-        QScrollBar::handle:horizontal:hover {
-            background: %2;  
-        }
-        QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
-            background: transparent;
-            height: 0px;           
-            border: none;
-        }
-        QScrollBar::up-arrow:horizontal, QScrollBar::down-arrow:horizontal {
-            background: transparent;
-        }
-            )")
-                                    .arg(cfg.get<std::string>({"colors", "results_list", "scrollbar_color"}))
-                                    .arg(cfg.get<std::string>({"colors", "results_list", "scrollbar_hold_color"})));
 
     setLayout(layout);
 }
