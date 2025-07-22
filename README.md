@@ -16,6 +16,15 @@ A fuzzy finder GUI for macOS.
 </p>
 
 
+## Key Features
+
+- Search applications, files instantly.
+- File preview.
+- Clipboard Manager.
+- (Almost) everything is configurable using a config file.
+- CLI mode: Pipe Resutls > Search > Enter.
+
+
 ## Install 
 
 ### Precompiled binary
