@@ -25,7 +25,7 @@ QPropertyAnimation* bounceAnimator(QWidget* widget, const QVariant& scale_factor
 }
 
 QPropertyAnimation* resizeAnimation(QWidget* widget, const QSize& final_size, int duration) {
-    QRect start = widget->geometry();
+    QRect start = widget->frameGeometry();
     QRect end = QRect(start.center() - QPoint(final_size.width() / 2, final_size.height() / 2), final_size);
 
     // Create animation
@@ -33,7 +33,7 @@ QPropertyAnimation* resizeAnimation(QWidget* widget, const QSize& final_size, in
     anim->setDuration(duration); // milliseconds
     anim->setStartValue(start);
     anim->setEndValue(end);
-    anim->setEasingCurve(QEasingCurve::OutQuad);
+    anim->setEasingCurve(QEasingCurve::OutExpo);
     anim->start(QAbstractAnimation::DeleteWhenStopped);
 
     return anim;
