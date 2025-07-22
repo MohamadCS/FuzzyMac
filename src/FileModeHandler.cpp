@@ -48,6 +48,7 @@ void FileModeHandler::load() {
     }
 
     paths.clear();
+    entries.clear();
     freeWidgets();
 
     auto& cfg = win->getConfigManager();
@@ -259,18 +260,11 @@ FileInfoPanel::FileInfoPanel(QWidget* parent, MainWindow* win, QString path)
 
     layout->setSpacing(0);
     layout->setContentsMargins(1, 0, 0, 0);
-    layout->addWidget(thumb, 0);
+    layout->addWidget(thumb, 1);
 
-    auto future = QtConcurrent::run([this, path]() -> QImage {
-        return getThumbnailImage(path, 128, 128);
-    });
+    auto future = QtConcurrent::run([this, path]() -> QImage { return getThumbnailImage(path, 128, 128); });
 
     image_watcher->setFuture(future);
-
-    QWidget* center = new QWidget(this);
-
-    center->setStyleSheet(sheet);
-    layout->addWidget(center, 1);
 
     for (int i = 0; i < file_info.size(); ++i) {
         auto [name, data] = file_info[i];

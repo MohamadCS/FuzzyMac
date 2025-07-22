@@ -10,9 +10,9 @@
 #include <QLabel>
 #include <QMimeData>
 #include <QPlainTextEdit>
-#include <QThreadPool>
 #include <QScrollArea>
 #include <QStandardPaths>
+#include <QThreadPool>
 #include <QtConcurrent>
 #include <iterator>
 #include <optional>
@@ -25,12 +25,13 @@ static std::optional<ClipboardManager::Entry::Content> getClipboardData() {
     // detect similar content
 
     if (mime->hasUrls()) {
-        qDebug() << "url";
         return mime->urls();
     }
 
     if (mime->hasText()) {
-        qDebug() << "text";
+        if (mime->text().isEmpty()) {
+            return std::nullopt;
+        }
         return mime->text();
     }
 
@@ -452,9 +453,6 @@ ClipboardInfoPanel::ClipboardInfoPanel(QWidget* parent, MainWindow* win, const C
                                     .arg(cfg.get<std::string>({"colors", "results_list", "scrollbar_color"}))
                                     .arg(cfg.get<std::string>({"colors", "results_list", "scrollbar_hold_color"})));
 
-    content_text->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
-    content_text->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
-
     if (std::holds_alternative<QString>(entry.value)) {
         content_text->setPlainText(std::get<QString>(entry.value));
     } else {
@@ -468,13 +466,16 @@ ClipboardInfoPanel::ClipboardInfoPanel(QWidget* parent, MainWindow* win, const C
         content_text->setPlainText(text);
     }
 
+    content_text->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    content_text->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+
     layout->addWidget(content_text, 1);
     // end content area
 
     // creating info widgets
     std::vector<std::pair<QString, QString>> file_info{
         {"Source", entry.app},
-        {"Time", entry.timestamp.toString(Qt::ISODate)},
+        {"Time", entry.timestamp.toString()},
     };
 
     for (auto [name, data] : file_info) {

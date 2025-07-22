@@ -1,8 +1,8 @@
 #pragma once
 #include "FuzzyMac/FuzzyWidget.hpp"
-#include "FuzzyMac/ModeHandler.hpp"
 #include "FuzzyMac/InfoPanel.hpp"
 #include "FuzzyMac/MainWindow.hpp"
+#include "FuzzyMac/ModeHandler.hpp"
 
 #include <QDrag>
 #include <QFileIconProvider>
@@ -15,7 +15,6 @@
 
 #include <optional>
 #include <toml++/toml.h>
-
 
 class FileModeHandler : public ModeHandler {
 public:
@@ -31,7 +30,7 @@ public:
     void invokeQuery(const QString& query_) override;
     void handleQuickLook() override;
 
-    std::vector<FuzzyWidget*> createMainModeWidgets() override; 
+    std::vector<FuzzyWidget*> createMainModeWidgets() override;
     QString getPrefix() const override;
     void freeWidgets() override;
 
@@ -44,12 +43,12 @@ private:
     QMutex mutex;
 };
 
-
 class FileInfoPanel : public InfoPanelContent {
     Q_OBJECT;
 
 public:
     FileInfoPanel(QWidget* parent, MainWindow* win, QString path);
+
 private:
-    QFutureWatcher<QImage>* image_watcher; 
+    QFutureWatcher<QImage>* image_watcher;
 };

@@ -45,7 +45,6 @@ void MainWindow::createWidgets() {
     results_list = new ResultsPanel(main_widget);
     mode_label = new QLabel(main_widget);
     info_panel = new InfoPanel(main_widget, this);
-    info_panel->hide();
 
     QVBoxLayout* border_layout = new QVBoxLayout(border_widget);
     border_widget->setLayout(border_layout);
@@ -53,7 +52,12 @@ void MainWindow::createWidgets() {
     border_layout->addWidget(main_widget);
 
     setWindowFlag(Qt::WindowStaysOnTopHint);
-    resize(600, 400);
+    if (show_info_panel) {
+        resize(700, 500);
+    } else {
+        info_panel->hide();
+        resize(600, 400);
+    }
     QApplication::setQuitOnLastWindowClosed(false);
     makeWindowFloating(this);
 
@@ -240,14 +244,18 @@ void MainWindow::createKeybinds() {
     }
 
     new QShortcut(QKeySequence(Qt::MetaModifier | Qt::Key_I), this, [this]() {
-        if (config_manager->get<bool>({"animations"})) {
-            auto* anim = resizeAnimation(this, show_info_panel ? QSize(600, 400) : QSize(700, 500), 300);
-            anim->start();
-        }
-
         show_info_panel = !show_info_panel;
         info_panel->setHidden(!show_info_panel);
-        if(show_info_panel) {
+
+        if (config_manager->get<bool>({"animations"})) {
+            auto* anim = resizeAnimation(this, !show_info_panel ? QSize(600, 400) : QSize(700, 500), 300);
+            anim->start();
+            // connect(anim, &QAbstractAnimation::finished, [this]() {
+            //         centerWindow(this);
+            //     });
+        }
+
+        if (show_info_panel) {
             setInfoPanelContent(mode_handlers[mode]->getInfoPanelContent());
         }
     });
