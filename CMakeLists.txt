@@ -58,6 +58,7 @@ target_link_libraries(FuzzyMac PRIVATE
     "-framework Carbon"
     "-framework AppKit"
     "-framework QuickLook"
+    "-framework LocalAuthentication"
     "-framework QuickLookThumbnailing"
     "-framework QuickLookUI"
 )

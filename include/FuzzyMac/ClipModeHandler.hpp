@@ -27,7 +27,7 @@ public:
     void clear();
 
     QList<Entry>& getEntries();
-
+    const QList<Entry>& getEntries() const;
 
 private:
     QList<Entry> entries;
@@ -40,13 +40,21 @@ public:
     ClipboardWidget(MainWindow* win, QWidget* parent, ClipboardManager::Entry::Content* value, int idx);
 
     std::variant<QListWidgetItem*, FuzzyWidget*> getItem() override;
-    ClipboardManager::Entry::Content& getContent() const;
+    ClipboardManager::Entry::Content& getContent();
+    const ClipboardManager::Entry::Content& getContent() const;
     int getIdx() const;
 
 private:
     QLabel* text;
     ClipboardManager::Entry::Content* content;
     int idx;
+};
+
+class ClipboardInfoPanel : public InfoPanelContent {
+    Q_OBJECT;
+
+public:
+    ClipboardInfoPanel(QWidget* parent, MainWindow* win, const ClipboardManager::Entry&);
 };
 
 class ClipModeHandler : public ModeHandler {
@@ -56,6 +64,7 @@ public:
     QString getPrefix() const override;
     QString handleModeText() override;
     std::vector<FuzzyWidget*> createMainModeWidgets() override;
+    InfoPanelContent* getInfoPanelContent() const override;
 
     void enterHandler() override;
     void handleQuickLook() override;
@@ -69,6 +78,7 @@ private:
     QString path;
     std::vector<FuzzyWidget*> widgets;
     ClipboardManager clipboard_manager;
+    QList<std::string> black_list;
     QTimer timer;
     QTimer save_timer;
 };

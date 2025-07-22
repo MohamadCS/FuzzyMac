@@ -1,6 +1,7 @@
 #include "FuzzyMac/ClipModeHandler.hpp"
 #include "FuzzyMac/Algorithms.hpp"
 #include "FuzzyMac/FuzzyWidget.hpp"
+#include "FuzzyMac/InfoPanel.hpp"
 #include "FuzzyMac/ModeHandler.hpp"
 #include "FuzzyMac/NativeMacHandlers.hpp"
 #include <QClipboard>
@@ -8,7 +9,9 @@
 #include <QGuiApplication>
 #include <QLabel>
 #include <QMimeData>
+#include <QScrollArea>
 #include <QStandardPaths>
+#include <iterator>
 #include <optional>
 #include <variant>
 
@@ -51,9 +54,17 @@ ClipModeHandler::ClipModeHandler(MainWindow* win)
         if (clipboard_count != new_count) {
             clipboard_count = new_count;
             auto content = getClipboardData();
+            auto app_path = QString::fromStdString(getFrontmostAppName());
+
+            for (const auto& banned_app : black_list) {
+                if (app_path.contains(QString::fromStdString(banned_app), Qt::CaseInsensitive)) {
+                    return;
+                }
+            }
+
             if (content.has_value()) {
                 dirty = true;
-                clipboard_manager.addEntry(content.value(), "app");
+                clipboard_manager.addEntry(content.value(), std::move(app_path));
                 win->refreshResults();
             }
         }
@@ -74,6 +85,7 @@ ClipModeHandler::ClipModeHandler(MainWindow* win)
 
 void ClipModeHandler::load() {
     freeWidgets();
+    black_list = win->getConfigManager().getList<std::string>({"mode", "clipboard", "blacklist"});
     clipboard_manager.loadFromFile(path);
 }
 
@@ -228,6 +240,10 @@ QList<ClipboardManager::Entry>& ClipboardManager::getEntries() {
     return entries;
 }
 
+const QList<ClipboardManager::Entry>& ClipboardManager::getEntries() const {
+    return entries;
+}
+
 QString ClipModeHandler::getPrefix() const {
     return "yy";
 }
@@ -241,9 +257,10 @@ ClipboardWidget::ClipboardWidget(MainWindow* win, QWidget* parent, ClipboardMana
       content(value),
       idx(idx) {
     if (std::holds_alternative<QString>(*value)) {
-        text = new QLabel(std::get<QString>(*value).left(30).replace('\n', " ⏎ "), this);
+        text = new QLabel(std::get<QString>(*value).left(width()).trimmed().replace('\n', " ⏎ "), this);
     } else {
-        text = new QLabel(std::get<QList<QUrl>>(*value).first().toString().left(30).replace('\n', " ⏎ ") + "...", this);
+        text = new QLabel(std::get<QList<QUrl>>(*value).first().toString().left(width()).replace('\n', " ⏎ ") + "...",
+                          this);
     }
 }
 
@@ -251,12 +268,20 @@ int ClipboardWidget::getIdx() const {
     return idx;
 }
 
-ClipboardManager::Entry::Content& ClipboardWidget::getContent() const {
+ClipboardManager::Entry::Content& ClipboardWidget::getContent() {
+    return *content;
+}
+
+const ClipboardManager::Entry::Content& ClipboardWidget::getContent() const {
     return *content;
 }
 
 std::variant<QListWidgetItem*, FuzzyWidget*> ClipboardWidget::getItem() {
-    return win->createListItem(text->text());
+    if (std::holds_alternative<QString>(*content)) {
+        return win->createListItem(text->text(), win->getIcons()["text"]);
+    }
+
+    return win->createListItem(text->text(), win->getFileIcon(std::get<QList<QUrl>>(*content).first().toLocalFile()));
 }
 
 void ClipboardManager::clear() {
@@ -302,4 +327,170 @@ void ClipModeHandler::freeWidgets() {
     widgets.clear();
 
     main_widget = new QWidget(nullptr);
+}
+
+InfoPanelContent* ClipModeHandler::getInfoPanelContent() const {
+    if (win->getResultsNum() == 0) {
+        return nullptr;
+    }
+
+    auto& entries = clipboard_manager.getEntries();
+
+    return new ClipboardInfoPanel(
+        main_widget, win, entries[dynamic_cast<ClipboardWidget*>(widgets[win->getCurrentResultIdx()])->getIdx()]);
+}
+
+ClipboardInfoPanel::ClipboardInfoPanel(QWidget* parent, MainWindow* win, const ClipboardManager::Entry& entry)
+    : InfoPanelContent(parent, win) {
+
+    auto& cfg = win->getConfigManager();
+
+    setAutoFillBackground(true);
+    setStyleSheet(QString(R"(
+            color : %1;
+            background-color: %1;
+            border-left: 2 solid %2;
+    )")
+                      .arg(cfg.get<std::string>({"colors", "mode_label", "background"}))
+                      .arg(cfg.get<std::string>({"colors", "inner_border_color"})));
+
+    QString sheet = QString(R"(
+            color : %1;
+            background: %2;
+            font-weight: 300;
+            font-family: %3;
+            font-size: 12px;
+            padding: 5px;
+            border: transparent;
+    )")
+                        .arg(cfg.get<std::string>({"colors", "mode_label", "text"}))
+                        .arg(cfg.get<std::string>({"colors", "mode_label", "background"}))
+                        .arg(cfg.get<std::string>({"font"}));
+
+    auto* layout = new QVBoxLayout(this);
+    layout->setSpacing(0);
+    layout->setContentsMargins(0, 0, 0, 0);
+
+    // creating content area
+    QScrollArea* content_area = new QScrollArea(this);
+
+    QLabel* content_text = new QLabel(this);
+    content_area->setWidget(content_text);
+    content_area->setWidgetResizable(true);
+
+    content_text->setStyleSheet(sheet);
+    content_text->setWordWrap(true);
+
+    content_area->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+    content_area->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+    content_text->setTextInteractionFlags(Qt::TextSelectableByMouse);
+    content_text->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+
+    if (std::holds_alternative<QString>(entry.value)) {
+        content_text->setText(std::get<QString>(entry.value));
+    } else {
+        QString text{};
+        for (const auto& url : std::get<QList<QUrl>>(entry.value)) {
+            auto url_str = url.toString();
+            text.append(url_str);
+            text.append("\n");
+        }
+
+        content_text->setText(text);
+    }
+
+    layout->addWidget(content_area, 1);
+    // end content area
+
+    // creating info widgets
+    std::vector<std::pair<QString, QString>> file_info{
+        {"Source", entry.app},
+        {"Time", entry.timestamp.toString(Qt::ISODate)},
+    };
+
+    for (auto [name, data] : file_info) {
+        auto* label_layout = new QHBoxLayout;
+        label_layout->setSpacing(0);
+        label_layout->setContentsMargins(0, 0, 0, 0);
+
+        QLabel* name_label = new QLabel(name, this);
+        QLabel* data_label = new QLabel(data, this);
+
+        data_label->setWordWrap(true);
+        data_label->setStyleSheet(sheet);
+        data_label->setAlignment(Qt::AlignRight);
+
+        name_label->setWordWrap(true);
+        name_label->setStyleSheet(sheet);
+
+        label_layout->addWidget(name_label);
+        label_layout->addWidget(data_label, 1);
+
+        QFrame* line = new QFrame(this);
+        line->setFrameShape(QFrame::HLine);
+        line->setFrameShadow(QFrame::Plain);
+        line->setStyleSheet(QString(R"( color : %1;)").arg(cfg.get<std::string>({"colors", "inner_border_color"})));
+
+        layout->addLayout(label_layout);
+        layout->addWidget(line);
+    }
+
+    content_area->setStyleSheet(QString(R"(
+        QScrollArea {
+            color: transparent;
+            background: transparent;
+            border: none;
+        }
+        QScrollBar:vertical {
+            border: none;
+            background: transparent;
+            width: 12px;  
+            padding: 2px;
+            border-radius: 4px;
+        }
+        QScrollBar::handle:vertical {
+            background: %1;  
+            min-height: 20px; 
+            border-radius: 4px;
+        }
+        QScrollBar::handle:vertical:hover {
+            background: %2;  
+        }
+        QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+            background: transparent;
+            height: 0px;           
+            border: none;
+        }
+        QScrollBar::up-arrow:vertical, QScrollBar::down-arrow:vertical {
+            background: transparent;
+        }
+
+        QScrollBar:horizontal {
+            border: none;
+            background: transparent;
+            width: 12px;  
+            padding: 2px;
+            border-radius: 4px;
+        }
+        QScrollBar::handle:horizontal {
+            background: %1;  
+            min-height: 20px; 
+            border-radius: 4px;
+        }
+        QScrollBar::handle:horizontal:hover {
+            background: %2;  
+        }
+        QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
+            background: transparent;
+            height: 0px;           
+            border: none;
+        }
+        QScrollBar::up-arrow:horizontal, QScrollBar::down-arrow:horizontal {
+            background: transparent;
+        }
+            )")
+                                    .arg(cfg.get<std::string>({"colors", "results_list", "scrollbar_color"}))
+                                    .arg(cfg.get<std::string>({"colors", "results_list", "scrollbar_hold_color"})));
+
+    setLayout(layout);
 }

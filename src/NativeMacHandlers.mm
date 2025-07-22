@@ -14,6 +14,7 @@
 
 #import <AppKit/AppKit.h>
 #include <Cocoa/Cocoa.h>
+#import <LocalAuthentication/LocalAuthentication.h>
 #include <QuickLook/QuickLook.h>
 #import <QuickLookThumbnailing/QuickLookThumbnailing.h>
 #include <QuickLookUI/QuickLookUI.h>
@@ -131,6 +132,61 @@ extern "C++" QImage getThumbnailImage(const QString &filePath, int width,
     sem->acquire();
 
     delete sem;
+    return result;
+  }
+}
+
+#import <Foundation/Foundation.h>
+#import <LocalAuthentication/LocalAuthentication.h>
+
+extern "C++" bool authenticateWithTouchID() {
+  NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+
+  LAContext *context = [[LAContext alloc] init];
+  NSError *authError = nil;
+
+  bool canEvaluate =
+      [context canEvaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics
+                           error:&authError];
+
+  if (!canEvaluate) {
+    [context release];
+    [pool drain];
+    return false;
+  }
+
+  __block BOOL success = NO;
+  std::binary_semaphore *sem = new std::binary_semaphore{0};
+
+  [context evaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics
+          localizedReason:@"Unlock clipboard history"
+                    reply:^(BOOL didSucceed, NSError *_Nullable error) {
+                      success = didSucceed;
+                      sem->release();
+                    }];
+
+  sem->acquire();
+  delete sem;
+  [context release];
+  [pool drain];
+  return success;
+}
+
+extern "C++" std::string getFrontmostAppName() {
+  @autoreleasepool {
+
+    NSWorkspace *workspace = [NSWorkspace sharedWorkspace];
+    NSRunningApplication *activeApp = [workspace frontmostApplication];
+    NSURL *bundleURL = [activeApp bundleURL];
+
+    std::string result;
+    if (bundleURL != nil) {
+      NSString *path = [bundleURL path];
+      result = [path UTF8String];
+    } else {
+      result = "Unknown";
+    }
+
     return result;
   }
 }
