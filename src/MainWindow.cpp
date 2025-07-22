@@ -45,6 +45,7 @@ void MainWindow::createWidgets() {
     results_list = new ResultsPanel(main_widget);
     mode_label = new QLabel(main_widget);
     info_panel = new InfoPanel(main_widget, this);
+    info_panel->hide();
 
     QVBoxLayout* border_layout = new QVBoxLayout(border_widget);
     border_widget->setLayout(border_layout);
@@ -52,7 +53,7 @@ void MainWindow::createWidgets() {
     border_layout->addWidget(main_widget);
 
     setWindowFlag(Qt::WindowStaysOnTopHint);
-    resize(700, 500);
+    resize(600, 400);
     QApplication::setQuitOnLastWindowClosed(false);
     makeWindowFloating(this);
 
@@ -88,7 +89,9 @@ void MainWindow::nextItem() {
     if (next != results_list->currentRow()) {
         results_list->setCurrentRow(next);
     }
-    setInfoPanelContent(mode_handlers[mode]->getInfoPanelContent());
+    if (show_info_panel) {
+        setInfoPanelContent(mode_handlers[mode]->getInfoPanelContent());
+    }
 }
 
 void MainWindow::openItem() {
@@ -112,7 +115,9 @@ void MainWindow::prevItem() {
         results_list->setCurrentRow(prev);
     }
 
-    setInfoPanelContent(mode_handlers[mode]->getInfoPanelContent());
+    if (show_info_panel) {
+        setInfoPanelContent(mode_handlers[mode]->getInfoPanelContent());
+    }
 }
 
 void MainWindow::wakeup() {
@@ -200,7 +205,9 @@ void MainWindow::processResults(const ResultsVec& results) {
     }
 
     // update info panel;
-    setInfoPanelContent(mode_handlers[mode]->getInfoPanelContent());
+    if (show_info_panel) {
+        setInfoPanelContent(mode_handlers[mode]->getInfoPanelContent());
+    }
 }
 
 void MainWindow::connectEventHandlers() {
@@ -211,7 +218,9 @@ void MainWindow::connectEventHandlers() {
         window()->windowHandle(), &QWindow::screenChanged, this, [this](QScreen* newScreen) { centerWindow(this); });
     connect(results_list, &QListWidget::itemDoubleClicked, this, [this](QListWidgetItem* item) { openItem(); });
     connect(results_list, &QListWidget::itemClicked, this, [this](QListWidgetItem* item) {
-        setInfoPanelContent(mode_handlers[mode]->getInfoPanelContent());
+        if (show_info_panel) {
+            setInfoPanelContent(mode_handlers[mode]->getInfoPanelContent());
+        }
     });
 
     connect(config_manager, &ConfigManager::configChange, this, [this]() { loadConfig(); });
@@ -230,6 +239,18 @@ void MainWindow::createKeybinds() {
         // disableCmdQ();
     }
 
+    new QShortcut(QKeySequence(Qt::MetaModifier | Qt::Key_I), this, [this]() {
+        if (config_manager->get<bool>({"animations"})) {
+            auto* anim = resizeAnimation(this, show_info_panel ? QSize(600, 400) : QSize(700, 500), 300);
+            anim->start();
+        }
+
+        show_info_panel = !show_info_panel;
+        info_panel->setHidden(!show_info_panel);
+        if(show_info_panel) {
+            setInfoPanelContent(mode_handlers[mode]->getInfoPanelContent());
+        }
+    });
     new QShortcut(QKeySequence(Qt::MetaModifier | Qt::Key_N), this, SLOT(nextItem()));
     new QShortcut(QKeySequence(Qt::MetaModifier | Qt::Key_P), this, SLOT(prevItem()));
 
@@ -252,6 +273,8 @@ MainWindow::MainWindow(Mode mode, QWidget* parent)
     mode_handlers[Mode::CLI] = mode_factory->create(Mode::CLI, this);
     mode = Mode::CLI;
 #endif
+
+    show_info_panel = config_manager->get<bool>({"info_panel"});
 
     createWidgets();
     connectEventHandlers();
@@ -435,7 +458,7 @@ void MainWindow::changeMode(Mode new_mode) {
 
     // animate if transitioning to a new mode
     if (new_mode != Mode::APP && config_manager->get<bool>({"animations"})) {
-        bounceAnimator(this, 0.05, 300);
+        bounceAnimator(this, 0.05, 200);
     }
 }
 
