@@ -10,8 +10,10 @@
 #include <QLabel>
 #include <QMimeData>
 #include <QPlainTextEdit>
+#include <QThreadPool>
 #include <QScrollArea>
 #include <QStandardPaths>
+#include <QtConcurrent>
 #include <iterator>
 #include <optional>
 #include <variant>
@@ -78,7 +80,7 @@ ClipModeHandler::ClipModeHandler(MainWindow* win)
         dirty = false;
     });
 
-    timer.start(1000);
+    timer.start(500);
     save_timer.start(10000);
 
     load();
@@ -178,16 +180,21 @@ void ClipboardManager::loadFromFile(const QString& path) {
 }
 
 void ClipboardManager::saveToFile(const QString& path) const {
-    QJsonArray arr;
-    for (const auto& entry : entries)
-        arr.append(entry.toJson());
+    auto local_entries = entries;
 
-    QJsonDocument doc(arr);
-    QFile file(path);
-    if (!file.open(QIODevice::WriteOnly))
-        return;
+    QThreadPool::globalInstance()->start([&local_entries, path]() -> void {
+        QJsonArray arr;
+        for (const auto& entry : local_entries)
+            arr.append(entry.toJson());
 
-    file.write(doc.toJson(QJsonDocument::Indented));
+        QJsonDocument doc(arr);
+        QFile file(path);
+        if (!file.open(QIODevice::WriteOnly))
+            return;
+
+        file.write(doc.toJson(QJsonDocument::Indented));
+        file.close();
+    });
 }
 
 QJsonObject ClipboardManager::Entry::toJson() const {
