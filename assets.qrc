@@ -8,4 +8,7 @@
   <qresource prefix="/">
     <file>./res/icons/clipboard_clear.svg</file>
   </qresource>
+  <qresource prefix="/">
+    <file>./res/icons/text.svg</file>
+  </qresource>
 </RCC>

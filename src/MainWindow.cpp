@@ -14,6 +14,7 @@
 
 #include <QApplication>
 #include <QClipboard>
+#include <QPixmapCache>
 #include <QDebug>
 #include <QEvent>
 #include <QFont>
@@ -54,10 +55,8 @@ void MainWindow::setupLayout() {
 
     layout->addWidget(query_edit, 0);
     layout->addWidget(mode_label, 0);
-    info_panel->setMinimumWidth(400);
-    results_list->setMinimumWidth(250);
-    content_layout->addWidget(results_list, 0);
-    content_layout->addWidget(info_panel, 0);
+    content_layout->addWidget(results_list, 5);
+    content_layout->addWidget(info_panel, 8);
     content_layout->setSpacing(0);
     layout->addLayout(content_layout);
 
@@ -241,7 +240,7 @@ MainWindow::MainWindow(Mode mode, QWidget* parent)
         mode_handlers[mode] = mode_factory->create(mode, this);
     }
 #else
-    mode_handler[Mode::CLI] = mode_factory->create(Mode::CLI, this);
+    mode_handlers[Mode::CLI] = mode_factory->create(Mode::CLI, this);
     mode = Mode::CLI;
 #endif
 
@@ -272,6 +271,7 @@ void MainWindow::onApplicationStateChanged(Qt::ApplicationState state) {
 #endif
 
 void MainWindow::loadConfig() {
+    QPixmapCache::clear();
     query_edit->loadConfig();
     results_list->loadConfig();
     loadStyle();
@@ -374,6 +374,11 @@ void MainWindow::loadStyle() {
              ":/res/icons/file_search.svg",
              QColor(QString::fromStdString(getConfigManager().get<std::string>({"colors", "results_list", "text"}))))},
 
+        {"text",
+         createIcon(
+             ":/res/icons/text.svg",
+             QColor(QString::fromStdString(getConfigManager().get<std::string>({"colors", "results_list", "text"}))))},
+
     };
 
     auto border_size = config_manager->get<int>({"border_size"});
@@ -441,7 +446,6 @@ std::vector<FuzzyWidget*> MainWindow::getModesWidgets() const {
     return res;
 }
 
-
-std::map<QString,QIcon> MainWindow::getIcons() {
+std::map<QString, QIcon> MainWindow::getIcons() {
     return icons;
 }

@@ -1,10 +1,10 @@
 #pragma once
 
-#include <string>
-#include <QString>
 #include <QImage>
 #include <QPixmap>
+#include <QString>
 #include <QTimer>
+#include <string>
 
 extern "C" void deactivateApp();
 
@@ -22,5 +22,6 @@ extern "C++" QImage getThumbnailImage(const QString& filePath, int width, int he
 
 extern "C++" int getClipboardCount();
 
+extern "C++" bool authenticateWithTouchID();
 
-
+extern "C++" std::string getFrontmostAppName();
