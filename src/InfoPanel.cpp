@@ -17,12 +17,13 @@ void InfoPanel::setContent(InfoPanelContent* new_content) {
     QWidget {
             color : %1;
             background-color: %2;
+            margin: 0px;
             border-left: 2px solid %3;
     }
     )")
                         .arg(cfg.get<std::string>({"colors", "mode_label", "background"}))
                         .arg(cfg.get<std::string>({"colors", "mode_label", "background"}))
-                        .arg(cfg.get<std::string>({"colors", "inner_border_color"}));
+                        .arg(cfg.get<std::string>({"colors", "inner_border"}));
     setStyleSheet(sheet);
 
     if (content) {

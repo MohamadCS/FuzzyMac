@@ -218,7 +218,7 @@ FileInfoPanel::FileInfoPanel(QWidget* parent, MainWindow* win, QString path)
             border-left: 2 solid %2;
     )")
                       .arg(cfg.get<std::string>({"colors", "mode_label", "background"}))
-                      .arg(cfg.get<std::string>({"colors", "inner_border_color"})));
+                      .arg(cfg.get<std::string>({"colors", "inner_border"})));
 
     QString sheet = QString(R"(
             color : %1;
@@ -253,14 +253,11 @@ FileInfoPanel::FileInfoPanel(QWidget* parent, MainWindow* win, QString path)
     thumb->setStyleSheet(sheet);
 
     layout->setSpacing(0);
-    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setContentsMargins(1, 0, 0, 0);
     layout->addWidget(thumb, 0);
 
     auto future = QtConcurrent::run([this, path]() -> QImage {
         auto image = getThumbnailImage(path, 128, 128);
-        if (image.isNull()) {
-            return this->win->getFileIcon(path).pixmap(128, 128).toImage();
-        }
         return image;
     });
 
@@ -271,7 +268,8 @@ FileInfoPanel::FileInfoPanel(QWidget* parent, MainWindow* win, QString path)
     center->setStyleSheet(sheet);
     layout->addWidget(center, 1);
 
-    for (auto [name, data] : file_info) {
+    for (int i = 0; i < file_info.size(); ++i) {
+        auto [name, data] = file_info[i];
         auto* label_layout = new QHBoxLayout;
         label_layout->setSpacing(0);
         label_layout->setContentsMargins(0, 0, 0, 0);
@@ -289,13 +287,13 @@ FileInfoPanel::FileInfoPanel(QWidget* parent, MainWindow* win, QString path)
         label_layout->addWidget(name_label);
         label_layout->addWidget(data_label, 1);
 
+
         QFrame* line = new QFrame(this);
         line->setFrameShape(QFrame::HLine);
         line->setFrameShadow(QFrame::Plain);
-        line->setStyleSheet(QString(R"( color : %1;)").arg(cfg.get<std::string>({"colors", "inner_border_color"})));
-
-        layout->addLayout(label_layout);
+        line->setStyleSheet(QString(R"( color : %1;)").arg(cfg.get<std::string>({"colors", "inner_border"})));
         layout->addWidget(line);
+        layout->addLayout(label_layout);
     }
 
     setLayout(layout);

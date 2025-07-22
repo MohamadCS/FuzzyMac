@@ -32,6 +32,7 @@ void QueryEdit::loadConfig() {
     const auto& config = win->getConfigManager();
     setStyleSheet(QString(R"(
                                     QLineEdit {
+                                        margin : 0px;
                                         selection-background-color : %1;
                                         selection-color : %2;
                                         color: %3;

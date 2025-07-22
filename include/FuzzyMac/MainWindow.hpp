@@ -86,7 +86,8 @@ private slots:
 protected:
 private:
     // for layout
-    QWidget* central;
+    QWidget* border_widget;
+    QWidget* main_widget;
     QVBoxLayout* layout;
 
     // main widgets, life time is managed by MainWindow
@@ -111,10 +112,6 @@ private:
 
     // creates all main widgets
     void createWidgets();
-
-    // setups the general layout of the mainwindow
-    void setupLayout();
-
     // creates the application shortcuts
     void createKeybinds();
 
