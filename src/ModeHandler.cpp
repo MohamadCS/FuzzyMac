@@ -47,6 +47,9 @@ InfoPanelContent* ModeHandler::getInfoPanelContent() const {
     return nullptr;
 }
 
+void ModeHandler::handleQuickLook() {
+}
+
 std::vector<FuzzyWidget*> ModeHandler::createMainModeWidgets() {
     return {};
 }

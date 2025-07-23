@@ -33,7 +33,7 @@ public:
     virtual QString getPrefix() const;
 
     // cmd-y handle  
-    virtual void handleQuickLook() = 0;
+    virtual void handleQuickLook();
 
     virtual std::optional<QIcon> getIcon() const;
 

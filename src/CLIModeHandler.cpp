@@ -35,8 +35,6 @@ void CLIModeHandler::load() {
         entries.push_back(line.c_str());
         widgets.push_back(new TextWidget(win, main_widget, line.c_str()));
     }
-
-    qDebug() << entries.size();
 }
 
 void CLIModeHandler::enterHandler() {
@@ -53,7 +51,7 @@ void CLIModeHandler::invokeQuery(const QString& query_) {
     auto results = filter(win, query_, entries);
 
     ResultsVec res{};
-    res.reserve(entries.size());
+    res.reserve(results.size());
 
     for (auto& entry : results) {
         res.push_back(new TextWidget(win, main_widget, entry));
