@@ -49,15 +49,16 @@ void MainWindow::createWidgets() {
     QVBoxLayout* border_layout = new QVBoxLayout(border_widget);
     border_widget->setLayout(border_layout);
 
+    resize(700, 500);
+
     border_layout->addWidget(main_widget);
 
-    setWindowFlag(Qt::WindowStaysOnTopHint);
-    if (show_info_panel) {
-        resize(700, 500);
-    } else {
+    if (!show_info_panel) {
         info_panel->hide();
-        resize(600, 400);
     }
+    setWindowFlag(Qt::WindowStaysOnTopHint);
+
+
     QApplication::setQuitOnLastWindowClosed(false);
     makeWindowFloating(this);
 
@@ -176,6 +177,7 @@ void MainWindow::onTextChange(const QString& text) {
         matchModeShortcut(text);
     }
 
+
     // let the mode handle the query
     mode_handlers[mode]->invokeQuery(query_edit->text());
 
@@ -249,14 +251,6 @@ void MainWindow::createKeybinds() {
     new QShortcut(QKeySequence(Qt::MetaModifier | Qt::Key_I), this, [this]() {
         show_info_panel = !show_info_panel;
         info_panel->setHidden(!show_info_panel);
-
-        if (config_manager->get<bool>({"animations"})) {
-            auto* anim = resizeAnimation(this, !show_info_panel ? QSize(600, 400) : QSize(700, 500), 300);
-            anim->start();
-            // connect(anim, &QAbstractAnimation::finished, [this]() {
-            //         centerWindow(this);
-            //     });
-        }
 
         if (show_info_panel) {
             setInfoPanelContent(mode_handlers[mode]->getInfoPanelContent());

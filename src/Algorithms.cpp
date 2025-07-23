@@ -12,6 +12,7 @@ int fuzzyScore(const QString& cand, const QString& query) {
     int c = 0;
     int prefix_score = 0;
 
+    // prefix score
     while (q < query.size() && c < cand.size()) {
         if (query[q] != lower_cand[c]) {
             break;
@@ -22,6 +23,7 @@ int fuzzyScore(const QString& cand, const QString& query) {
         prefix_score++;
     }
 
+    // continue to subseq score
     while (q < query.size() && c < cand.size()) {
         if (query[q] == lower_cand[c]) {
             sub_seq_score += 1;
@@ -30,6 +32,7 @@ int fuzzyScore(const QString& cand, const QString& query) {
         ++c;
     }
 
+    // cand is not subseq of query
     if (q != query.size()) {
         return -1;
     }
