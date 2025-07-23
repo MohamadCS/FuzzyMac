@@ -65,9 +65,11 @@ void MainWindow::createWidgets() {
 
     layout->addWidget(query_edit, 0);
     layout->addWidget(mode_label, 0);
+
     content_layout->addWidget(results_list, 5);
     content_layout->addWidget(info_panel, 8);
     content_layout->setSpacing(0);
+
     layout->addLayout(content_layout);
 
     layout->setContentsMargins(0, 0, 0, 0);
@@ -243,6 +245,7 @@ void MainWindow::createKeybinds() {
         // disableCmdQ();
     }
 
+#ifndef CLI_TOOL
     new QShortcut(QKeySequence(Qt::MetaModifier | Qt::Key_I), this, [this]() {
         show_info_panel = !show_info_panel;
         info_panel->setHidden(!show_info_panel);
@@ -259,6 +262,8 @@ void MainWindow::createKeybinds() {
             setInfoPanelContent(mode_handlers[mode]->getInfoPanelContent());
         }
     });
+#endif
+
     new QShortcut(QKeySequence(Qt::MetaModifier | Qt::Key_N), this, SLOT(nextItem()));
     new QShortcut(QKeySequence(Qt::MetaModifier | Qt::Key_P), this, SLOT(prevItem()));
 
