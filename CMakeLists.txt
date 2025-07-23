@@ -78,26 +78,26 @@ set_target_properties(FuzzyMac PROPERTIES
 # CLI Target (FuzzyMacCLI)
 # =========================
 
+add_executable(FuzzyMacCLI ${SOURCES} ${HEADERS} assets.qrc)
 
-# add_executable(FuzzyMacCLI ${SOURCES} ${HEADERS} assets.qrc)
-#
-# target_compile_definitions(FuzzyMacCLI PRIVATE CLI_TOOL)
-#
-# target_link_libraries(FuzzyMacCLI PRIVATE 
-#     Qt6::Core 
-#     Qt6::Gui
-#     Qt6::Svg
-#     Qt6::Widgets 
-#     Qt6::Concurrent
-#     "-framework Cocoa"
-#     "-framework Carbon"
-#     "-framework AppKit"
-#     "-framework QuickLook"
-#     "-framework QuickLookThumbnailing"
-#     "-framework QuickLookUI"
-# )
-#
-# set_target_properties(FuzzyMacCLI PROPERTIES
-#     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/build/cli/"
-# )
-#
+target_compile_definitions(FuzzyMacCLI PRIVATE CLI_TOOL)
+
+target_link_libraries(FuzzyMacCLI PRIVATE 
+    Qt6::Core 
+    Qt6::Gui
+    Qt6::Svg
+    Qt6::Widgets 
+    Qt6::Concurrent
+    "-framework Cocoa"
+    "-framework Carbon"
+    "-framework AppKit"
+    "-framework QuickLook"
+    "-framework LocalAuthentication"
+    "-framework QuickLookThumbnailing"
+    "-framework QuickLookUI"
+)
+
+set_target_properties(FuzzyMacCLI PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/build/cli/"
+)
+
