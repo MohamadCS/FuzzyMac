@@ -34,11 +34,12 @@ AppModeHandler::~AppModeHandler() {};
 QString AppModeHandler::handleModeText() {
     return "";
 }
+
 void AppModeHandler::handleQuickLook() {
 }
 
 void AppModeHandler::load() {
-    apps.clear();
+    app_paths.clear();
     freeWidgets();
 
     QStringList paths;
@@ -57,7 +58,7 @@ void AppModeHandler::load() {
         QFileInfoList entryInfoList = dir.entryInfoList(QDir::Dirs);
         for (const QFileInfo& entry : entryInfoList) {
             if (entry.suffix() == "app") {
-                apps << entry.absoluteFilePath();
+                app_paths << entry.absoluteFilePath();
             }
         }
     }
@@ -81,7 +82,7 @@ void AppModeHandler::load() {
 
     // add special apps(specific apps instead of dirs)
     for (const auto& path : paths) {
-        apps.push_back(path);
+        app_paths.push_back(path);
         widgets.push_back(
             new FileWidget(win, main_widget, path, win->getConfigManager().get<bool>({"mode", "apps", "show_icons"})));
     }
@@ -127,7 +128,9 @@ void AppModeHandler::invokeQuery(const QString& query) {
         widgets.push_back(calc_widget);
     }
 
-    auto search_results = filter(win, query, apps);
+    std::vector<int> indices{};
+    auto search_results =
+        filter(query, app_paths, &indices, [](const QString& str) { return QFileInfo(str).fileName(); });
 
     // BUG: Mode widgets make memory consumption like a 1GB for some reason.
 
@@ -141,11 +144,13 @@ void AppModeHandler::invokeQuery(const QString& query) {
         modes_search_phrases.push_back(widget->getSearchPhrase());
         search_to_widget.insert({widget->getSearchPhrase(), widget});
     }
-    auto modes_results = filter(win, query, modes_search_phrases);
+    auto modes_results = filter(query, modes_search_phrases);
 
-    for (const auto& path : search_results) {
-        widgets.push_back(
-            new FileWidget(win, main_widget, path, win->getConfigManager().get<bool>({"mode", "apps", "show_icons"})));
+    for (int i = 0; i < search_results.size(); ++i) {
+        widgets.push_back(new FileWidget(win,
+                                         main_widget,
+                                         app_paths[indices[i]],
+                                         win->getConfigManager().get<bool>({"mode", "apps", "show_icons"})));
     }
 
     for (const auto& key : modes_results) {

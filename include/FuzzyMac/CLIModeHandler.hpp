@@ -1,7 +1,7 @@
 #pragma once
 
-#include "FuzzyMac/ModeHandler.hpp"
 #include "FuzzyMac/FuzzyWidget.hpp"
+#include "FuzzyMac/ModeHandler.hpp"
 
 class CLIModeHandler : public ModeHandler {
 public:
@@ -10,12 +10,12 @@ public:
     void load() override;
     void enterHandler() override;
     void invokeQuery(const QString& query_) override;
+    void freeWidgets() override;
     QString handleModeText() override;
     void handleQuickLook() override;
 
 private:
     QStringList entries;
-    std::vector<TextWidget*> widgets;
+    std::vector<FuzzyWidget*> widgets;
     bool loaded = false;
 };
-

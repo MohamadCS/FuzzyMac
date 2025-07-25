@@ -154,7 +154,7 @@ void ClipModeHandler::invokeQuery(const QString& query) {
             widgets.push_back(new ClipboardWidget(win, main_widget, &entries[i].value, i));
         }
     } else {
-        filter(win, query, list, &idx_vec);
+        filter(query, list, &idx_vec);
         for (int i = 0; i < idx_vec.size(); ++i) {
             widgets.push_back(new ClipboardWidget(win, main_widget, &entries[idx_vec[i]].value, idx_vec[i]));
         }

@@ -1,7 +1,9 @@
 #pragma once
 
-#include "FuzzyMac/MainWindow.hpp"
 #include <QString>
+#include <QStringList>
+#include <functional>
 
 int fuzzyScore(const QString& cand, const QString& query);
-QStringList filter(MainWindow* win, const QString& query_, const QStringList& entries, std::vector<int>* idx_vec = nullptr);
+QStringList filter(const QString& query_, const QStringList& entries, std::vector<int>* idx_vec = nullptr,
+                   std::optional<std::function<QString(const QString&)>> format = std::nullopt);

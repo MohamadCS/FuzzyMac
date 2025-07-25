@@ -16,7 +16,7 @@ TextWidget::TextWidget(MainWindow* win, QWidget* parent, const QString& value)
     text = new QLabel(value);
 }
 
-QString TextWidget::getValue() const {
+QString TextWidget::getSearchPhrase() const {
     return text->text();
 }
 
