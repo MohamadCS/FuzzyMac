@@ -40,7 +40,8 @@ int fuzzyScore(const QString& cand, const QString& query) {
     return sub_seq_score + prefix_score * 10;
 }
 
-QStringList filter(MainWindow* win, const QString& query_, const QStringList& entries, std::vector<int>* idx_vec) {
+QStringList filter(const QString& query_, const QStringList& entries, std::vector<int>* idx_vec,
+                   std::optional<std::function<QString(const QString&)>> format) {
 
     QString query = query_.toLower();
 
@@ -48,7 +49,7 @@ QStringList filter(MainWindow* win, const QString& query_, const QStringList& en
 
     // calculate the score for each entry.
     for (int i = 0; i < entries.size(); ++i) {
-        int score = fuzzyScore(QFileInfo(entries[i]).fileName(), query);
+        int score = fuzzyScore((format) ? (*format)(entries[i]) : entries[i], query);
 
         if (score >= 0) {
             scores_per_idx.push_back({score, i});

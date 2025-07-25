@@ -126,7 +126,7 @@ void FileModeHandler::invokeQuery(const QString& query_) {
 
     auto future = QtConcurrent::run([this, query]() -> QStringList {
         // return spotlightSearch(paths, std::format("kMDItemDisplayName LIKE[cd] '{}*'", query.toStdString()));
-        return filter(win, query, entries);
+        return filter(query, entries, nullptr, [](const QString& str) { return QFileInfo(str).fileName(); });
     });
 
     future_watcher->setFuture(future);

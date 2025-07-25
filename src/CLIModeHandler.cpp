@@ -43,21 +43,27 @@ void CLIModeHandler::enterHandler() {
     }
 
     int i = std::max(win->getCurrentResultIdx(), 0);
-    std::cout << widgets[i]->getValue().toStdString();
+    std::cout << widgets[i]->getSearchPhrase().toStdString();
     exit(0);
 }
 
-void CLIModeHandler::invokeQuery(const QString& query_) {
-    auto results = filter(win, query_, entries);
+void CLIModeHandler::freeWidgets() {
+    widgets.clear();
+    main_widget->deleteLater();
+    main_widget = new QWidget(nullptr);
+}
 
-    ResultsVec res{};
-    res.reserve(results.size());
+void CLIModeHandler::invokeQuery(const QString& query_) {
+
+    freeWidgets();
+
+    auto results = filter(query_, entries);
 
     for (auto& entry : results) {
-        res.push_back(new TextWidget(win, main_widget, entry));
+        widgets.push_back(new TextWidget(win, main_widget, entry));
     }
 
-    win->processResults(res);
+    win->processResults(widgets);
 }
 
 void CLIModeHandler::handleQuickLook() {

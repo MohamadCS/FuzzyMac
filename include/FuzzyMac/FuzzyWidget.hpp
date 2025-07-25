@@ -29,7 +29,7 @@ public:
     TextWidget(MainWindow* win, QWidget* parent, const QString& value);
 
     std::variant<QListWidgetItem*, FuzzyWidget*> getItem() override;
-    QString getValue() const;
+    QString getSearchPhrase() const override;
 
 private:
     QLabel* text;

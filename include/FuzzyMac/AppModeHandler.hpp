@@ -16,7 +16,7 @@ public:
 
 private:
     bool math_mode = false;
-    QStringList apps;
+    QStringList app_paths;
     QStringList app_dirs;
     std::vector<FuzzyWidget*> widgets;
     QFileSystemWatcher* app_watcher;
