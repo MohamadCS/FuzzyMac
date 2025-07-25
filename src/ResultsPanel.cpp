@@ -6,6 +6,13 @@
 #include <QString>
 #include <QUrl>
 
+ResultsPanel::ResultsPanel(QWidget* parent)
+    : QListWidget(parent) {
+    setDragEnabled(true);
+    setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    setSelectionMode(QAbstractItemView::SingleSelection);
+}
+
 void ResultsPanel::startDrag(Qt::DropActions supportedActions) {
     MainWindow* win = qobject_cast<MainWindow*>(window());
     const ModeHandler* mod_handler = win->getCurrentModeHandler();
@@ -76,6 +83,5 @@ void ResultsPanel::loadConfig() {
                       .arg(config.get<std::string>({"colors", "results_list", "background"}))
                       .arg(config.get<std::string>({"font"}))
                       .arg(config.get<std::string>({"colors", "results_list", "scrollbar_color"}))
-                      .arg(config.get<std::string>({"colors", "results_list", "scrollbar_hold_color"}))
-                      );
+                      .arg(config.get<std::string>({"colors", "results_list", "scrollbar_hold_color"})));
 }

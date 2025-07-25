@@ -28,6 +28,7 @@
 #include <QStaticText>
 #include <QWindow>
 #include <QtConcurrent>
+#include <algorithm>
 #include <memory>
 #include <variant>
 
@@ -46,24 +47,22 @@ void MainWindow::createWidgets() {
     mode_label = new QLabel(main_widget);
     info_panel = new InfoPanel(main_widget, this);
 
+    // MainWindow settings
+    QApplication::setQuitOnLastWindowClosed(false);
+    setWindowFlag(Qt::WindowStaysOnTopHint);
+    resize(700, 500);
+    makeWindowFloating(this);
+
     QVBoxLayout* border_layout = new QVBoxLayout(border_widget);
     border_widget->setLayout(border_layout);
-
-    resize(700, 500);
-
     border_layout->addWidget(main_widget);
-
     if (!show_info_panel) {
         info_panel->hide();
     }
-    setWindowFlag(Qt::WindowStaysOnTopHint);
-
-
-    QApplication::setQuitOnLastWindowClosed(false);
-    makeWindowFloating(this);
 
     QHBoxLayout* content_layout = new QHBoxLayout;
 
+    // main layout widgets
     layout->addWidget(query_edit, 0);
     layout->addWidget(mode_label, 0);
 
@@ -71,31 +70,27 @@ void MainWindow::createWidgets() {
     content_layout->addWidget(info_panel, 8);
     content_layout->setSpacing(0);
 
+    // main layout settings
     layout->addLayout(content_layout);
-
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(0);
     layout->setSpacing(0);
-    mode_label->setAlignment(Qt::AlignCenter | Qt::AlignVCenter);
 
-    results_list->setDragEnabled(true);
-    results_list->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    results_list->setSelectionMode(QAbstractItemView::SingleSelection);
+    mode_label->setAlignment(Qt::AlignCenter | Qt::AlignVCenter);
 
     main_widget->setLayout(layout);
     setCentralWidget(border_widget);
     wakeup();
 }
 
-void MainWindow::nextItem() {
-    int next = std::min(results_list->count() - 1, results_list->currentRow() + 1);
-    if (next == results_list->currentRow()) {
-        return;
+void MainWindow::selectItem(int idx) {
+    int eff_idx = std::clamp(idx, 0, results_list->count() - 1);
+    int curr_row = results_list->currentRow();
+
+    if (eff_idx != curr_row) {
+        results_list->setCurrentRow(eff_idx);
     }
 
-    if (next != results_list->currentRow()) {
-        results_list->setCurrentRow(next);
-    }
     if (show_info_panel) {
         setInfoPanelContent(mode_handlers[mode]->getInfoPanelContent());
     }
@@ -109,22 +104,6 @@ void MainWindow::openItem() {
 
 void MainWindow::quickLock() {
     mode_handlers[mode]->handleQuickLook();
-}
-
-void MainWindow::prevItem() {
-    int prev = std::max(0, results_list->currentRow() - 1);
-
-    if (prev == results_list->currentRow()) {
-        return;
-    }
-
-    if (prev != results_list->currentRow()) {
-        results_list->setCurrentRow(prev);
-    }
-
-    if (show_info_panel) {
-        setInfoPanelContent(mode_handlers[mode]->getInfoPanelContent());
-    }
 }
 
 void MainWindow::wakeup() {
@@ -176,7 +155,6 @@ void MainWindow::onTextChange(const QString& text) {
     if (mode != Mode::CLI) {
         matchModeShortcut(text);
     }
-
 
     // let the mode handle the query
     mode_handlers[mode]->invokeQuery(query_edit->text());
@@ -232,22 +210,26 @@ void MainWindow::connectEventHandlers() {
     });
 
     connect(config_manager, &ConfigManager::configChange, this, [this]() { loadConfig(); });
-
-#ifndef CLI_TOOL
     QObject::connect(qApp, &QGuiApplication::applicationStateChanged, this, &MainWindow::onApplicationStateChanged);
-#endif
 }
 
 void MainWindow::createKeybinds() {
     // Global shortcuts
 
-    if (mode != Mode::CLI) {
-        registerGlobalHotkey(this);
-        new QShortcut(Qt::Key_Escape, this, [this]() { this->sleep(); });
-        // disableCmdQ();
+    new QShortcut(
+        QKeySequence(Qt::MetaModifier | Qt::Key_N), this, [this]() { selectItem(results_list->currentRow() + 1); });
+    new QShortcut(
+        QKeySequence(Qt::MetaModifier | Qt::Key_P), this, [this]() { selectItem(results_list->currentRow() - 1); });
+    new QShortcut(QKeySequence(Qt::ControlModifier | Qt::Key_Y), this, SLOT(quickLock()));
+    new QShortcut(Qt::Key_Return, this, SLOT(openItem()));
+    connect(query_edit, &QueryEdit::requestAppCopy, this, [this]() { copyToClipboard(); });
+
+    if (mode == Mode::CLI) {
+        return;
     }
 
-#ifndef CLI_TOOL
+    registerGlobalHotkey(this);
+    new QShortcut(Qt::Key_Escape, this, [this]() { this->sleep(); });
     new QShortcut(QKeySequence(Qt::MetaModifier | Qt::Key_I), this, [this]() {
         show_info_panel = !show_info_panel;
         info_panel->setHidden(!show_info_panel);
@@ -256,14 +238,7 @@ void MainWindow::createKeybinds() {
             setInfoPanelContent(mode_handlers[mode]->getInfoPanelContent());
         }
     });
-#endif
-
-    new QShortcut(QKeySequence(Qt::MetaModifier | Qt::Key_N), this, SLOT(nextItem()));
-    new QShortcut(QKeySequence(Qt::MetaModifier | Qt::Key_P), this, SLOT(prevItem()));
-
-    new QShortcut(QKeySequence(Qt::ControlModifier | Qt::Key_Y), this, SLOT(quickLock()));
-    new QShortcut(Qt::Key_Return, this, SLOT(openItem()));
-    connect(query_edit, &QueryEdit::requestAppCopy, this, [this]() { copyToClipboard(); });
+    disableCmdQ();
 }
 
 MainWindow::MainWindow(Mode mode, QWidget* parent)
@@ -272,14 +247,14 @@ MainWindow::MainWindow(Mode mode, QWidget* parent)
       mode_factory(new ModeHandlerFactory),
       config_manager(new ConfigManager) {
 
-#ifndef CLI_TOOL
-    for (auto mode : {Mode::APP, Mode::FILE, Mode::CLIP}) {
-        mode_handlers[mode] = mode_factory->create(mode, this);
+    if (mode != Mode::CLI) {
+        for (auto mode : {Mode::APP, Mode::FILE, Mode::CLIP}) {
+            mode_handlers[mode] = mode_factory->create(mode, this);
+        }
+    } else {
+        mode_handlers[Mode::CLI] = mode_factory->create(Mode::CLI, this);
+        mode = Mode::CLI;
     }
-#else
-    mode_handlers[Mode::CLI] = mode_factory->create(Mode::CLI, this);
-    mode = Mode::CLI;
-#endif
 
     show_info_panel = config_manager->get<bool>({"info_panel"});
 
@@ -300,13 +275,11 @@ MainWindow::~MainWindow() {
     delete config_manager;
 }
 
-#ifndef CLI_TOOL
 void MainWindow::onApplicationStateChanged(Qt::ApplicationState state) {
     if (state == Qt::ApplicationInactive) {
         hide();
     }
 }
-#endif
 
 void MainWindow::loadConfig() {
     QPixmapCache::clear();
@@ -396,6 +369,7 @@ QString MainWindow::getQuery() const {
 
 void MainWindow::loadStyle() {
 
+    // update icons
     icons = {
         {"clipboard",
          createIcon(
@@ -419,8 +393,10 @@ void MainWindow::loadStyle() {
 
     };
 
+    // update border color size
     auto border_size = config_manager->get<int>({"border_size"});
     border_widget->layout()->setContentsMargins(border_size, border_size, border_size, border_size);
+
     border_widget->setStyleSheet(QString(R"(
             background: %1;
             padding: 0px;

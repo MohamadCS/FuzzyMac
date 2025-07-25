@@ -150,8 +150,6 @@ extern "C++" bool authenticateWithTouchID() {
                     error:&authError];
 
     if (!canEvaluate) {
-      [context release];
-
       return false;
     }
 
@@ -175,12 +173,12 @@ extern "C++" std::string getFrontmostAppName() {
   @autoreleasepool {
 
     NSWorkspace *workspace = [NSWorkspace sharedWorkspace];
-    NSRunningApplication *activeApp = [workspace frontmostApplication];
-    NSURL *bundleURL = [activeApp bundleURL];
+    NSRunningApplication *active_app = [workspace frontmostApplication];
+    NSURL *bundle_url = [active_app bundleURL];
 
     std::string result;
-    if (bundleURL != nil) {
-      NSString *path = [bundleURL path];
+    if (bundle_url != nil) {
+      NSString *path = [bundle_url path];
       result = [path UTF8String];
     } else {
       result = "Unknown";
