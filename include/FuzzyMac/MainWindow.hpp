@@ -70,19 +70,16 @@ public:
     const ModeHandler* getModeHandler(Mode mode) const;
     std::vector<FuzzyWidget*> getModesWidgets() const;
 
+    void selectItem(int item);
+
 private slots:
-    void nextItem();
-    void prevItem();
     void copyToClipboard();
     void copyPathToClipboard();
     void openItem();
     void quickLock();
     void onTextChange(const QString& text);
-#ifndef CLI_TOOL
     void onApplicationStateChanged(Qt::ApplicationState state);
-#endif
 
-protected:
 private:
     // for layout
     QWidget* border_widget;
