@@ -1,8 +1,8 @@
 cask "fuzzymac" do
-  version "0.0.2"
-  sha256 "f6df8b2ef922d921206160a43377807701062b8ffbb19dbf31c463e92b1a5b75"
+  version "0.0.3"
+  sha256 "1da443114a6b77274c7a33f3fa237fbd044b7ad56d517900f8d5fb5f911fb149"
 
-  url "https://github.com/MohamadCS/FuzzyMac/releases/download/v0.0.2-alpha/FuzzyMac.zip"
+  url "https://github.com/MohamadCS/FuzzyMac/releases/download/v0.0.3-alpha/FuzzyMac.zip"
   name "FuzzyMac"
   desc "GUI fuzzy finder for macOS"
   homepage "https://github.com/MohamadCS/FuzzyMac"
