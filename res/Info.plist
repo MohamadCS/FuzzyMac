@@ -10,7 +10,7 @@
     <string>com.fuzzymac.app</string>
 
     <key>CFBundleVersion</key>
-    <string>1.0</string>
+    <string>0.0.3</string>
 
     <key>CFBundleExecutable</key>
     <string>FuzzyMac</string>
