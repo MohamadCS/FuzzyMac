@@ -14,6 +14,7 @@
 #include <QVBoxLayout>
 
 #include <optional>
+#include <stack>
 #include <toml++/toml.h>
 
 class FileModeHandler : public ModeHandler {
@@ -29,10 +30,14 @@ public:
     void handleDragAndDrop(QDrag*) const override;
     void invokeQuery(const QString& query_) override;
     void handleQuickLook() override;
+    void handleComplete() override;
+    bool handleBackspace() override;
 
     std::vector<FuzzyWidget*> createMainModeWidgets() override;
     QString getPrefix() const override;
     void freeWidgets() override;
+    bool isRelativeFileSearch() const;
+    void handleLeftBracket() override;
 
 private:
     std::vector<FuzzyWidget*> widgets;
@@ -40,6 +45,7 @@ private:
     QFileSystemWatcher* dir_watcher;
     QStringList paths;
     QStringList entries;
+    std::stack<QString> dir_stack;
     QMutex mutex;
 };
 

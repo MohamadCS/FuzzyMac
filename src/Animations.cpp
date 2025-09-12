@@ -19,7 +19,7 @@ QPropertyAnimation* bounceAnimator(QWidget* widget, const QVariant& scale_factor
     auto* anim = new QPropertyAnimation(widget, "geometry");
     anim->setDuration(duration);
     anim->setKeyValues({{0.0, original}, {0.5, enlarged}, {1.0, original}});
-    anim->setEasingCurve(QEasingCurve::OutBack);
+    anim->setEasingCurve(QEasingCurve::OutQuad);
     anim->start(QAbstractAnimation::DeleteWhenStopped);
     return anim;
 }

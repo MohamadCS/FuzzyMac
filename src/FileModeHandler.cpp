@@ -19,6 +19,10 @@
 #include <QGuiApplication>
 #include <QLabel>
 
+
+bool FileModeHandler::isRelativeFileSearch() const {
+    return !dir_stack.empty();
+}
 void FileModeHandler::freeWidgets() {
 
     main_widget->deleteLater();
@@ -27,21 +31,61 @@ void FileModeHandler::freeWidgets() {
     main_widget = new QWidget(nullptr);
 }
 
-static void loadDirs(const QString& d, QStringList& paths) {
+static void loadDirs(const QString& d, QStringList& paths, bool rec = true) {
 
     QDir dir(d);
     QFileInfoList entryInfoList = dir.entryInfoList(QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot);
     for (const QFileInfo& entry : entryInfoList) {
         auto abs_path = entry.absoluteFilePath();
-        if (entry.isDir() && !entry.isSymLink()) {
+        if (rec && entry.isDir() && !entry.isSymLink()) {
             loadDirs(abs_path, paths);
         }
         paths.push_back(abs_path);
     }
 }
 
-void FileModeHandler::load() {
 
+void FileModeHandler::handleLeftBracket() {
+    if(isRelativeFileSearch()) {
+        dir_stack.pop();
+        win->refreshResults();
+    }
+}
+
+void FileModeHandler::handleComplete() {
+    if (win->getResultsNum() == 0) {
+        return;
+    }
+
+    int i = std::max(win->getCurrentResultIdx(), 0);
+    auto path = dynamic_cast<FileWidget*>(widgets[i])->getPath();
+    QFileInfo info(path);
+    if (!info.isDir()) {
+        return;
+    }
+
+    dir_stack.push(path);
+
+    win->clearQuery();
+}
+
+bool FileModeHandler::handleBackspace() {
+    if (win->getQuery().isEmpty()) {
+        if (isRelativeFileSearch()) {
+
+            while(!dir_stack.empty()) {
+                dir_stack.pop();
+            }
+            win->clearQuery();
+        }
+
+        return true;
+    }
+
+    return false;
+}
+
+void FileModeHandler::load() {
     if (future_watcher->isRunning()) {
         future_watcher->cancel();
         future_watcher->waitForFinished();
@@ -87,7 +131,7 @@ FileModeHandler::FileModeHandler(MainWindow* win)
     });
 
     QObject::connect(future_watcher, &QFutureWatcher<std::vector<QString>>::finished, [this, win]() {
-        if (win->getQuery().isEmpty()) {
+        if (win->getQuery().isEmpty() && !isRelativeFileSearch()) {
             return;
         }
 
@@ -112,24 +156,40 @@ FileModeHandler::~FileModeHandler() {
 }
 
 void FileModeHandler::invokeQuery(const QString& query_) {
-
+    qDebug() << "Query Invoked";
     auto query = query_.trimmed();
 
-    if (query.isEmpty()) {
+    if (query.isEmpty() && !isRelativeFileSearch()) {
         win->processResults({});
-        return;
     }
 
     if (future_watcher->isRunning()) {
         future_watcher->cancel();
     }
 
+    if (isRelativeFileSearch()) {
+        QStringList curr_entries{};
+        loadDirs(dir_stack.top(), curr_entries, false);
+        qDebug() << curr_entries.size();
+
+        auto future = QtConcurrent::run([this, query, curr_entries]() -> QStringList {
+            if (query.isEmpty()) {
+                return curr_entries;
+            }
+            return filter(query, curr_entries, nullptr, [](const QString& str) { return QFileInfo(str).fileName(); });
+        });
+
+        future_watcher->setFuture(future);
+
+        return;
+    }
+
     auto future = QtConcurrent::run([this, query]() -> QStringList {
-        // return spotlightSearch(paths, std::format("kMDItemDisplayName LIKE[cd] '{}*'", query.toStdString()));
         return filter(query, entries, nullptr, [](const QString& str) { return QFileInfo(str).fileName(); });
     });
 
     future_watcher->setFuture(future);
+    qDebug() << "Finshed query invoke";
 }
 
 void FileModeHandler::handleQuickLook() {
@@ -151,6 +211,11 @@ void FileModeHandler::enterHandler() {
 }
 
 QString FileModeHandler::handleModeText() {
+    if (isRelativeFileSearch()) {
+        QFileInfo info(dir_stack.top());
+        return QString("Files - %1").arg(info.fileName());
+    }
+
     return "Files";
 }
 
@@ -182,6 +247,7 @@ void FileModeHandler::handleDragAndDrop(QDrag* drag) const {
 QString FileModeHandler::getPrefix() const {
     return " ";
 }
+
 
 InfoPanelContent* FileModeHandler::getInfoPanelContent() const {
     if (win->getResultsNum() == 0) {
