@@ -55,6 +55,12 @@ public:
 
     virtual void handlePathCopy();
 
+    virtual void handleComplete(); 
+
+    virtual bool handleBackspace();
+
+    virtual void handleLeftBracket();
+
 protected:
     MainWindow* win;
     QWidget* parent;

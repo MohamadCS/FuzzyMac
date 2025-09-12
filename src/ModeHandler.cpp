@@ -54,6 +54,18 @@ std::vector<FuzzyWidget*> ModeHandler::createMainModeWidgets() {
     return {};
 }
 
+
+void ModeHandler::handleComplete()  {
+}
+
+
+void ModeHandler::handleLeftBracket() {
+}
+
+bool ModeHandler::handleBackspace() {
+    return false;
+}
+
 ModeHandler::~ModeHandler() {
     delete main_widget;
 };

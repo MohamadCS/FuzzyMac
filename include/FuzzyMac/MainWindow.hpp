@@ -51,6 +51,8 @@ public:
     void refreshResults();
     QListWidgetItem* createListItem(const QString& name, const std::optional<QIcon>& icon = std::nullopt);
     QListWidgetItem* createListItem(QWidget* widget);
+    void handleComplete(); 
+    void handleBackspace();
     void clearResultList();
 
     void changeMode(Mode mode);
@@ -62,6 +64,7 @@ public:
     void setInfoPanelContent(InfoPanelContent* content);
     int getCurrentResultIdx() const;
     int getResultsNum() const;
+    void clearQuery();
 
     std::map<QString, QIcon> getIcons();
 
@@ -69,6 +72,8 @@ public:
     const ModeHandler* getCurrentModeHandler() const;
     const ModeHandler* getModeHandler(Mode mode) const;
     std::vector<FuzzyWidget*> getModesWidgets() const;
+
+    void toggleInfoPanel();
 
     void selectItem(int item);
 
