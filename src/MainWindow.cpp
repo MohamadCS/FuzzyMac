@@ -168,6 +168,14 @@ void MainWindow::onTextChange(const QString& text) {
     }
 }
 
+void MainWindow::handleBackspace() {
+    bool exit_mode = mode_handlers[mode]->handleBackspace();
+
+    if (exit_mode) {
+        changeMode(Mode::APP);
+    }
+}
+
 void MainWindow::processResults(const ResultsVec& results) {
 
     results_list->clear();
@@ -196,6 +204,10 @@ void MainWindow::processResults(const ResultsVec& results) {
     }
 }
 
+void MainWindow::handleComplete() {
+    mode_handlers[mode]->handleComplete();
+}
+
 void MainWindow::connectEventHandlers() {
 
     connect(query_edit, &QueryEdit::textChanged, this, &MainWindow::onTextChange);
@@ -213,15 +225,28 @@ void MainWindow::connectEventHandlers() {
     QObject::connect(qApp, &QGuiApplication::applicationStateChanged, this, &MainWindow::onApplicationStateChanged);
 }
 
+void MainWindow::toggleInfoPanel() {
+    show_info_panel = !show_info_panel;
+    info_panel->setHidden(!show_info_panel);
+
+    if (show_info_panel) {
+        setInfoPanelContent(mode_handlers[mode]->getInfoPanelContent());
+    }
+}
+
 void MainWindow::createKeybinds() {
     // Global shortcuts
+    //
 
     new QShortcut(
         QKeySequence(Qt::MetaModifier | Qt::Key_N), this, [this]() { selectItem(results_list->currentRow() + 1); });
     new QShortcut(
         QKeySequence(Qt::MetaModifier | Qt::Key_P), this, [this]() { selectItem(results_list->currentRow() - 1); });
-    new QShortcut(QKeySequence(Qt::ControlModifier | Qt::Key_Y), this, SLOT(quickLock()));
     new QShortcut(Qt::Key_Return, this, SLOT(openItem()));
+
+    new QShortcut(QKeySequence(Qt::MetaModifier | Qt::Key_Minus), this, [this]() {
+            mode_handlers[mode]->handleLeftBracket();
+    });
     connect(query_edit, &QueryEdit::requestAppCopy, this, [this]() { copyToClipboard(); });
 
     if (mode == Mode::CLI) {
@@ -230,14 +255,6 @@ void MainWindow::createKeybinds() {
 
     registerGlobalHotkey(this);
     new QShortcut(Qt::Key_Escape, this, [this]() { this->sleep(); });
-    new QShortcut(QKeySequence(Qt::MetaModifier | Qt::Key_I), this, [this]() {
-        show_info_panel = !show_info_panel;
-        info_panel->setHidden(!show_info_panel);
-
-        if (show_info_panel) {
-            setInfoPanelContent(mode_handlers[mode]->getInfoPanelContent());
-        }
-    });
     disableCmdQ();
 }
 
@@ -248,7 +265,7 @@ MainWindow::MainWindow(Mode mode, QWidget* parent)
       config_manager(new ConfigManager) {
 
     if (mode != Mode::CLI) {
-        for (auto mode : {Mode::APP, Mode::FILE, Mode::CLIP}) {
+        for (auto mode : {Mode::APP, Mode::FILE}) {
             mode_handlers[mode] = mode_factory->create(mode, this);
         }
     } else {
@@ -427,6 +444,11 @@ void MainWindow::loadStyle() {
                                   .arg(config_manager->get<std::string>({"colors", "inner_border"})));
 }
 
+void MainWindow::clearQuery() {
+    query_edit->setText("");
+    refreshResults();
+}
+
 void MainWindow::changeMode(Mode new_mode) {
 
     // there is no need to change;
@@ -436,8 +458,7 @@ void MainWindow::changeMode(Mode new_mode) {
 
     mode = new_mode;
 
-    query_edit->setText("");
-    refreshResults();
+    clearQuery();
 
     // animate if transitioning to a new mode
     if (new_mode != Mode::APP && config_manager->get<bool>({"animations"})) {

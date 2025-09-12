@@ -5,6 +5,7 @@
 
 void QueryEdit::keyPressEvent(QKeyEvent* event) {
 
+    MainWindow* win = qobject_cast<MainWindow*>(window());
     if (QKeySequence(event->modifiers() | event->key()) == QKeySequence(Qt::ControlModifier | Qt::Key_Backspace)) {
         setText("");
         return;
@@ -15,10 +16,24 @@ void QueryEdit::keyPressEvent(QKeyEvent* event) {
         return;
     }
 
+    if (QKeySequence(event->modifiers() | event->key()) ==QKeySequence(Qt::MetaModifier | Qt::Key_I)) {
+        win->toggleInfoPanel();
+        return;
+    }
+
+    if (QKeySequence(event->modifiers() | event->key()) ==QKeySequence(Qt::MetaModifier | Qt::Key_BracketLeft)) {
+        qDebug() << "Left Bracket";
+        return;
+    }
+
+    if (QKeySequence(event->modifiers() | event->key()) ==QKeySequence(Qt::MetaModifier | Qt::Key_Y)) {
+        win->handleComplete();
+        return;
+    }
+
 #ifndef CLI_TOOL
     if (text().isEmpty() && event->key() == Qt::Key_Backspace) {
-        MainWindow* win = qobject_cast<MainWindow*>(window());
-        win->changeMode(Mode::APP);
+        win->handleBackspace();
     }
 
 #endif
