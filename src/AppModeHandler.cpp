@@ -35,6 +35,7 @@ QString AppModeHandler::handleModeText() {
     return "";
 }
 
+
 void AppModeHandler::handleQuickLook() {
 }
 
@@ -132,8 +133,6 @@ void AppModeHandler::invokeQuery(const QString& query) {
     auto search_results =
         filter(query, app_paths, &indices, [](const QString& str) { return QFileInfo(str).fileName(); });
 
-    // BUG: Mode widgets make memory consumption like a 1GB for some reason.
-
     auto modes_widgets = win->getModesWidgets();
     std::unordered_map<QString, FuzzyWidget*> search_to_widget{};
 
@@ -147,6 +146,9 @@ void AppModeHandler::invokeQuery(const QString& query) {
     auto modes_results = filter(query, modes_search_phrases);
 
     for (int i = 0; i < search_results.size(); ++i) {
+        if(widgets.size() >= 25) {
+            break;
+        }
         widgets.push_back(new FileWidget(win,
                                          main_widget,
                                          app_paths[indices[i]],

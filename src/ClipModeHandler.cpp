@@ -82,7 +82,7 @@ ClipModeHandler::ClipModeHandler(MainWindow* win)
     });
 
     timer.start(500);
-    save_timer.start(10000);
+    save_timer.start(60000);
 
     load();
 }
