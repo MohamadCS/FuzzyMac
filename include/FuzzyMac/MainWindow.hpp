@@ -13,6 +13,7 @@
 #include <QListWidget>
 #include <QMainWindow>
 #include <QMessageBox>
+#include <QPainter>
 #include <QPainterPath>
 #include <QProcess>
 #include <QString>
@@ -51,7 +52,7 @@ public:
     void refreshResults();
     QListWidgetItem* createListItem(const QString& name, const std::optional<QIcon>& icon = std::nullopt);
     QListWidgetItem* createListItem(QWidget* widget);
-    void handleComplete(); 
+    void handleComplete();
     void handleBackspace();
     void clearResultList();
 

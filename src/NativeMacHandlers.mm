@@ -15,6 +15,7 @@
 #import <AppKit/AppKit.h>
 #include <Cocoa/Cocoa.h>
 #import <LocalAuthentication/LocalAuthentication.h>
+#import <QuartzCore/QuartzCore.h>
 #include <QuickLook/QuickLook.h>
 #import <QuickLookThumbnailing/QuickLookThumbnailing.h>
 #include <QuickLookUI/QuickLookUI.h>
@@ -39,6 +40,7 @@ extern "C" void centerWindow(QWidget *widget) {
     [window center];
   }
 }
+
 extern "C" void makeWindowFloating(QWidget *widget) {
   // Get the native NSWindow handle
   @autoreleasepool {
@@ -56,7 +58,32 @@ extern "C" void makeWindowFloating(QWidget *widget) {
 
     [window setStyleMask:(NSWindowStyleMaskBorderless)];
     [window center];
+
+    [window setOpaque:NO]; // Set window to be non-opaque
+    [window setBackgroundColor:[NSColor clearColor]]; // Set the background to
+                                                      // transparent
+
+    NSView *content_view = [window contentView];
+
+    CGFloat radius = 20.0;
+
+    [content_view setWantsLayer:YES];
+
+    content_view.layer.cornerRadius = radius;
+
+    content_view.layer.masksToBounds = YES;
+
+    NSBezierPath *path =
+        [NSBezierPath bezierPathWithRoundedRect:[content_view bounds]
+                                        xRadius:radius
+                                        yRadius:radius];
+
+    CAShapeLayer *mask_layer = [CAShapeLayer layer];
+    mask_layer.path = [path CGPath];
+    content_view.layer.mask = mask_layer;
   }
+
+
 }
 
 extern "C" void disableCmdQ() {

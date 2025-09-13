@@ -21,6 +21,7 @@
 #include <QKeyEvent>
 #include <QLabel>
 #include <QMessageBox>
+#include <QGraphicsBlurEffect>
 #include <QPainter>
 #include <QPixmapCache>
 #include <QProcess>
@@ -51,7 +52,20 @@ void MainWindow::createWidgets() {
     QApplication::setQuitOnLastWindowClosed(false);
     setWindowFlag(Qt::WindowStaysOnTopHint);
     resize(700, 500);
+
+    setAttribute(Qt::WA_TranslucentBackground); // Make background transparent
+    setWindowOpacity(0.98);                      // Make sure the window is fully opaque
     makeWindowFloating(this);
+    //
+   // // Frosty overlay
+    QWidget *frostOverlay = new QWidget(this);
+    frostOverlay->setGeometry(this->rect());
+    frostOverlay->lower(); // Make sure it is behind content
+
+    // Blur effect
+    QGraphicsBlurEffect *blur = new QGraphicsBlurEffect(frostOverlay);
+    blur->setBlurRadius(100);
+    frostOverlay->setGraphicsEffect(blur);
 
     QVBoxLayout* border_layout = new QVBoxLayout(border_widget);
     border_widget->setLayout(border_layout);
@@ -238,15 +252,18 @@ void MainWindow::createKeybinds() {
     // Global shortcuts
     //
 
+    new QShortcut(QKeySequence(Qt::MetaModifier | Qt::Key_I), this, [this]() { toggleInfoPanel(); });
+    new QShortcut(
+        QKeySequence(Qt::MetaModifier | Qt::Key_B), this, [this]() { mode_handlers[mode]->handleLeftBracket(); });
+    new QShortcut(
+        QKeySequence(Qt::MetaModifier | Qt::Key_O), this, [this]() { mode_handlers[mode]->handleComplete(); });
+
     new QShortcut(
         QKeySequence(Qt::MetaModifier | Qt::Key_N), this, [this]() { selectItem(results_list->currentRow() + 1); });
     new QShortcut(
         QKeySequence(Qt::MetaModifier | Qt::Key_P), this, [this]() { selectItem(results_list->currentRow() - 1); });
     new QShortcut(Qt::Key_Return, this, SLOT(openItem()));
 
-    new QShortcut(QKeySequence(Qt::MetaModifier | Qt::Key_Minus), this, [this]() {
-            mode_handlers[mode]->handleLeftBracket();
-    });
     connect(query_edit, &QueryEdit::requestAppCopy, this, [this]() { copyToClipboard(); });
 
     if (mode == Mode::CLI) {
