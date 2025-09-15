@@ -45,7 +45,7 @@ private:
     QFileSystemWatcher* dir_watcher;
     QStringList paths;
     QStringList entries;
-    std::stack<QString> dir_stack;
+    std::optional<QString> curr_path;
     QMutex mutex;
 };
 

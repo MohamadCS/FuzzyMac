@@ -1,4 +1,5 @@
 #include "FuzzyMac/NativeMacHandlers.hpp"
+#include "FuzzyMac/MainWindow.hpp"
 
 #include <QDebug>
 #include <QImage>
@@ -6,6 +7,7 @@
 #include <QString>
 #include <QVBoxLayout>
 #include <QWidget>
+#include <QWindow>
 #include <algorithm>
 #include <objc/objc-runtime.h>
 #include <semaphore>
@@ -15,6 +17,7 @@
 #import <AppKit/AppKit.h>
 #include <Cocoa/Cocoa.h>
 #import <LocalAuthentication/LocalAuthentication.h>
+#import <QuartzCore/QuartzCore.h>
 #include <QuickLook/QuickLook.h>
 #import <QuickLookThumbnailing/QuickLookThumbnailing.h>
 #include <QuickLookUI/QuickLookUI.h>
@@ -39,10 +42,11 @@ extern "C" void centerWindow(QWidget *widget) {
     [window center];
   }
 }
-extern "C" void makeWindowFloating(QWidget *widget) {
+
+extern "C" void makeWindowFloating(MainWindow *widget) {
   // Get the native NSWindow handle
   @autoreleasepool {
-
+    //
     NSView *native_view = reinterpret_cast<NSView *>(widget->winId());
     NSWindow *window = [native_view window];
 
@@ -56,6 +60,62 @@ extern "C" void makeWindowFloating(QWidget *widget) {
 
     [window setStyleMask:(NSWindowStyleMaskBorderless)];
     [window center];
+
+    [window setOpaque:NO]; // Set window to be non-opaque
+    [window setBackgroundColor:[NSColor clearColor]]; // Set the background
+                                                      // transparent
+
+    NSView *content_view = [window contentView];
+
+    CGFloat radius = 20.0;
+
+    [content_view setWantsLayer:YES];
+
+    content_view.layer.cornerRadius = radius;
+
+    content_view.layer.masksToBounds = YES;
+
+    NSBezierPath *path =
+        [NSBezierPath bezierPathWithRoundedRect:[content_view bounds]
+                                        xRadius:radius
+                                        yRadius:radius];
+
+    CAShapeLayer *mask_layer = [CAShapeLayer layer];
+    mask_layer.path = [path CGPath];
+    content_view.layer.mask = mask_layer;
+  }
+}
+
+extern "C" void addMaterial(QWidget *widget) {
+
+  @autoreleasepool {
+    //   NSView *native_view = reinterpret_cast<NSView *>(widget->winId());
+    //   NSWindow *window = [native_view window];
+    // NSVisualEffectView *effectView =
+    //     [[NSVisualEffectView alloc] initWithFrame:window.contentView.frame];
+    //
+    // // Set the desired vibrancy effect (light or dark blur)
+    // [effectView setBlendingMode:NSVisualEffectBlendingModeBehindWindow];
+    //
+    //                                                      // Light or Dark
+    //
+    // // Add the effect view to the window's content view
+    // [window.contentView addSubview:effectView
+    //                     positioned:NSWindowBelow
+    //                     relativeTo:nil];
+    //
+    //
+    // NSView *native_view = reinterpret_cast<NSView *>(widget->winId());
+    // NSWindow *window = [native_view window];
+    //
+    // NSVisualEffectView *visualEffectView =
+    //     [[NSVisualEffectView alloc] initWithFrame:[window frame]];
+    // visualEffectView.material = NSVisualEffectMaterialHUDWindow;
+    // visualEffectView.blendingMode = NSVisualEffectBlendingModeBehindWindow;
+    // // visualEffectView.state = NSVisualEffectStateActive;
+    //
+    // // Set the frosted effect on the native window
+    // [window setContentView:visualEffectView];
   }
 }
 

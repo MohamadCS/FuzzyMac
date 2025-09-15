@@ -55,6 +55,7 @@ target_link_libraries(FuzzyMac PRIVATE
     Qt6::Widgets 
     Qt6::Concurrent
     "-framework Cocoa"
+    "-framework QuartzCore"
     "-framework Carbon"
     "-framework AppKit"
     "-framework QuickLook"
