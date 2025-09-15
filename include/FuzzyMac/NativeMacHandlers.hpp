@@ -4,13 +4,17 @@
 #include <QPixmap>
 #include <QString>
 #include <QTimer>
+#include "FuzzyMac/MainWindow.hpp"
 #include <string>
 
 extern "C" void deactivateApp();
 
 extern "C" void centerWindow(QWidget* widget);
 
-extern "C" void makeWindowFloating(QWidget* widget);
+extern "C" void makeWindowFloating(MainWindow* widget);
+
+
+extern "C" void addMaterial(QWidget* widget);
 
 extern "C" void disableCmdQ();
 

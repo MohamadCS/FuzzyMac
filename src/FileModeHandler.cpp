@@ -19,16 +19,9 @@
 #include <QGuiApplication>
 #include <QLabel>
 
-
-bool FileModeHandler::isRelativeFileSearch() const {
-    return !dir_stack.empty();
-}
-void FileModeHandler::freeWidgets() {
-
-    main_widget->deleteLater();
-    widgets.clear();
-
-    main_widget = new QWidget(nullptr);
+static QString getParentDirPath(const QString& path) {
+    QFileInfo info(path);
+    return info.dir().absolutePath();
 }
 
 static void loadDirs(const QString& d, QStringList& paths, bool rec = true) {
@@ -44,10 +37,21 @@ static void loadDirs(const QString& d, QStringList& paths, bool rec = true) {
     }
 }
 
+bool FileModeHandler::isRelativeFileSearch() const {
+    return curr_path.has_value();
+}
+
+void FileModeHandler::freeWidgets() {
+
+    main_widget->deleteLater();
+    widgets.clear();
+
+    main_widget = new QWidget(nullptr);
+}
 
 void FileModeHandler::handleLeftBracket() {
-    if(isRelativeFileSearch()) {
-        dir_stack.pop();
+    if (isRelativeFileSearch()) {
+        curr_path = getParentDirPath(curr_path.value());
         win->refreshResults();
     }
 }
@@ -64,7 +68,7 @@ void FileModeHandler::handleComplete() {
         return;
     }
 
-    dir_stack.push(path);
+    curr_path = path;
 
     win->clearQuery();
 }
@@ -72,10 +76,7 @@ void FileModeHandler::handleComplete() {
 bool FileModeHandler::handleBackspace() {
     if (win->getQuery().isEmpty()) {
         if (isRelativeFileSearch()) {
-
-            while(!dir_stack.empty()) {
-                dir_stack.pop();
-            }
+            curr_path = std::nullopt;
             win->clearQuery();
         }
 
@@ -100,6 +101,7 @@ void FileModeHandler::load() {
     for (auto& p : cfg.getList<std::string>({"mode", "files", "dirs"})) {
         paths.push_back(QString::fromStdString(p));
     }
+
     expandPaths(paths);
 
     for (auto& dir : paths) {
@@ -169,7 +171,7 @@ void FileModeHandler::invokeQuery(const QString& query_) {
 
     if (isRelativeFileSearch()) {
         QStringList curr_entries{};
-        loadDirs(dir_stack.top(), curr_entries, false);
+        loadDirs(curr_path.value(), curr_entries, false);
         qDebug() << curr_entries.size();
 
         auto future = QtConcurrent::run([this, query, curr_entries]() -> QStringList {
@@ -212,8 +214,8 @@ void FileModeHandler::enterHandler() {
 
 QString FileModeHandler::handleModeText() {
     if (isRelativeFileSearch()) {
-        QFileInfo info(dir_stack.top());
-        return QString("Files - %1").arg(info.fileName());
+        QFileInfo info(curr_path.value());
+        return QString("%1").arg(info.fileName());
     }
 
     return "Files";
@@ -247,7 +249,6 @@ void FileModeHandler::handleDragAndDrop(QDrag* drag) const {
 QString FileModeHandler::getPrefix() const {
     return " ";
 }
-
 
 InfoPanelContent* FileModeHandler::getInfoPanelContent() const {
     if (win->getResultsNum() == 0) {

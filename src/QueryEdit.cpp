@@ -16,18 +16,9 @@ void QueryEdit::keyPressEvent(QKeyEvent* event) {
         return;
     }
 
-    if (QKeySequence(event->modifiers() | event->key()) ==QKeySequence(Qt::MetaModifier | Qt::Key_I)) {
+
+    if (QKeySequence(event->modifiers() | event->key()) == QKeySequence(Qt::MetaModifier | Qt::Key_I)) {
         win->toggleInfoPanel();
-        return;
-    }
-
-    if (QKeySequence(event->modifiers() | event->key()) ==QKeySequence(Qt::MetaModifier | Qt::Key_BracketLeft)) {
-        qDebug() << "Left Bracket";
-        return;
-    }
-
-    if (QKeySequence(event->modifiers() | event->key()) ==QKeySequence(Qt::MetaModifier | Qt::Key_Y)) {
-        win->handleComplete();
         return;
     }
 

@@ -17,6 +17,7 @@
 #include <QDebug>
 #include <QEvent>
 #include <QFont>
+#include <QGraphicsBlurEffect>
 #include <QGuiApplication>
 #include <QKeyEvent>
 #include <QLabel>
@@ -51,7 +52,12 @@ void MainWindow::createWidgets() {
     QApplication::setQuitOnLastWindowClosed(false);
     setWindowFlag(Qt::WindowStaysOnTopHint);
     resize(700, 500);
+
+    setAttribute(Qt::WA_TranslucentBackground); // Make background transparent
     makeWindowFloating(this);
+    setWindowOpacity(0.97);
+    
+
 
     QVBoxLayout* border_layout = new QVBoxLayout(border_widget);
     border_widget->setLayout(border_layout);
@@ -59,6 +65,10 @@ void MainWindow::createWidgets() {
     if (!show_info_panel) {
         info_panel->hide();
     }
+
+    // QGraphicsBlurEffect* blurEffect = new QGraphicsBlurEffect();
+    // blurEffect->setBlurRadius(15); // Adjust blur intensity
+    // setGraphicsEffect(blurEffect); // Apply blur effect to the window
 
     QHBoxLayout* content_layout = new QHBoxLayout;
 
@@ -81,6 +91,7 @@ void MainWindow::createWidgets() {
     main_widget->setLayout(layout);
     setCentralWidget(border_widget);
     wakeup();
+    addMaterial(this);
 }
 
 void MainWindow::selectItem(int idx) {
@@ -238,15 +249,18 @@ void MainWindow::createKeybinds() {
     // Global shortcuts
     //
 
+    new QShortcut(QKeySequence(Qt::MetaModifier | Qt::Key_I), this, [this]() { toggleInfoPanel(); });
+    new QShortcut(
+        QKeySequence(Qt::MetaModifier | Qt::Key_B), this, [this]() { mode_handlers[mode]->handleLeftBracket(); });
+    new QShortcut(
+        QKeySequence(Qt::MetaModifier | Qt::Key_O), this, [this]() { mode_handlers[mode]->handleComplete(); });
+
     new QShortcut(
         QKeySequence(Qt::MetaModifier | Qt::Key_N), this, [this]() { selectItem(results_list->currentRow() + 1); });
     new QShortcut(
         QKeySequence(Qt::MetaModifier | Qt::Key_P), this, [this]() { selectItem(results_list->currentRow() - 1); });
     new QShortcut(Qt::Key_Return, this, SLOT(openItem()));
 
-    new QShortcut(QKeySequence(Qt::MetaModifier | Qt::Key_Minus), this, [this]() {
-            mode_handlers[mode]->handleLeftBracket();
-    });
     connect(query_edit, &QueryEdit::requestAppCopy, this, [this]() { copyToClipboard(); });
 
     if (mode == Mode::CLI) {
@@ -435,7 +449,7 @@ void MainWindow::loadStyle() {
             margin: 0px;
             font-family: %3;
             padding: 2px;
-            border-bottom: 2px solid %4;
+            border-bottom: 0px solid %4;
         }
     )")
                                   .arg(config_manager->get<std::string>({"colors", "mode_label", "text"}))
