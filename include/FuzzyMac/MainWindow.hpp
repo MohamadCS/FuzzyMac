@@ -9,6 +9,7 @@
 #include <QFileIconProvider>
 #include <QFileSystemWatcher>
 #include <QFutureWatcher>
+#include <QGraphicsBlurEffect>
 #include <QLineEdit>
 #include <QListWidget>
 #include <QMainWindow>
