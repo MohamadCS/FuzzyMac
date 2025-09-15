@@ -17,11 +17,11 @@
 #include <QDebug>
 #include <QEvent>
 #include <QFont>
+#include <QGraphicsBlurEffect>
 #include <QGuiApplication>
 #include <QKeyEvent>
 #include <QLabel>
 #include <QMessageBox>
-#include <QGraphicsBlurEffect>
 #include <QPainter>
 #include <QPixmapCache>
 #include <QProcess>
@@ -54,18 +54,10 @@ void MainWindow::createWidgets() {
     resize(700, 500);
 
     setAttribute(Qt::WA_TranslucentBackground); // Make background transparent
-    setWindowOpacity(0.98);                      // Make sure the window is fully opaque
     makeWindowFloating(this);
-    //
-   // // Frosty overlay
-    QWidget *frostOverlay = new QWidget(this);
-    frostOverlay->setGeometry(this->rect());
-    frostOverlay->lower(); // Make sure it is behind content
+    setWindowOpacity(0.97);
+    
 
-    // Blur effect
-    QGraphicsBlurEffect *blur = new QGraphicsBlurEffect(frostOverlay);
-    blur->setBlurRadius(100);
-    frostOverlay->setGraphicsEffect(blur);
 
     QVBoxLayout* border_layout = new QVBoxLayout(border_widget);
     border_widget->setLayout(border_layout);
@@ -73,6 +65,10 @@ void MainWindow::createWidgets() {
     if (!show_info_panel) {
         info_panel->hide();
     }
+
+    // QGraphicsBlurEffect* blurEffect = new QGraphicsBlurEffect();
+    // blurEffect->setBlurRadius(15); // Adjust blur intensity
+    // setGraphicsEffect(blurEffect); // Apply blur effect to the window
 
     QHBoxLayout* content_layout = new QHBoxLayout;
 
@@ -95,6 +91,7 @@ void MainWindow::createWidgets() {
     main_widget->setLayout(layout);
     setCentralWidget(border_widget);
     wakeup();
+    addMaterial(this);
 }
 
 void MainWindow::selectItem(int idx) {
@@ -452,7 +449,7 @@ void MainWindow::loadStyle() {
             margin: 0px;
             font-family: %3;
             padding: 2px;
-            border-bottom: 2px solid %4;
+            border-bottom: 0px solid %4;
         }
     )")
                                   .arg(config_manager->get<std::string>({"colors", "mode_label", "text"}))

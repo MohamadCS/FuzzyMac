@@ -1,4 +1,5 @@
 #include "FuzzyMac/NativeMacHandlers.hpp"
+#include "FuzzyMac/MainWindow.hpp"
 
 #include <QDebug>
 #include <QImage>
@@ -6,6 +7,7 @@
 #include <QString>
 #include <QVBoxLayout>
 #include <QWidget>
+#include <QWindow>
 #include <algorithm>
 #include <objc/objc-runtime.h>
 #include <semaphore>
@@ -41,10 +43,10 @@ extern "C" void centerWindow(QWidget *widget) {
   }
 }
 
-extern "C" void makeWindowFloating(QWidget *widget) {
+extern "C" void makeWindowFloating(MainWindow *widget) {
   // Get the native NSWindow handle
   @autoreleasepool {
-
+    //
     NSView *native_view = reinterpret_cast<NSView *>(widget->winId());
     NSWindow *window = [native_view window];
 
@@ -60,7 +62,7 @@ extern "C" void makeWindowFloating(QWidget *widget) {
     [window center];
 
     [window setOpaque:NO]; // Set window to be non-opaque
-    [window setBackgroundColor:[NSColor clearColor]]; // Set the background to
+    [window setBackgroundColor:[NSColor clearColor]]; // Set the background
                                                       // transparent
 
     NSView *content_view = [window contentView];
@@ -82,8 +84,39 @@ extern "C" void makeWindowFloating(QWidget *widget) {
     mask_layer.path = [path CGPath];
     content_view.layer.mask = mask_layer;
   }
+}
 
+extern "C" void addMaterial(QWidget *widget) {
 
+  @autoreleasepool {
+    //   NSView *native_view = reinterpret_cast<NSView *>(widget->winId());
+    //   NSWindow *window = [native_view window];
+    // NSVisualEffectView *effectView =
+    //     [[NSVisualEffectView alloc] initWithFrame:window.contentView.frame];
+    //
+    // // Set the desired vibrancy effect (light or dark blur)
+    // [effectView setBlendingMode:NSVisualEffectBlendingModeBehindWindow];
+    //
+    //                                                      // Light or Dark
+    //
+    // // Add the effect view to the window's content view
+    // [window.contentView addSubview:effectView
+    //                     positioned:NSWindowBelow
+    //                     relativeTo:nil];
+    //
+    //
+    // NSView *native_view = reinterpret_cast<NSView *>(widget->winId());
+    // NSWindow *window = [native_view window];
+    //
+    // NSVisualEffectView *visualEffectView =
+    //     [[NSVisualEffectView alloc] initWithFrame:[window frame]];
+    // visualEffectView.material = NSVisualEffectMaterialHUDWindow;
+    // visualEffectView.blendingMode = NSVisualEffectBlendingModeBehindWindow;
+    // // visualEffectView.state = NSVisualEffectStateActive;
+    //
+    // // Set the frosted effect on the native window
+    // [window setContentView:visualEffectView];
+  }
 }
 
 extern "C" void disableCmdQ() {
