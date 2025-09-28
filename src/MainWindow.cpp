@@ -54,8 +54,8 @@ void MainWindow::createWidgets() {
     resize(700, 500);
 
     setAttribute(Qt::WA_TranslucentBackground); // Make background transparent
-    makeWindowFloating(this);
-    setWindowOpacity(0.97);
+    setupWindowDecoration(this, config_manager->get<int>({"corner_radius"}));
+    setWindowOpacity(1);
     
 
 
@@ -120,7 +120,7 @@ void MainWindow::quickLock() {
 void MainWindow::wakeup() {
 
     if (config_manager->get<bool>({"animations"})) {
-        obacityAnimator(this, 0.0, 1.0, 150);
+        opacityAnimator(this, 0.0, config_manager->get<float>({"opacity"}), 50);
     }
 
     show();
@@ -136,14 +136,20 @@ void MainWindow::sleep() {
     auto sleep_ = [this]() {
         deactivateApp();
         hide();
+        query_edit->clear();
+        changeMode(Mode::APP);
+        refreshResults();
     };
 
+
     if (config_manager->get<bool>({"animations"})) {
-        auto* anim = obacityAnimator(this, 1.0, 0.0, 150);
+        auto* anim = opacityAnimator(this, config_manager->get<float>({"opacity"}), 0.0, 50);
         connect(anim, &QPropertyAnimation::finished, this, sleep_);
     } else {
         sleep_();
     }
+
+
 }
 
 void MainWindow::matchModeShortcut(const QString& text) {
@@ -424,6 +430,9 @@ void MainWindow::loadStyle() {
 
     };
 
+    setWindowOpacity(config_manager->get<float>({"opacity"}));
+    setupWindowDecoration(this, config_manager->get<int>({"corner_radius"}));
+
     // update border color size
     auto border_size = config_manager->get<int>({"border_size"});
     border_widget->layout()->setContentsMargins(border_size, border_size, border_size, border_size);
@@ -470,14 +479,15 @@ void MainWindow::changeMode(Mode new_mode) {
         return;
     }
 
+    mode_handlers[mode]->onModeExit();
+
+
     mode = new_mode;
 
     clearQuery();
 
-    // animate if transitioning to a new mode
-    if (new_mode != Mode::APP && config_manager->get<bool>({"animations"})) {
-        bounceAnimator(this, 0.05, 200);
-    }
+    // if (new_mode != Mode::APP && config_manager->get<bool>({"animations"})) {
+    // }
 }
 
 void MainWindow::setInfoPanelContent(InfoPanelContent* content) {

@@ -4,6 +4,7 @@
 #include "FuzzyMac/InfoPanel.hpp"
 #include "FuzzyMac/ModeHandler.hpp"
 #include "FuzzyMac/NativeMacHandlers.hpp"
+
 #include <QClipboard>
 #include <QDir>
 #include <QGuiApplication>
@@ -14,7 +15,6 @@
 #include <QStandardPaths>
 #include <QThreadPool>
 #include <QtConcurrent>
-#include <iterator>
 #include <optional>
 #include <variant>
 

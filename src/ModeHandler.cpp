@@ -62,6 +62,11 @@ void ModeHandler::handleComplete()  {
 void ModeHandler::handleLeftBracket() {
 }
 
+
+void ModeHandler::onModeExit() {
+}
+
+
 bool ModeHandler::handleBackspace() {
     return false;
 }
