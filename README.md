@@ -35,8 +35,7 @@ brew tap MohamadCS/FuzzyMac https://github.com/MohamadCS/FuzzyMac.git
 brew install --cask MohamadCS/FuzzyMac/fuzzymac
 ```
 
-!>[!NOTE]
-> This will install qt@6 also, for now.
+**NOTE**: This will install qt@6 also, for now.
 
 or by navigating to the releases section.
 #### Damaged Binary ?
