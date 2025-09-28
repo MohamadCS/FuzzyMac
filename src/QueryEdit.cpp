@@ -2,6 +2,7 @@
 #include "FuzzyMac/MainWindow.hpp"
 
 #include <QApplication>
+#include <vector>
 
 void QueryEdit::keyPressEvent(QKeyEvent* event) {
 

@@ -4,6 +4,7 @@
 
 #include <QString>
 #include <QStringList>
+#include <complex>
 #include <iostream>
 #include <wordexp.h>
 
@@ -53,4 +54,19 @@ std::optional<double> evalMathExp(const std::string& exp) {
     }
 
     return std::nullopt;
+}
+
+QString cutPathPrefix(const QString& path, int max_length) {
+    if(max_length >= path.size()) {
+        return path;
+    }
+
+    QString normalized_path = path.right(max_length);
+    for(int i = 0; i < normalized_path.size(); ++i) {
+        if(normalized_path[i] == '/') {
+           return ".." + normalized_path.right(normalized_path.size() - i);
+        }
+    }
+
+    return path;
 }

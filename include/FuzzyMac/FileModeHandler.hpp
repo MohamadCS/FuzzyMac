@@ -39,6 +39,8 @@ public:
     bool isRelativeFileSearch() const;
     void handleLeftBracket() override;
 
+    void onModeExit() override;
+
 private:
     std::vector<FuzzyWidget*> widgets;
     QFutureWatcher<QStringList>* future_watcher;
