@@ -11,7 +11,7 @@ extern "C" void deactivateApp();
 
 extern "C" void centerWindow(QWidget* widget);
 
-extern "C" void makeWindowFloating(MainWindow* widget);
+extern "C" void setupWindowDecoration(MainWindow *widget, int corner_radius);
 
 
 extern "C" void addMaterial(QWidget* widget);
