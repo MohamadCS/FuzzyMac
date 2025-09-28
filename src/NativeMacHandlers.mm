@@ -43,7 +43,7 @@ extern "C" void centerWindow(QWidget *widget) {
   }
 }
 
-extern "C" void makeWindowFloating(MainWindow *widget) {
+extern "C" void setupWindowDecoration(MainWindow *widget, int corner_radius) {
   // Get the native NSWindow handle
   @autoreleasepool {
     //
@@ -67,7 +67,7 @@ extern "C" void makeWindowFloating(MainWindow *widget) {
 
     NSView *content_view = [window contentView];
 
-    CGFloat radius = 20.0;
+    CGFloat radius = corner_radius;
 
     [content_view setWantsLayer:YES];
 

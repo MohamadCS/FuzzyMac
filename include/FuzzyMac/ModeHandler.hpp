@@ -51,6 +51,8 @@ public:
 
     virtual void handleCopy();
 
+    virtual void onModeExit();
+
     virtual void handleDragAndDrop(QDrag*) const;
 
     virtual void handlePathCopy();

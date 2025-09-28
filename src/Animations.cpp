@@ -1,6 +1,7 @@
 #include "FuzzyMac/Animations.hpp"
+#include <QPropertyAnimation>
 
-QPropertyAnimation* obacityAnimator(QWidget* widget, const QVariant& start_val, const QVariant& end_val, int duration) {
+QPropertyAnimation* opacityAnimator(QWidget* widget, const QVariant& start_val, const QVariant& end_val, int duration) {
     QPropertyAnimation* anim = new QPropertyAnimation(widget, "windowOpacity");
     anim->setDuration(duration);
     anim->setStartValue(start_val);
@@ -10,18 +11,28 @@ QPropertyAnimation* obacityAnimator(QWidget* widget, const QVariant& start_val, 
 }
 
 QPropertyAnimation* bounceAnimator(QWidget* widget, const QVariant& scale_factor, int duration) {
-    QRect original = widget->geometry();
-    int dx = original.width() * scale_factor.toDouble();
-    int dy = original.height() * scale_factor.toDouble();
 
-    QRect enlarged(original.x() - dx / 2, original.y() - dy / 2, original.width() + dx, original.height() + dy);
+ // Animation on geometry (size + position)
+    QPropertyAnimation *animation = new QPropertyAnimation(widget, "geometry");
 
-    auto* anim = new QPropertyAnimation(widget, "geometry");
-    anim->setDuration(duration);
-    anim->setKeyValues({{0.0, original}, {0.5, enlarged}, {1.0, original}});
-    anim->setEasingCurve(QEasingCurve::OutQuad);
-    anim->start(QAbstractAnimation::DeleteWhenStopped);
-    return anim;
+
+    QRect originalRect = widget->geometry();
+    QPoint center = originalRect.center();  // Get the center point
+
+    int scale = 20; // Total increase in width and height
+
+    // New scaled size keeping center unchanged
+    QSize scaledSize = originalRect.size() + QSize(scale, scale);
+    QRect scaledRect(QPoint(0, 0), scaledSize);
+    scaledRect.moveCenter(center); // Keep the center in place
+
+    animation->setDuration(600);
+    animation->setStartValue(originalRect);
+    animation->setKeyValueAt(0.5, scaledRect);
+    animation->setEndValue(originalRect);
+    animation->setEasingCurve(QEasingCurve::OutInBack);
+    animation->start(QAbstractAnimation::DeleteWhenStopped);
+    return animation;
 }
 
 QPropertyAnimation* resizeAnimation(QWidget* widget, const QSize& final_size, int duration) {

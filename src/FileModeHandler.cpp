@@ -215,7 +215,7 @@ void FileModeHandler::enterHandler() {
 QString FileModeHandler::handleModeText() {
     if (isRelativeFileSearch()) {
         QFileInfo info(curr_path.value());
-        return QString("%1").arg(info.fileName());
+        return QString("%1").arg(cutPathPrefix(info.absoluteFilePath(), 70));
     }
 
     return "Files";
@@ -270,6 +270,11 @@ std::vector<FuzzyWidget*> FileModeHandler::createMainModeWidgets() {
             [this]() { win->changeMode(Mode::FILE); },
             win->getIcons()["search_files"]),
     };
+}
+
+
+void FileModeHandler::onModeExit() {
+    curr_path = std::nullopt;
 }
 
 FileInfoPanel::FileInfoPanel(QWidget* parent, MainWindow* win, QString path)
