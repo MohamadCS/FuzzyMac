@@ -22,6 +22,8 @@
 AppModeHandler::AppModeHandler(MainWindow* win)
     : ModeHandler(win) {
 
+    createBindings();
+
     app_watcher = new QFileSystemWatcher(win);
     QObject::connect(app_watcher, &QFileSystemWatcher::directoryChanged, win, [this, win](const QString& path) {
         load();
@@ -35,8 +37,17 @@ QString AppModeHandler::handleModeText() {
     return "";
 }
 
+void AppModeHandler::createBindings() {
+    keymap.bind(QKeySequence(Qt::Key_Return), [this]() {
+        if (win->getResultsNum() == 0 || win->getCurrentResultIdx() < 0) {
+            return;
+        }
 
-void AppModeHandler::handleQuickLook() {
+        int i = std::max(win->getCurrentResultIdx(), 0);
+        qDebug() << i;
+        qDebug() << win->getResultsNum();
+        widgets[i]->enterHandler();
+    });
 }
 
 void AppModeHandler::load() {
@@ -91,18 +102,6 @@ void AppModeHandler::load() {
     win->processResults(widgets);
 }
 
-void AppModeHandler::enterHandler() {
-
-    if (win->getResultsNum() == 0 || win->getCurrentResultIdx() < 0) {
-        return;
-    }
-
-    int i = std::max(win->getCurrentResultIdx(), 0);
-    qDebug() << i;
-    qDebug() << win->getResultsNum();
-    widgets[i]->enterHandler();
-}
-
 void AppModeHandler::freeWidgets() {
     main_widget->deleteLater();
     widgets.clear();
@@ -146,7 +145,7 @@ void AppModeHandler::invokeQuery(const QString& query) {
     auto modes_results = filter(query, modes_search_phrases);
 
     for (int i = 0; i < search_results.size(); ++i) {
-        if(widgets.size() >= 25) {
+        if (widgets.size() >= 25) {
             break;
         }
         widgets.push_back(new FileWidget(win,

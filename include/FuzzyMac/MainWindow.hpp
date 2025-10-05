@@ -3,6 +3,7 @@
 #include "ConfigManager.hpp"
 #include "FuzzyMac/ConfigManager.hpp"
 #include "FuzzyMac/QueryEdit.hpp"
+#include "FuzzyMac/KeyMap.hpp"
 #include "FuzzyMac/ResultsPanel.hpp"
 #include "toml++/toml.h"
 
@@ -11,7 +12,9 @@
 #include <QFutureWatcher>
 #include <QGraphicsBlurEffect>
 #include <QLineEdit>
+#include <QLocalSocket>
 #include <QListWidget>
+#include <QLocalServer>
 #include <QMainWindow>
 #include <QMessageBox>
 #include <QPainter>
@@ -51,47 +54,51 @@ public:
     void sleep();
 
     void refreshResults();
+    void clearResultList();
+    void selectItem(int item);
     QListWidgetItem* createListItem(const QString& name, const std::optional<QIcon>& icon = std::nullopt);
     QListWidgetItem* createListItem(QWidget* widget);
-    void handleComplete();
-    void handleBackspace();
-    void clearResultList();
+    int getCurrentResultIdx() const;
+    int getResultsNum() const;
+    void processResults(const ResultsVec&);
 
     void changeMode(Mode mode);
+    void exitMode();
+
+    void setInfoPanelContent(InfoPanelContent* content);
+    void toggleInfoPanel();
 
     const ConfigManager& getConfigManager() const;
     QString getQuery() const;
     QIcon getFileIcon(const QString& path) const;
     QIcon createIcon(const QString& path, const QColor& color) const;
-    void setInfoPanelContent(InfoPanelContent* content);
-    int getCurrentResultIdx() const;
-    int getResultsNum() const;
     void clearQuery();
+
+    bool keymapDefined(QKeyEvent* ev) const;
+    bool keymapOverides(QKeyEvent* ev) const;
+
 
     std::map<QString, QIcon> getIcons();
 
-    void processResults(const ResultsVec&);
     const ModeHandler* getCurrentModeHandler() const;
     const ModeHandler* getModeHandler(Mode mode) const;
     std::vector<FuzzyWidget*> getModesWidgets() const;
 
-    void toggleInfoPanel();
 
-    void selectItem(int item);
+
+    void keyPressEvent(QKeyEvent* ev) override;
 
 private slots:
-    void copyToClipboard();
-    void copyPathToClipboard();
-    void openItem();
-    void quickLock();
     void onTextChange(const QString& text);
     void onApplicationStateChanged(Qt::ApplicationState state);
+
 
 private:
     // for layout
     QWidget* border_widget;
     QWidget* main_widget;
     QVBoxLayout* layout;
+    Keymap keymap;
 
     // main widgets, life time is managed by MainWindow
     QueryEdit* query_edit;
@@ -118,6 +125,8 @@ private:
     void createWidgets();
     // creates the application shortcuts
     void createKeybinds();
+
+    void setupServer();
 
     // reloads the config, and the current mod
     void loadConfig();

@@ -33,6 +33,7 @@ void ResultsPanel::loadConfig() {
             selection-background-color : %1;
             selection-color : %2;
             color: %3;
+            border-radius: 0px;
             margin: 0px;
             background: %4;
             padding: 0px;

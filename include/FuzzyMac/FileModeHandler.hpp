@@ -23,21 +23,16 @@ public:
     ~FileModeHandler() override;
 
     void load() override;
-    void enterHandler() override;
     QString handleModeText() override;
-    void handleCopy() override;
     InfoPanelContent* getInfoPanelContent() const override;
     void handleDragAndDrop(QDrag*) const override;
     void invokeQuery(const QString& query_) override;
-    void handleQuickLook() override;
-    void handleComplete() override;
-    bool handleBackspace() override;
 
     std::vector<FuzzyWidget*> createMainModeWidgets() override;
     QString getPrefix() const override;
     void freeWidgets() override;
     bool isRelativeFileSearch() const;
-    void handleLeftBracket() override;
+
 
     void onModeExit() override;
 
@@ -49,6 +44,8 @@ private:
     QStringList entries;
     std::optional<QString> curr_path;
     QMutex mutex;
+
+    void createKeyMaps();
 };
 
 class FileInfoPanel : public InfoPanelContent {
@@ -58,5 +55,6 @@ public:
     FileInfoPanel(QWidget* parent, MainWindow* win, QString path);
 
 private:
+
     QFutureWatcher<QImage>* image_watcher;
 };

@@ -1,5 +1,6 @@
 #include "FuzzyMac/ClipModeHandler.hpp"
 #include "FuzzyMac/Algorithms.hpp"
+#include "FuzzyMac/CLIModeHandler.hpp"
 #include "FuzzyMac/FuzzyWidget.hpp"
 #include "FuzzyMac/InfoPanel.hpp"
 #include "FuzzyMac/ModeHandler.hpp"
@@ -38,10 +39,50 @@ static std::optional<ClipboardManager::Entry::Content> getClipboardData() {
     return std::nullopt;
 }
 
+void ClipModeHandler::createKeymaps() {
+    keymap.bind(QKeySequence(Qt::Key_Return), [this]() {
+        if (win->getResultsNum() == 0) {
+            return;
+        }
+
+        QClipboard* clipboard = QGuiApplication::clipboard();
+        QMimeData* mime_data = new QMimeData();
+
+        // Create a list with a single file URL
+        auto content = dynamic_cast<ClipboardWidget*>(widgets[win->getCurrentResultIdx()])->getContent();
+        if (std::holds_alternative<QString>(content)) {
+            const QString& text = std::get<QString>(content);
+            mime_data->setText(text);
+
+        } else {
+            const QList<QUrl>& urls = std::get<QList<QUrl>>(content);
+            mime_data->setUrls(urls);
+        }
+
+        // swap entries
+        // suppress next change
+        //
+
+        auto& entries = clipboard_manager.getEntries();
+        auto* widget = dynamic_cast<ClipboardWidget*>(widgets[win->getCurrentResultIdx()]);
+        auto entry = entries[widget->getIdx()];
+        entries.erase(entries.begin() + widget->getIdx());
+        entries.push_back(entry);
+
+        suppress_next_change = true;
+
+        clipboard->setMimeData(mime_data);
+
+        win->sleep();
+        win->refreshResults();
+    });
+}
+
 ClipModeHandler::ClipModeHandler(MainWindow* win)
     : ModeHandler(win),
       clipboard_count{getClipboardCount()},
       suppress_next_change(false) {
+    createKeymaps();
     QString dataDir = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
     QDir().mkpath(dataDir); // ensure directory exists
     path = dataDir + "/clipboard.json";
@@ -91,46 +132,6 @@ void ClipModeHandler::load() {
     freeWidgets();
     black_list = win->getConfigManager().getList<std::string>({"mode", "clipboard", "blacklist"});
     clipboard_manager.loadFromFile(path);
-}
-
-void ClipModeHandler::enterHandler() {
-    if (win->getResultsNum() == 0) {
-        return;
-    }
-
-    QClipboard* clipboard = QGuiApplication::clipboard();
-    QMimeData* mime_data = new QMimeData();
-
-    // Create a list with a single file URL
-    auto content = dynamic_cast<ClipboardWidget*>(widgets[win->getCurrentResultIdx()])->getContent();
-    if (std::holds_alternative<QString>(content)) {
-        const QString& text = std::get<QString>(content);
-        mime_data->setText(text);
-
-    } else {
-        const QList<QUrl>& urls = std::get<QList<QUrl>>(content);
-        mime_data->setUrls(urls);
-    }
-
-    // swap entries
-    // suppress next change
-    //
-
-    auto& entries = clipboard_manager.getEntries();
-    auto* widget = dynamic_cast<ClipboardWidget*>(widgets[win->getCurrentResultIdx()]);
-    auto entry = entries[widget->getIdx()];
-    entries.erase(entries.begin() + widget->getIdx());
-    entries.push_back(entry);
-
-    suppress_next_change = true;
-
-    clipboard->setMimeData(mime_data);
-
-    win->sleep();
-    win->refreshResults();
-}
-
-void ClipModeHandler::handleQuickLook() {
 }
 
 void ClipModeHandler::invokeQuery(const QString& query) {

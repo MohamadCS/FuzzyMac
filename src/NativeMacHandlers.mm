@@ -1,4 +1,5 @@
 #include "FuzzyMac/NativeMacHandlers.hpp"
+#include "FuzzyMac/ConfigManager.hpp"
 #include "FuzzyMac/MainWindow.hpp"
 
 #include <QDebug>
@@ -43,7 +44,7 @@ extern "C" void centerWindow(QWidget *widget) {
   }
 }
 
-extern "C" void setupWindowDecoration(MainWindow *widget, int corner_radius) {
+extern "C" void setupWindowDecoration(MainWindow *widget, ConfigManager *cfg) {
   // Get the native NSWindow handle
   @autoreleasepool {
     //
@@ -66,23 +67,57 @@ extern "C" void setupWindowDecoration(MainWindow *widget, int corner_radius) {
                                                       // transparent
 
     NSView *content_view = [window contentView];
-
-    CGFloat radius = corner_radius;
+    CGFloat radius = cfg->get<float>({"corner_radius"});
 
     [content_view setWantsLayer:YES];
-
     content_view.layer.cornerRadius = radius;
-
     content_view.layer.masksToBounds = YES;
 
-    NSBezierPath *path =
+    // Border color
+    QColor border_color(
+        QString::fromStdString(cfg->get<std::string>({"colors","outer_border"})));
+    CGFloat r = border_color.redF();
+    CGFloat g = border_color.greenF();
+    CGFloat b = border_color.blueF();
+    CGFloat a = border_color.alphaF();
+    NSColor *cg_radius_color = [NSColor colorWithCalibratedRed:r
+                                                         green:g
+                                                          blue:b
+                                                         alpha:a];
+
+    // Remove old border layer if exists
+    NSArray<CALayer *> *sublayers = [content_view.layer.sublayers copy];
+    for (CALayer *layer in sublayers) {
+      if ([layer.name isEqualToString:@"BorderLayer"]) {
+        [layer removeFromSuperlayer];
+      }
+    }
+
+    // Rounded corners mask
+    NSBezierPath *mask_path =
         [NSBezierPath bezierPathWithRoundedRect:[content_view bounds]
                                         xRadius:radius
                                         yRadius:radius];
-
     CAShapeLayer *mask_layer = [CAShapeLayer layer];
-    mask_layer.path = [path CGPath];
+    mask_layer.path = [mask_path CGPath];
     content_view.layer.mask = mask_layer;
+
+    // Rounded border
+    CGFloat lineWidth = cfg->get<int>({"border_size"});
+    NSRect borderRect =
+        NSInsetRect([content_view bounds], lineWidth / 2, lineWidth / 2);
+    NSBezierPath *border_path =
+        [NSBezierPath bezierPathWithRoundedRect:borderRect
+                                        xRadius:radius - lineWidth / 2
+                                        yRadius:radius - lineWidth / 2];
+    CAShapeLayer *border_layer = [CAShapeLayer layer];
+    border_layer.name = @"BorderLayer"; // identify for removal
+    border_layer.path = [border_path CGPath];
+    border_layer.fillColor = [[NSColor clearColor] CGColor];
+    border_layer.strokeColor = [cg_radius_color CGColor];
+    border_layer.lineWidth = lineWidth;
+    border_layer.frame = [content_view bounds];
+    [content_view.layer addSublayer:border_layer];
   }
 }
 
@@ -246,4 +281,37 @@ extern "C++" std::string getFrontmostAppName() {
 
     return result;
   }
+}
+
+@interface QuickLookDelegate : NSObject <QLPreviewPanelDataSource>
+@property(nonatomic, strong) NSArray<NSURL *> *file_urls;
+@end
+
+@implementation QuickLookDelegate
+- (NSInteger)numberOfPreviewItemsInPreviewPanel:(QLPreviewPanel *)panel {
+  return self.file_urls.count;
+}
+
+- (id<QLPreviewItem>)previewPanel:(QLPreviewPanel *)panel
+               previewItemAtIndex:(NSInteger)index {
+  return self.file_urls[index];
+}
+@end
+
+static QuickLookDelegate *g_delegate = nil;
+
+extern "C++" void showQuickLookPanel(const QString &filePath) {
+  if (!g_delegate) {
+    g_delegate = [[QuickLookDelegate alloc] init];
+  }
+
+  NSURL *url = [NSURL fileURLWithPath:filePath.toNSString()];
+  g_delegate.file_urls = @[ url ];
+
+  QLPreviewPanel *panel = [QLPreviewPanel sharedPreviewPanel];
+  panel.dataSource = g_delegate;
+
+  dispatch_async(dispatch_get_main_queue(), ^{
+    [panel makeKeyAndOrderFront:nil];
+  });
 }
