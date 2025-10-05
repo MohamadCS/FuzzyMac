@@ -2,8 +2,10 @@
 #include "FuzzyMac/FuzzyWidget.hpp"
 #include "FuzzyMac/InfoPanel.hpp"
 #include "FuzzyMac/MainWindow.hpp"
+#include "FuzzyMac/KeyMap.hpp"
 
 #include <QDrag>
+#include <QJsonObject>
 #include <QFileIconProvider>
 #include <QFileSystemWatcher>
 #include <QListWidget>
@@ -26,14 +28,8 @@ public:
     // no use case yet
     virtual void unload() {};
 
-    // called whenever the user pressed enter when the mode is activated
-    virtual void enterHandler() = 0;
-
     // Prefix that the user types for to switch to the mode automatically
     virtual QString getPrefix() const;
-
-    // cmd-y handle  
-    virtual void handleQuickLook();
 
     virtual std::optional<QIcon> getIcon() const;
 
@@ -49,24 +45,19 @@ public:
 
     virtual std::vector<FuzzyWidget*> createMainModeWidgets(); 
 
-    virtual void handleCopy();
+    virtual void handleRequest(const QJsonObject& obj);
 
     virtual void onModeExit();
 
     virtual void handleDragAndDrop(QDrag*) const;
 
-    virtual void handlePathCopy();
-
-    virtual void handleComplete(); 
-
-    virtual bool handleBackspace();
-
-    virtual void handleLeftBracket();
+    const Keymap& getKeymap() const;
 
 protected:
     MainWindow* win;
     QWidget* parent;
     QWidget* main_widget; // used for cleanup
+    Keymap keymap;
 
     virtual void freeWidgets();
     QListWidgetItem* createListItem();

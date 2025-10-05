@@ -4,6 +4,7 @@
 #include <QPixmap>
 #include <QString>
 #include <QTimer>
+#include "FuzzyMac/ConfigManager.hpp"
 #include "FuzzyMac/MainWindow.hpp"
 #include <string>
 
@@ -11,7 +12,7 @@ extern "C" void deactivateApp();
 
 extern "C" void centerWindow(QWidget* widget);
 
-extern "C" void setupWindowDecoration(MainWindow *widget, int corner_radius);
+extern "C" void setupWindowDecoration(MainWindow *widget, ConfigManager*);
 
 
 extern "C" void addMaterial(QWidget* widget);
@@ -29,3 +30,6 @@ extern "C++" int getClipboardCount();
 extern "C++" bool authenticateWithTouchID();
 
 extern "C++" std::string getFrontmostAppName();
+
+
+extern "C++" void showQuickLookPanel(const QString &filePath);

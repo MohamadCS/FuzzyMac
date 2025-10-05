@@ -30,11 +30,6 @@ QString ModeHandler::handleModeText() {
 std::optional<QIcon> ModeHandler::getIcon() const {
     return {};
 }
-void ModeHandler::handleCopy() {
-}
-
-void ModeHandler::handlePathCopy() {
-}
 
 void ModeHandler::handleDragAndDrop(QDrag* drag) const {
 }
@@ -47,30 +42,20 @@ InfoPanelContent* ModeHandler::getInfoPanelContent() const {
     return nullptr;
 }
 
-void ModeHandler::handleQuickLook() {
-}
-
 std::vector<FuzzyWidget*> ModeHandler::createMainModeWidgets() {
     return {};
-}
-
-
-void ModeHandler::handleComplete()  {
-}
-
-
-void ModeHandler::handleLeftBracket() {
-}
-
-
-void ModeHandler::onModeExit() {
-}
-
-
-bool ModeHandler::handleBackspace() {
-    return false;
 }
 
 ModeHandler::~ModeHandler() {
     delete main_widget;
 };
+
+void ModeHandler::handleRequest(const QJsonObject& obj) {
+}
+
+void ModeHandler::onModeExit() {
+}
+
+const Keymap& ModeHandler::getKeymap() const {
+    return keymap;
+}

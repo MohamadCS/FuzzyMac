@@ -66,8 +66,6 @@ public:
     std::vector<FuzzyWidget*> createMainModeWidgets() override;
     InfoPanelContent* getInfoPanelContent() const override;
 
-    void enterHandler() override;
-    void handleQuickLook() override;
     void invokeQuery(const QString&) override;
     void freeWidgets() override;
 
@@ -81,4 +79,6 @@ private:
     QList<std::string> black_list;
     QTimer timer;
     QTimer save_timer;
+
+    void createKeymaps();
 };

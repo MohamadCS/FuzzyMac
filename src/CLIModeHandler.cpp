@@ -19,6 +19,23 @@
 
 CLIModeHandler::CLIModeHandler(MainWindow* win)
     : ModeHandler(win) {
+
+        createKeymaps();
+}
+
+void CLIModeHandler::createKeymaps() {
+    keymap.bind(QKeySequence(Qt::Key_Return), [this]() {
+        if (win->getResultsNum() == 0) {
+            return;
+        }
+
+        int i = std::max(win->getCurrentResultIdx(), 0);
+        std::cout << widgets[i]->getSearchPhrase().toStdString();
+        exit(0);
+    });
+}
+
+void CLIModeHandler::handleRequest(const QJsonObject& request) {
 }
 
 void CLIModeHandler::load() {
@@ -35,16 +52,6 @@ void CLIModeHandler::load() {
         entries.push_back(line.c_str());
         widgets.push_back(new TextWidget(win, main_widget, line.c_str()));
     }
-}
-
-void CLIModeHandler::enterHandler() {
-    if (win->getResultsNum() == 0) {
-        return;
-    }
-
-    int i = std::max(win->getCurrentResultIdx(), 0);
-    std::cout << widgets[i]->getSearchPhrase().toStdString();
-    exit(0);
 }
 
 void CLIModeHandler::freeWidgets() {
@@ -64,9 +71,6 @@ void CLIModeHandler::invokeQuery(const QString& query_) {
     }
 
     win->processResults(widgets);
-}
-
-void CLIModeHandler::handleQuickLook() {
 }
 
 QString CLIModeHandler::handleModeText() {
