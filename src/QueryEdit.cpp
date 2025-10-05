@@ -2,35 +2,18 @@
 #include "FuzzyMac/MainWindow.hpp"
 
 #include <QApplication>
-#include <vector>
 
 void QueryEdit::keyPressEvent(QKeyEvent* event) {
-
     MainWindow* win = qobject_cast<MainWindow*>(window());
-    if (QKeySequence(event->modifiers() | event->key()) == QKeySequence(Qt::ControlModifier | Qt::Key_Backspace)) {
-        setText("");
-        return;
-    }
-
-    if (QKeySequence(event->modifiers() | event->key()) == QKeySequence::Copy) {
-        emit requestAppCopy();
-        return;
-    }
 
 
-    if (QKeySequence(event->modifiers() | event->key()) == QKeySequence(Qt::MetaModifier | Qt::Key_I)) {
-        win->toggleInfoPanel();
-        return;
-    }
+    if(win->keymapDefined(event)) {
+        QApplication::sendEvent(win, event);
+        if(win->keymapOverides(event)) {
+            return;
+        }
+    } 
 
-#ifndef CLI_TOOL
-    if (text().isEmpty() && event->key() == Qt::Key_Backspace) {
-        win->handleBackspace();
-    }
-
-#endif
-
-    // Default behavior for all other keys
     QLineEdit::keyPressEvent(event);
 }
 
@@ -41,6 +24,7 @@ void QueryEdit::loadConfig() {
                                     QLineEdit {
                                         margin : 0px;
                                         selection-background-color : %1;
+                                        border-radius: 0px;
                                         selection-color : %2;
                                         color: %3;
                                         background: %4;

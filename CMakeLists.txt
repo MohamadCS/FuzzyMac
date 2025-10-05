@@ -25,7 +25,7 @@ set(HEADERS ${CPP_HEADERS})
 
 
 set(CMAKE_PREFIX_PATH "/opt/homebrew/opt/qt@6/lib/cmake")
-find_package(Qt6 COMPONENTS Core Svg Gui Widgets Concurrent REQUIRED)
+find_package(Qt6 COMPONENTS Core Network Svg Gui Widgets Concurrent REQUIRED)
 
 
 # =========================
@@ -54,6 +54,7 @@ target_link_libraries(FuzzyMac PRIVATE
     Qt6::Svg
     Qt6::Widgets 
     Qt6::Concurrent
+    Qt6::Network
     "-framework Cocoa"
     "-framework QuartzCore"
     "-framework Carbon"
@@ -70,35 +71,3 @@ set_target_properties(FuzzyMac PROPERTIES
     MACOSX_BUNDLE_INFO_PLIST "${CMAKE_SOURCE_DIR}/res/Info.plist"
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/build/app/"
 )
-
-
-
-
-
-# =========================
-# CLI Target (FuzzyMacCLI)
-# =========================
-add_executable(FuzzyMacCLI ${SOURCES} ${HEADERS} assets.qrc)
-
-target_compile_definitions(FuzzyMacCLI PRIVATE CLI_TOOL)
-
-target_link_libraries(FuzzyMacCLI PRIVATE 
-    Qt6::Core 
-    Qt6::Gui
-    Qt6::Svg
-    Qt6::Widgets 
-    Qt6::Concurrent
-    "-framework Cocoa"
-    "-framework QuartzCore"
-    "-framework Carbon"
-    "-framework AppKit"
-    "-framework QuickLook"
-    "-framework LocalAuthentication"
-    "-framework QuickLookThumbnailing"
-    "-framework QuickLookUI"
-)
-
-set_target_properties(FuzzyMacCLI PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/build/cli/"
-)
-
