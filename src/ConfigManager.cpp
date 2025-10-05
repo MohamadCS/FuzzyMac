@@ -1,10 +1,12 @@
 #include "FuzzyMac/ConfigManager.hpp"
+#include "FuzzyMac/DefaultConfig.hpp"
 #include "FuzzyMac/Utils.hpp"
 
 #include <QFileInfo>
 #include <QWidget>
 
 ConfigManager::ConfigManager() {
+    default_config = DEFAULT_CONFIG;
     QStringList p_{"$HOME/.config/FuzzyMac/config.toml"};
     expandPaths(p_);
 
@@ -27,6 +29,7 @@ void ConfigManager::load() {
             new_config = tbl;
         }
         tbl = new_config;
+    } else {
     }
 
     emit configChange();

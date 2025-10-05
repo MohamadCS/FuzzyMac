@@ -37,6 +37,69 @@ static void loadDirs(const QString& d, QStringList& paths, bool rec = true) {
     }
 }
 
+void FileModeHandler::createKeyMaps() {
+
+    // Handle Enter
+    keymap.bind(QKeySequence(Qt::Key_Return), [this]() {
+        if (win->getResultsNum() == 0) {
+            return;
+        }
+
+        int i = std::max(win->getCurrentResultIdx(), 0);
+        widgets[i]->enterHandler();
+    });
+
+    // Handle Enter
+    keymap.bind(QKeySequence::Copy, [this]() {
+        QMimeData* mime_data = new QMimeData();
+
+        // Create a list with a single file URL
+        QString file_path = dynamic_cast<FileWidget*>(widgets[win->getCurrentResultIdx()])->getPath();
+        QList<QUrl> urls;
+        urls.append(QUrl::fromLocalFile(std::move(file_path)));
+
+        mime_data->setUrls(urls);
+
+        // Set the clipboard contents
+        QGuiApplication::clipboard()->setMimeData(mime_data);
+    });
+
+    // Do Quicklook
+    keymap.bind(QKeySequence(Qt::MetaModifier | Qt::Key_Return), [this]() {
+        if (win->getResultsNum() == 0) {
+            return;
+        }
+
+        showQuickLookPanel(dynamic_cast<FileWidget*>(widgets[win->getCurrentResultIdx()])->getPath());
+    });
+
+    // Navigate back
+    keymap.bind(QKeySequence(Qt::MetaModifier | Qt::Key_B), [this]() {
+        if (isRelativeFileSearch()) {
+            curr_path = getParentDirPath(curr_path.value());
+            win->refreshResults();
+        }
+    });
+
+    // Navigate to folder.
+    keymap.bind(QKeySequence(Qt::MetaModifier | Qt::Key_O), [this]() {
+        if (win->getResultsNum() == 0) {
+            return;
+        }
+
+        int i = std::max(win->getCurrentResultIdx(), 0);
+        auto path = dynamic_cast<FileWidget*>(widgets[i])->getPath();
+        QFileInfo info(path);
+        if (!info.isDir()) {
+            return;
+        }
+
+        curr_path = path;
+
+        win->clearQuery();
+    });
+}
+
 bool FileModeHandler::isRelativeFileSearch() const {
     return curr_path.has_value();
 }
@@ -47,43 +110,6 @@ void FileModeHandler::freeWidgets() {
     widgets.clear();
 
     main_widget = new QWidget(nullptr);
-}
-
-void FileModeHandler::handleLeftBracket() {
-    if (isRelativeFileSearch()) {
-        curr_path = getParentDirPath(curr_path.value());
-        win->refreshResults();
-    }
-}
-
-void FileModeHandler::handleComplete() {
-    if (win->getResultsNum() == 0) {
-        return;
-    }
-
-    int i = std::max(win->getCurrentResultIdx(), 0);
-    auto path = dynamic_cast<FileWidget*>(widgets[i])->getPath();
-    QFileInfo info(path);
-    if (!info.isDir()) {
-        return;
-    }
-
-    curr_path = path;
-
-    win->clearQuery();
-}
-
-bool FileModeHandler::handleBackspace() {
-    if (win->getQuery().isEmpty()) {
-        if (isRelativeFileSearch()) {
-            curr_path = std::nullopt;
-            win->clearQuery();
-        }
-
-        return true;
-    }
-
-    return false;
 }
 
 void FileModeHandler::load() {
@@ -124,6 +150,8 @@ void FileModeHandler::load() {
 
 FileModeHandler::FileModeHandler(MainWindow* win)
     : ModeHandler(win) {
+
+    createKeyMaps();
     future_watcher = new QFutureWatcher<QStringList>(win);
     dir_watcher = new QFileSystemWatcher(win);
 
@@ -194,24 +222,6 @@ void FileModeHandler::invokeQuery(const QString& query_) {
     qDebug() << "Finshed query invoke";
 }
 
-void FileModeHandler::handleQuickLook() {
-    if (win->getResultsNum() == 0) {
-        return;
-    }
-
-    // quickLook(dynamic_cast<FileWidget*>(widgets[win->getCurrentResultIdx()])->getPath());
-}
-
-void FileModeHandler::enterHandler() {
-
-    if (win->getResultsNum() == 0) {
-        return;
-    }
-
-    int i = std::max(win->getCurrentResultIdx(), 0);
-    widgets[i]->enterHandler();
-}
-
 QString FileModeHandler::handleModeText() {
     if (isRelativeFileSearch()) {
         QFileInfo info(curr_path.value());
@@ -219,20 +229,6 @@ QString FileModeHandler::handleModeText() {
     }
 
     return "Files";
-}
-
-void FileModeHandler::handleCopy() {
-    QMimeData* mime_data = new QMimeData();
-
-    // Create a list with a single file URL
-    QString file_path = dynamic_cast<FileWidget*>(widgets[win->getCurrentResultIdx()])->getPath();
-    QList<QUrl> urls;
-    urls.append(QUrl::fromLocalFile(std::move(file_path)));
-
-    mime_data->setUrls(urls);
-
-    // Set the clipboard contents
-    QGuiApplication::clipboard()->setMimeData(mime_data);
 }
 
 void FileModeHandler::handleDragAndDrop(QDrag* drag) const {
@@ -265,13 +261,12 @@ std::vector<FuzzyWidget*> FileModeHandler::createMainModeWidgets() {
         new ModeWidget(
             win,
             nullptr,
-            "Search Files",
+            "Files",
             Mode::FILE,
             [this]() { win->changeMode(Mode::FILE); },
             win->getIcons()["search_files"]),
     };
 }
-
 
 void FileModeHandler::onModeExit() {
     curr_path = std::nullopt;

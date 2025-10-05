@@ -1,5 +1,7 @@
 #pragma once
 
+#include "FuzzyMac/DefaultConfig.hpp"
+
 #include <toml++/toml.h>
 #include <QObject>
 
@@ -33,7 +35,7 @@ private:
     QString config_path;
     QFileSystemWatcher watcher;
 
-    static inline toml::table default_config ;
+    toml::table default_config;
 };
 
 template <typename T>

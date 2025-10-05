@@ -21,6 +21,7 @@
 #include <QGuiApplication>
 #include <QKeyEvent>
 #include <QLabel>
+#include <QLocalSocket>
 #include <QMessageBox>
 #include <QPainter>
 #include <QPixmapCache>
@@ -54,10 +55,8 @@ void MainWindow::createWidgets() {
     resize(700, 500);
 
     setAttribute(Qt::WA_TranslucentBackground); // Make background transparent
-    setupWindowDecoration(this, config_manager->get<int>({"corner_radius"}));
+    setupWindowDecoration(this, config_manager);
     setWindowOpacity(1);
-    
-
 
     QVBoxLayout* border_layout = new QVBoxLayout(border_widget);
     border_widget->setLayout(border_layout);
@@ -107,16 +106,6 @@ void MainWindow::selectItem(int idx) {
     }
 }
 
-void MainWindow::openItem() {
-    if (getResultsNum() > 0 && getCurrentResultIdx() != -1) {
-        mode_handlers[mode]->enterHandler();
-    }
-}
-
-void MainWindow::quickLock() {
-    mode_handlers[mode]->handleQuickLook();
-}
-
 void MainWindow::wakeup() {
 
     if (config_manager->get<bool>({"animations"})) {
@@ -141,15 +130,12 @@ void MainWindow::sleep() {
         refreshResults();
     };
 
-
     if (config_manager->get<bool>({"animations"})) {
         auto* anim = opacityAnimator(this, config_manager->get<float>({"opacity"}), 0.0, 50);
         connect(anim, &QPropertyAnimation::finished, this, sleep_);
     } else {
         sleep_();
     }
-
-
 }
 
 void MainWindow::matchModeShortcut(const QString& text) {
@@ -167,7 +153,6 @@ void MainWindow::matchModeShortcut(const QString& text) {
 }
 
 void MainWindow::onTextChange(const QString& text) {
-
     // try to see if the current text is a prefix defined by some mode
     if (mode != Mode::CLI) {
         matchModeShortcut(text);
@@ -182,14 +167,6 @@ void MainWindow::onTextChange(const QString& text) {
         mode_label->show();
     } else {
         mode_label->hide();
-    }
-}
-
-void MainWindow::handleBackspace() {
-    bool exit_mode = mode_handlers[mode]->handleBackspace();
-
-    if (exit_mode) {
-        changeMode(Mode::APP);
     }
 }
 
@@ -221,17 +198,12 @@ void MainWindow::processResults(const ResultsVec& results) {
     }
 }
 
-void MainWindow::handleComplete() {
-    mode_handlers[mode]->handleComplete();
-}
-
 void MainWindow::connectEventHandlers() {
 
     connect(query_edit, &QueryEdit::textChanged, this, &MainWindow::onTextChange);
 
     connect(
         window()->windowHandle(), &QWindow::screenChanged, this, [this](QScreen* newScreen) { centerWindow(this); });
-    connect(results_list, &QListWidget::itemDoubleClicked, this, [this](QListWidgetItem* item) { openItem(); });
     connect(results_list, &QListWidget::itemClicked, this, [this](QListWidgetItem* item) {
         if (show_info_panel) {
             setInfoPanelContent(mode_handlers[mode]->getInfoPanelContent());
@@ -251,30 +223,44 @@ void MainWindow::toggleInfoPanel() {
     }
 }
 
+bool MainWindow::keymapDefined(QKeyEvent* ev) const{
+    return mode_handlers.at(mode)->getKeymap().defined(ev) || keymap.defined(ev);
+}
+
+
+bool MainWindow::keymapOverides(QKeyEvent* ev) const {
+    return mode_handlers.at(mode)->getKeymap().doesOveride(ev) || keymap.doesOveride(ev);
+}
+
+
+void MainWindow::keyPressEvent(QKeyEvent* ev) {
+    if (!mode_handlers[mode]->getKeymap().trigger(ev) && !keymap.trigger(ev)) {
+    }
+}
+
 void MainWindow::createKeybinds() {
-    // Global shortcuts
-    //
+    keymap.bind(QKeySequence(Qt::MetaModifier | Qt::Key_I), [this]() { toggleInfoPanel(); });
 
-    new QShortcut(QKeySequence(Qt::MetaModifier | Qt::Key_I), this, [this]() { toggleInfoPanel(); });
-    new QShortcut(
-        QKeySequence(Qt::MetaModifier | Qt::Key_B), this, [this]() { mode_handlers[mode]->handleLeftBracket(); });
-    new QShortcut(
-        QKeySequence(Qt::MetaModifier | Qt::Key_O), this, [this]() { mode_handlers[mode]->handleComplete(); });
-
-    new QShortcut(
-        QKeySequence(Qt::MetaModifier | Qt::Key_N), this, [this]() { selectItem(results_list->currentRow() + 1); });
-    new QShortcut(
-        QKeySequence(Qt::MetaModifier | Qt::Key_P), this, [this]() { selectItem(results_list->currentRow() - 1); });
-    new QShortcut(Qt::Key_Return, this, SLOT(openItem()));
-
-    connect(query_edit, &QueryEdit::requestAppCopy, this, [this]() { copyToClipboard(); });
+    keymap.bind(QKeySequence(Qt::MetaModifier | Qt::Key_N), [this]() {
+        qDebug() << "Triggerd";
+        selectItem(results_list->currentRow() + 1);
+    });
+    keymap.bind(QKeySequence(Qt::MetaModifier | Qt::Key_P), [this]() { selectItem(results_list->currentRow() - 1); });
+    keymap.bind(
+        QKeySequence(Qt::Key_Backspace),
+        [this]() {
+            if (getQuery().isEmpty())
+                changeMode(Mode::APP);
+        },
+        false);
 
     if (mode == Mode::CLI) {
         return;
     }
 
+    keymap.bind(Qt::Key_Escape, [this]() { this->sleep(); });
+
     registerGlobalHotkey(this);
-    new QShortcut(Qt::Key_Escape, this, [this]() { this->sleep(); });
     disableCmdQ();
 }
 
@@ -283,6 +269,7 @@ MainWindow::MainWindow(Mode mode, QWidget* parent)
       mode(mode),
       mode_factory(new ModeHandlerFactory),
       config_manager(new ConfigManager) {
+    // setupServer();
 
     if (mode != Mode::CLI) {
         for (auto mode : {Mode::APP, Mode::FILE}) {
@@ -342,13 +329,6 @@ QListWidgetItem* MainWindow::createListItem(const QString& name, const std::opti
     }
 
     return item;
-}
-
-void MainWindow::copyToClipboard() {
-    mode_handlers[mode]->handleCopy();
-}
-
-void MainWindow::copyPathToClipboard() {
 }
 
 void MainWindow::clearResultList() {
@@ -431,7 +411,7 @@ void MainWindow::loadStyle() {
     };
 
     setWindowOpacity(config_manager->get<float>({"opacity"}));
-    setupWindowDecoration(this, config_manager->get<int>({"corner_radius"}));
+    setupWindowDecoration(this, config_manager);
 
     // update border color size
     auto border_size = config_manager->get<int>({"border_size"});
@@ -439,8 +419,7 @@ void MainWindow::loadStyle() {
 
     border_widget->setStyleSheet(QString(R"(
             background: %1;
-            padding: 0px;
-    )")
+   new-session -ds "Desktop" -c "~/Desktop/"   )")
                                      .arg(config_manager->get<std::string>({"colors", "outer_border"})));
 
     main_widget->setStyleSheet(QString(R"(
@@ -456,6 +435,7 @@ void MainWindow::loadStyle() {
             background: %2;
             font-weight: 500;
             margin: 0px;
+            font-size: 16px;
             font-family: %3;
             padding: 2px;
             border-bottom: 0px solid %4;
@@ -480,7 +460,6 @@ void MainWindow::changeMode(Mode new_mode) {
     }
 
     mode_handlers[mode]->onModeExit();
-
 
     mode = new_mode;
 

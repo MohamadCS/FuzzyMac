@@ -8,9 +8,6 @@ public:
     ~AppModeHandler() override;
     void load() override;
     QString handleModeText() override;
-
-    void enterHandler() override;
-    void handleQuickLook() override;
     void invokeQuery(const QString& query_) override;
     void freeWidgets() override;
 
@@ -20,4 +17,6 @@ private:
     QStringList app_dirs;
     std::vector<FuzzyWidget*> widgets;
     QFileSystemWatcher* app_watcher;
+
+    void createBindings();
 };
