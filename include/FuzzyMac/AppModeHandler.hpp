@@ -16,7 +16,7 @@ private:
     QStringList app_paths;
     QStringList app_dirs;
     std::vector<FuzzyWidget*> widgets;
-    QFileSystemWatcher* app_watcher;
 
     void createBindings();
+    void setupCalcWidget(const QString& query);
 };
