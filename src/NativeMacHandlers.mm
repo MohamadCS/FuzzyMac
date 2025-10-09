@@ -6,6 +6,7 @@
 #include <QImage>
 #include <QPointer>
 #include <QString>
+#include <QStringList>
 #include <QVBoxLayout>
 #include <QWidget>
 #include <QWindow>
@@ -74,8 +75,8 @@ extern "C" void setupWindowDecoration(MainWindow *widget, ConfigManager *cfg) {
     content_view.layer.masksToBounds = YES;
 
     // Border color
-    QColor border_color(
-        QString::fromStdString(cfg->get<std::string>({"colors","outer_border"})));
+    QColor border_color(QString::fromStdString(
+        cfg->get<std::string>({"colors", "outer_border"})));
     CGFloat r = border_color.redF();
     CGFloat g = border_color.greenF();
     CGFloat b = border_color.blueF();
@@ -314,4 +315,66 @@ extern "C++" void showQuickLookPanel(const QString &filePath) {
   dispatch_async(dispatch_get_main_queue(), ^{
     [panel makeKeyAndOrderFront:nil];
   });
+}
+
+extern "C++" QStringList spotlightSearch(const QStringList &dirs,
+                                         const QString &query) {
+  QStringList results;
+
+  @autoreleasepool {
+    if (dirs.isEmpty() || query.isEmpty())
+      return results;
+
+    NSMetadataQuery *metadata_query = [[NSMetadataQuery alloc] init];
+
+    // Convert QStringList -> NSArray<NSString *>
+    NSMutableArray *scope_array =
+        [NSMutableArray arrayWithCapacity:dirs.size()];
+    for (const QString &dir : dirs)
+      [scope_array
+          addObject:[NSString stringWithUTF8String:dir.toUtf8().constData()]];
+
+    [metadata_query setSearchScopes:scope_array];
+
+    // Predicate: match file names containing query (case-insensitive)
+    NSString *query_string =
+        [NSString stringWithUTF8String:query.toUtf8().constData()];
+    NSPredicate *predicate = [NSPredicate
+        predicateWithFormat:@"kMDItemFSName CONTAINS[cd] %@", query_string];
+    [metadata_query setPredicate:predicate];
+
+    // Use pointers to avoid copying into Objective-C block
+    QEventLoop loop;
+    QEventLoop *loop_ptr = &loop;
+    QStringList *results_ptr = &results;
+
+    __block id observer = [[NSNotificationCenter defaultCenter]
+        addObserverForName:NSMetadataQueryDidFinishGatheringNotification
+                    object:metadata_query
+                     queue:[NSOperationQueue mainQueue]
+                usingBlock:^(NSNotification *note) {
+                  [metadata_query disableUpdates];
+
+                  for (NSMetadataItem *item in metadata_query.results) {
+                    NSString *path =
+                        [item valueForAttribute:NSMetadataItemPathKey];
+                    if (path)
+                      results_ptr->append(QString::fromNSString(path));
+                  }
+
+                  [metadata_query stopQuery];
+                  [[NSNotificationCenter defaultCenter]
+                      removeObserver:observer];
+
+                  loop_ptr->quit();
+                }];
+
+    // Start the query
+    [metadata_query startQuery];
+
+    // Wait until query completes
+    loop.exec();
+  }
+
+  return results;
 }

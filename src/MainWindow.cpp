@@ -287,11 +287,11 @@ MainWindow::MainWindow(Mode mode, QWidget* parent)
     loadConfig();
     createKeybinds();
 
-    if (mode != Mode::CLI) {
-        sleep();
-    } else {
-        wakeup();
-    }
+    // if (mode != Mode::CLI) {
+    //     sleep();
+    // } else {
+    //     wakeup();
+    // }
 }
 
 MainWindow::~MainWindow() {
