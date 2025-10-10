@@ -11,7 +11,6 @@
 #include <cstdlib>
 #include <optional>
 #include <print>
-#include <unordered_map>
 #include <wordexp.h>
 
 #include <QApplication>
@@ -24,6 +23,28 @@
 AppModeHandler::AppModeHandler(MainWindow* win)
     : ModeHandler(win) {
     createBindings();
+
+    future_watcher = new QFutureWatcher<QStringList>(win);
+
+    QObject::connect(future_watcher, &QFutureWatcher<QStringList>::finished, win, [this, win]() {
+        if (win->getQuery().isEmpty()) {
+            return;
+        }
+
+        auto results = future_watcher->result();
+
+        std::println("Found {} results", results.size());
+        const bool show_icons = win->getConfigManager().get<bool>({"mode", "apps", "show_icons"});
+
+        for (const auto& app_path : results) {
+            if (widgets.size() >= 25) {
+                break;
+            }
+            widgets.push_back(new FileWidget(win, main_widget, app_path, show_icons));
+        }
+
+        win->processResults(widgets);
+    });
 }
 
 AppModeHandler::~AppModeHandler() {};
@@ -50,6 +71,7 @@ void AppModeHandler::createBindings() {
 void AppModeHandler::load() {
 
     const auto& new_dirs = win->getConfigManager().getList<std::string>({"mode", "apps", "dirs"});
+    const auto& special_apps = win->getConfigManager().getList<std::string>({"mode", "apps", "apps"});
 
     app_dirs.clear(); // clear old dirs
     app_dirs.reserve(new_dirs.size());
@@ -59,58 +81,13 @@ void AppModeHandler::load() {
         app_dirs.push_back(QString::fromStdString(path));
     }
 
-    std::println("Loaded {} dirs", app_dirs.size());
+    app_paths.clear();
+    app_paths.reserve(special_apps.size());
+    for (const auto& path : special_apps) {
+        app_paths.push_back(QString::fromStdString(path));
+    }
 
-    // app_paths.clear();
-    // freeWidgets();
-    //
-    // QStringList paths;
-    // for (const auto& p : win->getConfigManager().getList<std::string>({"mode", "apps", "dirs"})) {
-    //     paths.push_back(QString::fromStdString(p));
-    // }
-    // expandPaths(paths);
-    //
-    // // reload apps in defined app dirs
-    // for (const auto& path : paths) {
-    //
-    //     QDir dir(path);
-    //     if (!dir.exists())
-    //         continue;
-    //
-    //     QFileInfoList entryInfoList = dir.entryInfoList(QDir::Dirs);
-    //     for (const QFileInfo& entry : entryInfoList) {
-    //         if (entry.suffix() == "app") {
-    //             app_paths << entry.absoluteFilePath();
-    //         }
-    //     }
-    // }
-    //
-    // // watch new app dirs
-    // if (app_watcher->directories().size() > 0) {
-    //     app_watcher->removePaths(app_watcher->directories());
-    // }
-    //
-    // QStringList paths_list{};
-    // for (const auto& path : paths) {
-    //     paths_list.push_back(path);
-    // }
-    // app_watcher->addPaths(paths_list);
-    //
-    // paths = {};
-    // for (const auto& p : win->getConfigManager().getList<std::string>({"mode", "apps", "apps"})) {
-    //     paths.push_back(QString::fromStdString(p.c_str()));
-    // }
-    // expandPaths(paths);
-    //
-    // // add special apps(specific apps instead of dirs)
-    // for (const auto& path : paths) {
-    //     app_paths.push_back(path);
-    //     widgets.push_back(
-    //         new FileWidget(win, main_widget, path, win->getConfigManager().get<bool>({"mode", "apps",
-    //         "show_icons"})));
-    // }
-    //
-    // win->processResults(widgets);
+    std::println("Loaded {} dirs", app_dirs.size());
 }
 
 void AppModeHandler::freeWidgets() {
@@ -139,59 +116,25 @@ void AppModeHandler::setupCalcWidget(const QString& query) {
 
 void AppModeHandler::invokeQuery(const QString& query) {
 
-    // clear all widgets from memory
-
+    qDebug() << "Query Invoked";
     freeWidgets();
     setupCalcWidget(query);
 
-    if(query.isEmpty()) {
+    if (query.isEmpty()) {
         win->processResults({});
-        return; 
+        return;
     }
 
-    auto results = spotlightSearch(app_dirs, query);
-
-    std::println("Found {} results", results.size());
-
-    for (const auto& app_path : results) {
-        if (widgets.size() >= 25) {
-            break;
-        }
-        widgets.push_back(new FileWidget(
-            win, main_widget, app_path, win->getConfigManager().get<bool>({"mode", "apps", "show_icons"})));
+    if (future_watcher->isRunning()) {
+        future_watcher->cancel();
     }
 
-    win->processResults(widgets);
+    auto future = QtConcurrent::run([this, query]() -> QStringList {
+        auto results = spotlightSearch(app_dirs, "kMDItemContentType == 'com.apple.application-bundle'");
+        results += app_paths;
+        results.removeDuplicates();
+        return filter(query, results, nullptr, [](const QString& str) { return QFileInfo(str).fileName(); });
+    });
 
-    // std::vector<int> indices{};
-    // auto search_results =
-    //     filter(query, app_paths, &indices, [](const QString& str) { return QFileInfo(str).fileName(); });
-    //
-    // auto modes_widgets = win->getModesWidgets();
-    // std::unordered_map<QString, FuzzyWidget*> search_to_widget{};
-    //
-    // QStringList modes_search_phrases{};
-    // modes_search_phrases.reserve(modes_widgets.size());
-    // for (auto* widget : modes_widgets) {
-    //     widget->setParent(main_widget);
-    //     modes_search_phrases.push_back(widget->getSearchPhrase());
-    //     search_to_widget.insert({widget->getSearchPhrase(), widget});
-    // }
-    // auto modes_results = filter(query, modes_search_phrases);
-    //
-    // for (int i = 0; i < search_results.size(); ++i) {
-    //     if (widgets.size() >= 25) {
-    //         break;
-    //     }
-    //     widgets.push_back(new FileWidget(win,
-    //                                      main_widget,
-    //                                      app_paths[indices[i]],
-    //                                      win->getConfigManager().get<bool>({"mode", "apps", "show_icons"})));
-    // }
-    //
-    // for (const auto& key : modes_results) {
-    //     widgets.push_back(search_to_widget[key]);
-    // }
-    //
-    // win->processResults(widgets);
+    future_watcher->setFuture(future);
 }

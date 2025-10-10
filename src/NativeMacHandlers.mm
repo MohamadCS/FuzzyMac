@@ -10,8 +10,10 @@
 #include <QVBoxLayout>
 #include <QWidget>
 #include <QWindow>
+
 #include <algorithm>
 #include <objc/objc-runtime.h>
+#include <print>
 #include <semaphore>
 #include <string>
 #include <vector>
@@ -122,39 +124,6 @@ extern "C" void setupWindowDecoration(MainWindow *widget, ConfigManager *cfg) {
   }
 }
 
-extern "C" void addMaterial(QWidget *widget) {
-
-  @autoreleasepool {
-    //   NSView *native_view = reinterpret_cast<NSView *>(widget->winId());
-    //   NSWindow *window = [native_view window];
-    // NSVisualEffectView *effectView =
-    //     [[NSVisualEffectView alloc] initWithFrame:window.contentView.frame];
-    //
-    // // Set the desired vibrancy effect (light or dark blur)
-    // [effectView setBlendingMode:NSVisualEffectBlendingModeBehindWindow];
-    //
-    //                                                      // Light or Dark
-    //
-    // // Add the effect view to the window's content view
-    // [window.contentView addSubview:effectView
-    //                     positioned:NSWindowBelow
-    //                     relativeTo:nil];
-    //
-    //
-    // NSView *native_view = reinterpret_cast<NSView *>(widget->winId());
-    // NSWindow *window = [native_view window];
-    //
-    // NSVisualEffectView *visualEffectView =
-    //     [[NSVisualEffectView alloc] initWithFrame:[window frame]];
-    // visualEffectView.material = NSVisualEffectMaterialHUDWindow;
-    // visualEffectView.blendingMode = NSVisualEffectBlendingModeBehindWindow;
-    // // visualEffectView.state = NSVisualEffectStateActive;
-    //
-    // // Set the frosted effect on the native window
-    // [window setContentView:visualEffectView];
-  }
-}
-
 extern "C" void disableCmdQ() {
   @autoreleasepool {
 
@@ -232,38 +201,7 @@ extern "C++" QImage getThumbnailImage(const QString &filePath, int width,
   }
 }
 
-#import <Foundation/Foundation.h>
-#import <LocalAuthentication/LocalAuthentication.h>
 
-extern "C++" bool authenticateWithTouchID() {
-  @autoreleasepool {
-
-    LAContext *context = [[[LAContext alloc] init] autorelease];
-    NSError *authError = nil;
-
-    bool canEvaluate = [context
-        canEvaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics
-                    error:&authError];
-
-    if (!canEvaluate) {
-      return false;
-    }
-
-    __block BOOL success = NO;
-    std::binary_semaphore *sem = new std::binary_semaphore{0};
-
-    [context evaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics
-            localizedReason:@"Unlock clipboard history"
-                      reply:^(BOOL didSucceed, NSError *_Nullable error) {
-                        success = didSucceed;
-                        sem->release();
-                      }];
-
-    sem->acquire();
-    delete sem;
-    return success;
-  }
-}
 
 extern "C++" std::string getFrontmostAppName() {
   @autoreleasepool {
@@ -317,63 +255,26 @@ extern "C++" void showQuickLookPanel(const QString &filePath) {
   });
 }
 
-extern "C++" QStringList spotlightSearch(const QStringList &dirs,
-                                         const QString &query) {
+
+extern "C++" QStringList spotlightSearch(const QStringList &dirs, const QString& arg) {
   QStringList results;
 
-  @autoreleasepool {
-    if (dirs.isEmpty() || query.isEmpty())
-      return results;
+  for (const QString &dir : dirs) {
+    if (dir.isEmpty())
+      continue;
 
-    NSMetadataQuery *metadata_query = [[NSMetadataQuery alloc] init];
+    QStringList args;
+    args << arg << "-onlyin" << dir;
 
-    // Convert QStringList -> NSArray<NSString *>
-    NSMutableArray *scope_array =
-        [NSMutableArray arrayWithCapacity:dirs.size()];
-    for (const QString &dir : dirs)
-      [scope_array
-          addObject:[NSString stringWithUTF8String:dir.toUtf8().constData()]];
+    QProcess proc;
+    proc.start("mdfind", args);
+    if (!proc.waitForFinished(5000)) {
+      qWarning() << "Spotlight search timed out for" << dir;
+      continue;
+    }
 
-    [metadata_query setSearchScopes:scope_array];
-
-    // Predicate: match file names containing query (case-insensitive)
-    NSString *query_string =
-        [NSString stringWithUTF8String:query.toUtf8().constData()];
-    NSPredicate *predicate = [NSPredicate
-        predicateWithFormat:@"kMDItemFSName CONTAINS[cd] %@", query_string];
-    [metadata_query setPredicate:predicate];
-
-    // Use pointers to avoid copying into Objective-C block
-    QEventLoop loop;
-    QEventLoop *loop_ptr = &loop;
-    QStringList *results_ptr = &results;
-
-    __block id observer = [[NSNotificationCenter defaultCenter]
-        addObserverForName:NSMetadataQueryDidFinishGatheringNotification
-                    object:metadata_query
-                     queue:[NSOperationQueue mainQueue]
-                usingBlock:^(NSNotification *note) {
-                  [metadata_query disableUpdates];
-
-                  for (NSMetadataItem *item in metadata_query.results) {
-                    NSString *path =
-                        [item valueForAttribute:NSMetadataItemPathKey];
-                    if (path)
-                      results_ptr->append(QString::fromNSString(path));
-                  }
-
-                  [metadata_query stopQuery];
-                  [[NSNotificationCenter defaultCenter]
-                      removeObserver:observer];
-
-                  loop_ptr->quit();
-                }];
-
-    // Start the query
-    [metadata_query startQuery];
-
-    // Wait until query completes
-    loop.exec();
+    QString output = proc.readAllStandardOutput();
+    results.append(output.split('\n', Qt::SkipEmptyParts));
   }
 
   return results;

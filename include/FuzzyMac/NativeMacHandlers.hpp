@@ -14,13 +14,13 @@ extern "C" void centerWindow(QWidget* widget);
 
 extern "C" void setupWindowDecoration(MainWindow* widget, ConfigManager*);
 
-extern "C++" QStringList spotlightSearch(const QStringList& dirs, const QString& query);
+extern "C++" QStringList spotlightSearch(const QStringList& dirs, const QString& arg);
 
 extern "C" void addMaterial(QWidget* widget);
 
 extern "C" void disableCmdQ();
 
-extern "C++" QStringList spotlightSearch(const QStringList& dirs, const QString& query);
+extern "C++" QStringList spotlightSearch(const QStringList& dirs, const QString& arg);
 
 extern "C++" void quickLook(const std::string& filePath);
 

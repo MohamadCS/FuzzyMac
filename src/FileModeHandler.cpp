@@ -130,22 +130,22 @@ void FileModeHandler::load() {
 
     expandPaths(paths);
 
-    for (auto& dir : paths) {
-        loadDirs(dir, entries);
-    }
-
-    QStringList paths_list{};
-    for (const auto& path : entries) {
-        if (QFileInfo(path).isDir()) {
-            paths_list.push_back(path);
-        }
-    }
-
-    if (dir_watcher->directories().size() > 0) {
-        dir_watcher->removePaths(dir_watcher->directories());
-    }
-
-    dir_watcher->addPaths(paths_list);
+    // for (auto& dir : paths) {
+    //     loadDirs(dir, entries);
+    // }
+    //
+    // QStringList paths_list{};
+    // for (const auto& path : entries) {
+    //     if (QFileInfo(path).isDir()) {
+    //         paths_list.push_back(path);
+    //     }
+    // }
+    //
+    // if (dir_watcher->directories().size() > 0) {
+    //     dir_watcher->removePaths(dir_watcher->directories());
+    // }
+    //
+    // dir_watcher->addPaths(paths_list);
 }
 
 FileModeHandler::FileModeHandler(MainWindow* win)
@@ -153,12 +153,6 @@ FileModeHandler::FileModeHandler(MainWindow* win)
 
     createKeyMaps();
     future_watcher = new QFutureWatcher<QStringList>(win);
-    dir_watcher = new QFileSystemWatcher(win);
-
-    QObject::connect(dir_watcher, &QFileSystemWatcher::directoryChanged, win, [this, win](const QString&) {
-        load();
-        win->refreshResults();
-    });
 
     QObject::connect(future_watcher, &QFutureWatcher<std::vector<QString>>::finished, [this, win]() {
         if (win->getQuery().isEmpty() && !isRelativeFileSearch()) {
@@ -215,7 +209,8 @@ void FileModeHandler::invokeQuery(const QString& query_) {
     }
 
     auto future = QtConcurrent::run([this, query]() -> QStringList {
-        return filter(query, entries, nullptr, [](const QString& str) { return QFileInfo(str).fileName(); });
+        auto entries_ = spotlightSearch(paths, "kMDItemFSName != ''");
+        return filter(query, entries_, nullptr, [](const QString& str) { return QFileInfo(str).fileName(); });
     });
 
     future_watcher->setFuture(future);

@@ -12,10 +12,12 @@ public:
     void freeWidgets() override;
 
 private:
-    bool math_mode = false;
+    QFutureWatcher<QStringList>* future_watcher;
     QStringList app_paths;
     QStringList app_dirs;
     std::vector<FuzzyWidget*> widgets;
+
+    bool math_mode = false;
 
     void createBindings();
     void setupCalcWidget(const QString& query);
