@@ -25,6 +25,9 @@ AppModeHandler::AppModeHandler(MainWindow* win)
     createBindings();
 
     future_watcher = new QFutureWatcher<QStringList>(win);
+    fs_watcher = new QFileSystemWatcher(win);
+
+    QObject::connect(fs_watcher, &QFileSystemWatcher::directoryChanged, win, [this, win] { reloadEntries(); });
 
     QObject::connect(future_watcher, &QFutureWatcher<QStringList>::finished, win, [this, win]() {
         if (win->getQuery().isEmpty()) {
@@ -49,6 +52,12 @@ AppModeHandler::AppModeHandler(MainWindow* win)
 
 AppModeHandler::~AppModeHandler() {};
 
+void AppModeHandler::reloadEntries() {
+    loaded_apps = spotlightSearch(app_dirs, "kMDItemContentType == 'com.apple.application-bundle'");
+    loaded_apps += special_apps;
+    loaded_apps.removeDuplicates();
+}
+
 QString AppModeHandler::handleModeText() {
     return "";
 }
@@ -71,7 +80,7 @@ void AppModeHandler::createBindings() {
 void AppModeHandler::load() {
 
     const auto& new_dirs = win->getConfigManager().getList<std::string>({"mode", "apps", "dirs"});
-    const auto& special_apps = win->getConfigManager().getList<std::string>({"mode", "apps", "apps"});
+    const auto& new_special_apps = win->getConfigManager().getList<std::string>({"mode", "apps", "apps"});
 
     app_dirs.clear(); // clear old dirs
     app_dirs.reserve(new_dirs.size());
@@ -81,13 +90,13 @@ void AppModeHandler::load() {
         app_dirs.push_back(QString::fromStdString(path));
     }
 
-    app_paths.clear();
-    app_paths.reserve(special_apps.size());
-    for (const auto& path : special_apps) {
-        app_paths.push_back(QString::fromStdString(path));
+    special_apps.clear();
+    special_apps.reserve(special_apps.size());
+    for (const auto& path : new_special_apps) {
+        special_apps.push_back(QString::fromStdString(path));
     }
 
-    std::println("Loaded {} dirs", app_dirs.size());
+    reloadEntries();
 }
 
 void AppModeHandler::freeWidgets() {
@@ -130,10 +139,7 @@ void AppModeHandler::invokeQuery(const QString& query) {
     }
 
     auto future = QtConcurrent::run([this, query]() -> QStringList {
-        auto results = spotlightSearch(app_dirs, "kMDItemContentType == 'com.apple.application-bundle'");
-        results += app_paths;
-        results.removeDuplicates();
-        return filter(query, results, nullptr, [](const QString& str) { return QFileInfo(str).fileName(); });
+        return filter(query, loaded_apps, nullptr, [](const QString& str) { return QFileInfo(str).fileName(); });
     });
 
     future_watcher->setFuture(future);
