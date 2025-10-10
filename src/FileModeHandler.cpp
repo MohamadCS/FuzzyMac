@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <optional>
+#include <print>
 #include <utility>
 #include <wordexp.h>
 
@@ -35,6 +36,44 @@ static void loadDirs(const QString& d, QStringList& paths, bool rec = true) {
         }
         paths.push_back(abs_path);
     }
+}
+
+FileModeHandler::FileModeHandler(MainWindow* win)
+    : ModeHandler(win) {
+
+    createKeyMaps();
+
+    future_watcher = new QFutureWatcher<QStringList>(win);
+    dir_watcher = new QFileSystemWatcher(win);
+
+    QObject::connect(
+        dir_watcher, &QFileSystemWatcher::directoryChanged, win, [this, win](const QString&) { reloadEntries(); });
+
+    QObject::connect(future_watcher, &QFutureWatcher<std::vector<QString>>::finished, [this, win]() {
+        if (win->getQuery().isEmpty() && !isRelativeFileSearch()) {
+            return;
+        }
+
+        freeWidgets();
+        auto results = future_watcher->result();
+        for (const auto& file : results) {
+            if (widgets.size() >= 25) {
+                break;
+            }
+
+            widgets.push_back(new FileWidget(
+                win, main_widget, file, win->getConfigManager().get<bool>({"mode", "files", "show_icons"})));
+        }
+
+        win->processResults(widgets);
+    });
+
+    load();
+}
+
+void FileModeHandler::reloadEntries() {
+    entries = spotlightSearch(paths, "kMDItemFSName != ''");
+    std::println("Mini fs reloaded with {} files" , entries.size());
 }
 
 void FileModeHandler::createKeyMaps() {
@@ -129,51 +168,7 @@ void FileModeHandler::load() {
     }
 
     expandPaths(paths);
-
-    // for (auto& dir : paths) {
-    //     loadDirs(dir, entries);
-    // }
-    //
-    // QStringList paths_list{};
-    // for (const auto& path : entries) {
-    //     if (QFileInfo(path).isDir()) {
-    //         paths_list.push_back(path);
-    //     }
-    // }
-    //
-    // if (dir_watcher->directories().size() > 0) {
-    //     dir_watcher->removePaths(dir_watcher->directories());
-    // }
-    //
-    // dir_watcher->addPaths(paths_list);
-}
-
-FileModeHandler::FileModeHandler(MainWindow* win)
-    : ModeHandler(win) {
-
-    createKeyMaps();
-    future_watcher = new QFutureWatcher<QStringList>(win);
-
-    QObject::connect(future_watcher, &QFutureWatcher<std::vector<QString>>::finished, [this, win]() {
-        if (win->getQuery().isEmpty() && !isRelativeFileSearch()) {
-            return;
-        }
-
-        freeWidgets();
-        auto results = future_watcher->result();
-        for (const auto& file : results) {
-            if (widgets.size() >= 25) {
-                break;
-            }
-
-            widgets.push_back(new FileWidget(
-                win, main_widget, file, win->getConfigManager().get<bool>({"mode", "files", "show_icons"})));
-        }
-
-        win->processResults(widgets);
-    });
-
-    load();
+    reloadEntries();
 }
 
 FileModeHandler::~FileModeHandler() {
@@ -209,8 +204,7 @@ void FileModeHandler::invokeQuery(const QString& query_) {
     }
 
     auto future = QtConcurrent::run([this, query]() -> QStringList {
-        auto entries_ = spotlightSearch(paths, "kMDItemFSName != ''");
-        return filter(query, entries_, nullptr, [](const QString& str) { return QFileInfo(str).fileName(); });
+        return filter(query, entries, nullptr, [](const QString& str) { return QFileInfo(str).fileName(); });
     });
 
     future_watcher->setFuture(future);

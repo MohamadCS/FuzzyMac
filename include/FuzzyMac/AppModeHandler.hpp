@@ -13,12 +13,15 @@ public:
 
 private:
     QFutureWatcher<QStringList>* future_watcher;
-    QStringList app_paths;
-    QStringList app_dirs;
+    QFileSystemWatcher* fs_watcher; // For deltas in our sub-fs;
+    QStringList app_dirs; // directory containing apps;
+    QStringList special_apps; // apps with no root dir.
+    QStringList loaded_apps; 
     std::vector<FuzzyWidget*> widgets;
 
     bool math_mode = false;
 
     void createBindings();
+    void reloadEntries();
     void setupCalcWidget(const QString& query);
 };

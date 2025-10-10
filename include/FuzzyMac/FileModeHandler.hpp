@@ -32,18 +32,38 @@ public:
     void handleDragAndDrop(QDrag*) const override;
     QString handleModeText() override;
     void onModeExit() override;
+
+
     void createKeyMaps();
     void freeWidgets() override;
 
 private:
     std::vector<FuzzyWidget*> widgets;
     QFutureWatcher<QStringList>* future_watcher;
+    QFileSystemWatcher* dir_watcher;
     QStringList paths;
     QStringList entries;
     std::optional<QString> curr_path;
 
+    void reloadEntries();
     bool isRelativeFileSearch() const;
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 class FileInfoPanel : public InfoPanelContent {
     Q_OBJECT;
@@ -52,5 +72,6 @@ public:
     FileInfoPanel(QWidget* parent, MainWindow* win, QString path);
 
 private:
+
     QFutureWatcher<QImage>* image_watcher;
 };
