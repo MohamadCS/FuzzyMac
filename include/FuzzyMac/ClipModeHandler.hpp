@@ -67,6 +67,7 @@ public:
     InfoPanelContent* getInfoPanelContent() const override;
 
     void invokeQuery(const QString&) override;
+    void createKeymaps();
     void freeWidgets() override;
 
 private:
@@ -79,6 +80,4 @@ private:
     QList<std::string> black_list;
     QTimer timer;
     QTimer save_timer;
-
-    void createKeymaps();
 };
