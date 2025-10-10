@@ -65,10 +65,6 @@ void MainWindow::createWidgets() {
         info_panel->hide();
     }
 
-    // QGraphicsBlurEffect* blurEffect = new QGraphicsBlurEffect();
-    // blurEffect->setBlurRadius(15); // Adjust blur intensity
-    // setGraphicsEffect(blurEffect); // Apply blur effect to the window
-
     QHBoxLayout* content_layout = new QHBoxLayout;
 
     // main layout widgets
@@ -90,7 +86,6 @@ void MainWindow::createWidgets() {
     main_widget->setLayout(layout);
     setCentralWidget(border_widget);
     wakeup();
-    addMaterial(this);
 }
 
 void MainWindow::selectItem(int idx) {
@@ -171,7 +166,6 @@ void MainWindow::onTextChange(const QString& text) {
 }
 
 void MainWindow::processResults(const ResultsVec& results) {
-
     results_list->clear();
 
     for (auto obj : results) {
@@ -223,15 +217,13 @@ void MainWindow::toggleInfoPanel() {
     }
 }
 
-bool MainWindow::keymapDefined(QKeyEvent* ev) const{
+bool MainWindow::keymapDefined(QKeyEvent* ev) const {
     return mode_handlers.at(mode)->getKeymap().defined(ev) || keymap.defined(ev);
 }
-
 
 bool MainWindow::keymapOverides(QKeyEvent* ev) const {
     return mode_handlers.at(mode)->getKeymap().doesOveride(ev) || keymap.doesOveride(ev);
 }
-
 
 void MainWindow::keyPressEvent(QKeyEvent* ev) {
     if (!mode_handlers[mode]->getKeymap().trigger(ev) && !keymap.trigger(ev)) {
@@ -271,13 +263,8 @@ MainWindow::MainWindow(Mode mode, QWidget* parent)
       config_manager(new ConfigManager) {
     // setupServer();
 
-    if (mode != Mode::CLI) {
-        for (auto mode : {Mode::APP, Mode::FILE}) {
-            mode_handlers[mode] = mode_factory->create(mode, this);
-        }
-    } else {
-        mode_handlers[Mode::CLI] = mode_factory->create(Mode::CLI, this);
-        mode = Mode::CLI;
+    for (auto mode : {Mode::APP, Mode::FILE}) {
+        mode_handlers[mode] = mode_factory->create(mode, this);
     }
 
     show_info_panel = config_manager->get<bool>({"info_panel"});
@@ -287,8 +274,8 @@ MainWindow::MainWindow(Mode mode, QWidget* parent)
     loadConfig();
     createKeybinds();
 
-    // if (mode != Mode::CLI) {
     //     sleep();
+    // if (mode != Mode::CLI) {
     // } else {
     //     wakeup();
     // }
@@ -455,6 +442,7 @@ void MainWindow::clearQuery() {
 void MainWindow::changeMode(Mode new_mode) {
 
     // there is no need to change;
+
     if (new_mode == mode) {
         return;
     }
@@ -464,6 +452,7 @@ void MainWindow::changeMode(Mode new_mode) {
     mode = new_mode;
 
     clearQuery();
+
 
     // if (new_mode != Mode::APP && config_manager->get<bool>({"animations"})) {
     // }
