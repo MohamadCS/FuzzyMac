@@ -193,7 +193,7 @@ void ClipboardManager::saveToFile(const QString& path) const {
     }
 
     // Write asynchronously — capture by value to avoid use-after-free
-    QtConcurrent::run([local_entries, path]() {
+    auto result = QtConcurrent::run([local_entries, path]() {
         QJsonArray arr;
         for (const auto& entry : local_entries)
             arr.append(entry.toJson());
