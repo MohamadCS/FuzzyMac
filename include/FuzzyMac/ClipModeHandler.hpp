@@ -30,6 +30,7 @@ public:
     const QList<Entry>& getEntries() const;
 
 private:
+    mutable QMutex entries_mutex;
     QList<Entry> entries;
 };
 
@@ -62,7 +63,7 @@ public:
     ClipModeHandler(MainWindow* win);
     void load() override;
     QString getPrefix() const override;
-    QString handleModeText() override;
+    QString getModeText() override;
     std::vector<FuzzyWidget*> createMainModeWidgets() override;
     InfoPanelContent* getInfoPanelContent() const override;
 

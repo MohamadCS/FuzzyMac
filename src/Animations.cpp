@@ -12,12 +12,11 @@ QPropertyAnimation* opacityAnimator(QWidget* widget, const QVariant& start_val, 
 
 QPropertyAnimation* bounceAnimator(QWidget* widget, const QVariant& scale_factor, int duration) {
 
- // Animation on geometry (size + position)
-    QPropertyAnimation *animation = new QPropertyAnimation(widget, "geometry");
-
+    // Animation on geometry (size + position)
+    QPropertyAnimation* animation = new QPropertyAnimation(widget, "geometry");
 
     QRect originalRect = widget->geometry();
-    QPoint center = originalRect.center();  // Get the center point
+    QPoint center = originalRect.center(); // Get the center point
 
     int scale = 20; // Total increase in width and height
 
@@ -36,15 +35,12 @@ QPropertyAnimation* bounceAnimator(QWidget* widget, const QVariant& scale_factor
 }
 
 QPropertyAnimation* resizeAnimation(QWidget* widget, const QSize& final_size, int duration) {
-    QRect start = widget->geometry();
-    QRect end = QRect(start.topLeft(), final_size);
-
-    // Create animation
-    QPropertyAnimation* anim = new QPropertyAnimation(widget, "geometry");
-    anim->setDuration(duration); // milliseconds
-    anim->setStartValue(start);
-    anim->setEndValue(end);
+    QSize targetSize = widget->sizeHint();
+    QPropertyAnimation* anim = new QPropertyAnimation(widget, "size");
+    anim->setDuration(150);
     anim->setEasingCurve(QEasingCurve::OutCubic);
+    anim->setStartValue(widget->size());
+    anim->setEndValue(targetSize);
     anim->start(QAbstractAnimation::DeleteWhenStopped);
     return anim;
 }

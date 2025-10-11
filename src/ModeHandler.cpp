@@ -23,7 +23,7 @@ ModeHandler::ModeHandler(MainWindow* win)
 void ModeHandler::freeWidgets() {
 }
 
-QString ModeHandler::handleModeText() {
+QString ModeHandler::getModeText() {
     return "empty";
 }
 
@@ -49,9 +49,6 @@ std::vector<FuzzyWidget*> ModeHandler::createMainModeWidgets() {
 ModeHandler::~ModeHandler() {
     delete main_widget;
 };
-
-void ModeHandler::handleRequest(const QJsonObject& obj) {
-}
 
 void ModeHandler::onModeExit() {
 }

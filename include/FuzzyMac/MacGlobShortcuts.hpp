@@ -6,6 +6,5 @@
 
 
 
-OSStatus hotKeyHandler(EventHandlerCallRef nextHandler, EventRef theEvent, void* userData); 
 void registerGlobalHotkey(MainWindow* win); 
 

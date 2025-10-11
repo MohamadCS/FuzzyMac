@@ -47,8 +47,8 @@ extern "C" void centerWindow(QWidget *widget) {
   }
 }
 
-extern "C" void setupWindowDecoration(MainWindow *widget, ConfigManager *cfg) {
-  // Get the native NSWindow handle
+extern "C" void setupWindowSettings(MainWindow *widget) {
+
   @autoreleasepool {
     //
     NSView *native_view = reinterpret_cast<NSView *>(widget->winId());
@@ -63,11 +63,17 @@ extern "C" void setupWindowDecoration(MainWindow *widget, ConfigManager *cfg) {
                                    NSWindowCollectionBehaviorStationary)];
 
     [window setStyleMask:(NSWindowStyleMaskBorderless)];
-    [window center];
 
     [window setOpaque:NO]; // Set window to be non-opaque
     [window setBackgroundColor:[NSColor clearColor]]; // Set the background
-                                                      // transparent
+  }
+}
+
+extern "C" void setupWindowDecoration(MainWindow *widget, ConfigManager *cfg) {
+  // Get the native NSWindow handle
+  @autoreleasepool {
+    NSView *native_view = reinterpret_cast<NSView *>(widget->winId());
+    NSWindow *window = [native_view window];
 
     NSView *content_view = [window contentView];
     CGFloat radius = cfg->get<float>({"corner_radius"});
@@ -201,8 +207,6 @@ extern "C++" QImage getThumbnailImage(const QString &filePath, int width,
   }
 }
 
-
-
 extern "C++" std::string getFrontmostAppName() {
   @autoreleasepool {
 
@@ -255,8 +259,8 @@ extern "C++" void showQuickLookPanel(const QString &filePath) {
   });
 }
 
-
-extern "C++" QStringList spotlightSearch(const QStringList &dirs, const QString& arg) {
+extern "C++" QStringList spotlightSearch(const QStringList &dirs,
+                                         const QString &arg) {
   QStringList results;
 
   for (const QString &dir : dirs) {

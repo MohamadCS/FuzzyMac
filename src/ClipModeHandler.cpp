@@ -6,6 +6,8 @@
 #include "FuzzyMac/ModeHandler.hpp"
 #include "FuzzyMac/NativeMacHandlers.hpp"
 
+
+#include "spdlog/spdlog.h"
 #include <QClipboard>
 #include <QDir>
 #include <QGuiApplication>
@@ -86,7 +88,6 @@ ClipModeHandler::ClipModeHandler(MainWindow* win)
     QString dataDir = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
     QDir().mkpath(dataDir); // ensure directory exists
     path = dataDir + "/clipboard.json";
-    qDebug() << path;
 
     QObject::connect(&timer, &QTimer::timeout, [this, win]() {
         int new_count = getClipboardCount();
@@ -120,6 +121,8 @@ ClipModeHandler::ClipModeHandler(MainWindow* win)
             clipboard_manager.saveToFile(path);
         }
         dirty = false;
+
+        spdlog::info("Saved clipboard history to {}", path.toStdString());
     });
 
     timer.start(500);
@@ -172,8 +175,8 @@ void ClipboardManager::loadFromFile(const QString& path) {
     QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
     QJsonArray arr = doc.array();
 
+    QMutexLocker locker(&entries_mutex);
     entries.clear();
-    qDebug() << arr.size();
     for (const QJsonValue& val : arr) {
         if (val.isObject()) {
             entries.append(Entry::fromJson(val.toObject()));
@@ -182,16 +185,22 @@ void ClipboardManager::loadFromFile(const QString& path) {
 }
 
 void ClipboardManager::saveToFile(const QString& path) const {
-    auto local_entries = entries;
+    // Copy entries under lock for thread-safety
+    QList<Entry> local_entries;
+    {
+        QMutexLocker locker(&entries_mutex);
+        local_entries = entries;
+    }
 
-    QThreadPool::globalInstance()->start([&local_entries, path]() -> void {
+    // Write asynchronously — capture by value to avoid use-after-free
+    QtConcurrent::run([local_entries, path]() {
         QJsonArray arr;
         for (const auto& entry : local_entries)
             arr.append(entry.toJson());
 
         QJsonDocument doc(arr);
         QFile file(path);
-        if (!file.open(QIODevice::WriteOnly))
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate))
             return;
 
         file.write(doc.toJson(QJsonDocument::Indented));
@@ -239,6 +248,8 @@ ClipboardManager::Entry ClipboardManager::Entry::fromJson(const QJsonObject& obj
 }
 
 void ClipboardManager::addEntry(const Entry::Content& value, const QString& app) {
+    QMutexLocker locker(&entries_mutex);
+
     entries.push_back(Entry{
         .value = value,
         .app = app,
@@ -258,7 +269,7 @@ QString ClipModeHandler::getPrefix() const {
     return "yy";
 }
 
-QString ClipModeHandler::handleModeText() {
+QString ClipModeHandler::getModeText() {
     return "Clipboard";
 }
 
@@ -295,6 +306,7 @@ std::variant<QListWidgetItem*, FuzzyWidget*> ClipboardWidget::getItem() {
 }
 
 void ClipboardManager::clear() {
+    QMutexLocker locker(&entries_mutex);
     entries.clear();
 }
 
@@ -335,7 +347,6 @@ std::vector<FuzzyWidget*> ClipModeHandler::createMainModeWidgets() {
 void ClipModeHandler::freeWidgets() {
     main_widget->deleteLater();
     widgets.clear();
-
     main_widget = new QWidget(nullptr);
 }
 

@@ -70,10 +70,9 @@ T ConfigManager::get(std::initializer_list<std::string> keys, T fallback) const 
     if (node) {
         if (auto val = node->value<T>())
             return *val;
-    }
+    } 
 
     return fallback; // fallback if nothing found
-                     //
 }
 
 template <typename T>
