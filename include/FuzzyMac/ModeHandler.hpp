@@ -24,10 +24,7 @@ public:
 
     // Called on startup and when config file changes
     virtual void load() = 0;
-
-    // no use case yet
-    virtual void unload() {};
-
+    //
     // Prefix that the user types for to switch to the mode automatically
     virtual QString getPrefix() const;
 
@@ -38,14 +35,12 @@ public:
     virtual InfoPanelContent* getInfoPanelContent() const;
 
     // The text that be shown below the search bar
-    virtual QString handleModeText();
+    virtual QString getModeText();
 
-    // called when the text on searchbar changes
+    // Called when the text on searchbar changes
     virtual void invokeQuery(const QString& query_) = 0;
 
     virtual std::vector<FuzzyWidget*> createMainModeWidgets(); 
-
-    virtual void handleRequest(const QJsonObject& obj);
 
     virtual void onModeExit();
 

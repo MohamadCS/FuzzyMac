@@ -10,8 +10,7 @@ public:
     void load() override;
     void invokeQuery(const QString& query_) override;
     void freeWidgets() override;
-    void handleRequest(const QJsonObject&) override;
-    QString handleModeText() override;
+    QString getModeText() override;
 
 private:
     QStringList entries;

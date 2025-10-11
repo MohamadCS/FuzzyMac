@@ -57,16 +57,26 @@ std::optional<double> evalMathExp(const std::string& exp) {
 }
 
 QString cutPathPrefix(const QString& path, int max_length) {
-    if(max_length >= path.size()) {
+    if (max_length >= path.size()) {
         return path;
     }
 
     QString normalized_path = path.right(max_length);
-    for(int i = 0; i < normalized_path.size(); ++i) {
-        if(normalized_path[i] == '/') {
-           return ".." + normalized_path.right(normalized_path.size() - i);
+    for (int i = 0; i < normalized_path.size(); ++i) {
+        if (normalized_path[i] == '/') {
+            return ".." + normalized_path.right(normalized_path.size() - i);
         }
     }
 
     return path;
 }
+
+QStringList fromQList(const QList<std::string>& vec) {
+    QStringList result{};
+    for (const auto& elm : vec) {
+        result.push_back(QString::fromStdString(elm));
+    }
+    return result;
+}
+
+

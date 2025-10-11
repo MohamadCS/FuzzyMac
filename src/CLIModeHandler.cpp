@@ -35,9 +35,6 @@ void CLIModeHandler::createKeymaps() {
     });
 }
 
-void CLIModeHandler::handleRequest(const QJsonObject& request) {
-}
-
 void CLIModeHandler::load() {
     if (loaded) {
         return;
@@ -73,6 +70,6 @@ void CLIModeHandler::invokeQuery(const QString& query_) {
     win->processResults(widgets);
 }
 
-QString CLIModeHandler::handleModeText() {
+QString CLIModeHandler::getModeText() {
     return "Results";
 }

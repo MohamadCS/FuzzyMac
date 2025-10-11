@@ -2,6 +2,8 @@
 #include "FuzzyMac/DefaultConfig.hpp"
 #include "FuzzyMac/Utils.hpp"
 
+#include "spdlog/spdlog.h"
+
 #include <QFileInfo>
 #include <QWidget>
 
@@ -21,15 +23,21 @@ ConfigManager::ConfigManager() {
 
 void ConfigManager::load() {
     if (QFileInfo(config_path).exists()) {
-        toml::table new_config = tbl;
+
+        toml::table new_config;
         // reload config file
         try {
             new_config = toml::parse_file(config_path.toStdString());
+            tbl = new_config;
+            spdlog::info("Configuration change detected, loading the new configuration");
+
         } catch (const toml::parse_error& err) {
-            new_config = tbl;
+            spdlog::warn("Config file: {}", err.description());
         }
-        tbl = new_config;
+
     } else {
+        spdlog::warn("Config file not found in the expected location {}, falling back to default config.",
+                     config_path.toStdString());
     }
 
     emit configChange();
