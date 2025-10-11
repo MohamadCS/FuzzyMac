@@ -39,7 +39,6 @@ void ResultsPanel::loadConfig() {
             padding: 0px;
             border : none;
             font-size: 15px;
-            font-weight: 300;
             font-family: %5;
         }
         QScrollBar:vertical {
@@ -53,11 +52,13 @@ void ResultsPanel::loadConfig() {
           QListWidget::item {
                     border: 0px solid #ccc;
                     border-radius: 10px;      
-                    margin: 4px 3px;         
+                    font-weight : normal;
+                    margin: 4px 8px;         
                     background-color: %4;
             }
             QListWidget::item:selected {
                 background-color: %1;
+                font-weight : bold;
                 color: %3;
             }
             QScrollBar::handle:vertical {

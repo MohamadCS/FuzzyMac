@@ -9,3 +9,5 @@ QPropertyAnimation* resizeAnimation(QWidget* widget,const QSize& final_size, int
 
 
 
+
+

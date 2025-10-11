@@ -14,6 +14,8 @@ extern "C" void centerWindow(QWidget* widget);
 
 extern "C" void setupWindowDecoration(MainWindow* widget, ConfigManager*);
 
+extern "C" void setupWindowSettings(MainWindow* widget);
+
 extern "C++" QStringList spotlightSearch(const QStringList& dirs, const QString& arg);
 
 extern "C" void addMaterial(QWidget* widget);

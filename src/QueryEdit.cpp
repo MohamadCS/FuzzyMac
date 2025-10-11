@@ -6,13 +6,12 @@
 void QueryEdit::keyPressEvent(QKeyEvent* event) {
     MainWindow* win = qobject_cast<MainWindow*>(window());
 
-
-    if(win->keymapDefined(event)) {
+    if (win->keymapDefined(event)) {
         QApplication::sendEvent(win, event);
-        if(win->keymapOverides(event)) {
+        if (win->keymapOverides(event)) {
             return;
         }
-    } 
+    }
 
     QLineEdit::keyPressEvent(event);
 }
@@ -22,9 +21,9 @@ void QueryEdit::loadConfig() {
     const auto& config = win->getConfigManager();
     setStyleSheet(QString(R"(
                                     QLineEdit {
-                                        margin : 0px;
+                                        margin: 10px;
                                         selection-background-color : %1;
-                                        border-radius: 0px;
+                                        border-radius: 8px;
                                         selection-color : %2;
                                         color: %3;
                                         background: %4;

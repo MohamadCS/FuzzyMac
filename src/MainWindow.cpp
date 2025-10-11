@@ -2,6 +2,7 @@
 #include "FuzzyMac/Animations.hpp"
 #include "FuzzyMac/ConfigManager.hpp"
 #include "FuzzyMac/FuzzyWidget.hpp"
+#include "FuzzyMac/GlobalShortcut.hpp"
 #include "FuzzyMac/InfoPanel.hpp"
 #include "FuzzyMac/MacGlobShortcuts.hpp"
 #include "FuzzyMac/ModeHandler.hpp"
@@ -10,7 +11,7 @@
 #include "FuzzyMac/QueryEdit.hpp"
 #include "FuzzyMac/ResultsPanel.hpp"
 
-#include "toml++/impl/parser.hpp"
+#include "spdlog/spdlog.h"
 
 #include <QApplication>
 #include <QClipboard>
@@ -55,7 +56,10 @@ void MainWindow::createWidgets() {
     resize(700, 500);
 
     setAttribute(Qt::WA_TranslucentBackground); // Make background transparent
+    setupWindowSettings(this);
     setupWindowDecoration(this, config_manager);
+
+    centerWindow(this);
     setWindowOpacity(1);
 
     QVBoxLayout* border_layout = new QVBoxLayout(border_widget);
@@ -107,6 +111,8 @@ void MainWindow::wakeup() {
         opacityAnimator(this, 0.0, config_manager->get<float>({"opacity"}), 50);
     }
 
+    // setupWindowDecoration(this, config_manager);
+
     show();
     raise();
     activateWindow();
@@ -149,19 +155,17 @@ void MainWindow::matchModeShortcut(const QString& text) {
 
 void MainWindow::onTextChange(const QString& text) {
     // try to see if the current text is a prefix defined by some mode
-    if (mode != Mode::CLI) {
-        matchModeShortcut(text);
-    }
+    matchModeShortcut(text);
 
     // let the mode handle the query
     mode_handlers[mode]->invokeQuery(query_edit->text());
 
     // replace the mode label text if possible
-    if (const auto& mode_text = mode_handlers[mode]->handleModeText(); !mode_text.isEmpty()) {
+    if (const auto& mode_text = mode_handlers[mode]->getModeText(); !mode_text.isEmpty()) {
         mode_label->setText(QString("%1").arg(mode_text));
-        mode_label->show();
+        mode_label->setVisible(true);
     } else {
-        mode_label->hide();
+        mode_label->setVisible(false);
     }
 }
 
@@ -181,8 +185,8 @@ void MainWindow::processResults(const ResultsVec& results) {
         }
     }
 
-    // try to select the first entry
     if (results_list->count()) {
+        // try to select the first entry
         results_list->setCurrentRow(0);
     }
 
@@ -190,6 +194,9 @@ void MainWindow::processResults(const ResultsVec& results) {
     if (show_info_panel) {
         setInfoPanelContent(mode_handlers[mode]->getInfoPanelContent());
     }
+}
+
+void MainWindow::onResultsListChanged() {
 }
 
 void MainWindow::connectEventHandlers() {
@@ -233,10 +240,7 @@ void MainWindow::keyPressEvent(QKeyEvent* ev) {
 void MainWindow::createKeybinds() {
     keymap.bind(QKeySequence(Qt::MetaModifier | Qt::Key_I), [this]() { toggleInfoPanel(); });
 
-    keymap.bind(QKeySequence(Qt::MetaModifier | Qt::Key_N), [this]() {
-        qDebug() << "Triggerd";
-        selectItem(results_list->currentRow() + 1);
-    });
+    keymap.bind(QKeySequence(Qt::MetaModifier | Qt::Key_N), [this]() { selectItem(results_list->currentRow() + 1); });
     keymap.bind(QKeySequence(Qt::MetaModifier | Qt::Key_P), [this]() { selectItem(results_list->currentRow() - 1); });
     keymap.bind(
         QKeySequence(Qt::Key_Backspace),
@@ -246,13 +250,27 @@ void MainWindow::createKeybinds() {
         },
         false);
 
-    if (mode == Mode::CLI) {
-        return;
-    }
-
     keymap.bind(Qt::Key_Escape, [this]() { this->sleep(); });
 
-    registerGlobalHotkey(this);
+    auto* cmd_space = new GlobalHotkeyBridge(this);
+    connect(cmd_space, &GlobalHotkeyBridge::activated, this, [this] {
+        if (isHidden()) { // HIDE
+            wakeup();
+        } else {
+            sleep();
+        }
+    });
+
+    cmd_space->registerHotkey(QKeySequence(Qt::MetaModifier | Qt::Key_Space));
+
+    auto* cmd_shift_c = new GlobalHotkeyBridge(this);
+    connect(cmd_shift_c, &GlobalHotkeyBridge::activated, this, [this] {
+        wakeup();
+        changeMode(Mode::CLIP);
+    });
+
+    cmd_shift_c->registerHotkey(QKeySequence(Qt::MetaModifier | Qt::ShiftModifier | Qt::Key_C));
+
     disableCmdQ();
 }
 
@@ -261,9 +279,15 @@ MainWindow::MainWindow(Mode mode, QWidget* parent)
       mode(mode),
       mode_factory(new ModeHandlerFactory),
       config_manager(new ConfigManager) {
-    // setupServer();
 
-    for (auto mode : {Mode::APP, Mode::FILE}) {
+    const std::vector<Mode> modes = {
+        Mode::APP,
+        Mode::FILE,
+        Mode::WALLPAPER,
+        Mode::CLIP,
+    };
+
+    for (auto mode : modes) {
         mode_handlers[mode] = mode_factory->create(mode, this);
     }
 
@@ -274,11 +298,7 @@ MainWindow::MainWindow(Mode mode, QWidget* parent)
     loadConfig();
     createKeybinds();
 
-    //     sleep();
-    // if (mode != Mode::CLI) {
-    // } else {
-    //     wakeup();
-    // }
+    sleep();
 }
 
 MainWindow::~MainWindow() {
@@ -394,6 +414,10 @@ void MainWindow::loadStyle() {
          createIcon(
              ":/res/icons/text.svg",
              QColor(QString::fromStdString(getConfigManager().get<std::string>({"colors", "results_list", "text"}))))},
+        {"wallpaper",
+         createIcon(
+             ":/res/icons/wallpaper.svg",
+             QColor(QString::fromStdString(getConfigManager().get<std::string>({"colors", "results_list", "text"}))))},
 
     };
 
@@ -404,10 +428,10 @@ void MainWindow::loadStyle() {
     auto border_size = config_manager->get<int>({"border_size"});
     border_widget->layout()->setContentsMargins(border_size, border_size, border_size, border_size);
 
-    border_widget->setStyleSheet(QString(R"(
-            background: %1;
-   new-session -ds "Desktop" -c "~/Desktop/"   )")
-                                     .arg(config_manager->get<std::string>({"colors", "outer_border"})));
+    //  border_widget->setStyleSheet(QString(R"(
+    //          background: %1;
+    // new-session -ds "Desktop" -c "~/Desktop/"   )")
+    //                                   .arg(config_manager->get<std::string>({"colors", "outer_border"})));
 
     main_widget->setStyleSheet(QString(R"(
             background: %1;
@@ -452,10 +476,6 @@ void MainWindow::changeMode(Mode new_mode) {
     mode = new_mode;
 
     clearQuery();
-
-
-    // if (new_mode != Mode::APP && config_manager->get<bool>({"animations"})) {
-    // }
 }
 
 void MainWindow::setInfoPanelContent(InfoPanelContent* content) {

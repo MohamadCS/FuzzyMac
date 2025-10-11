@@ -1,6 +1,5 @@
 #include "../include/FuzzyMac/MacGlobShortcuts.hpp"
 #include "../include/FuzzyMac/MainWindow.hpp"
-#include "../include/FuzzyMac/NativeMacHandlers.hpp"
 
 OSStatus triggerApp(EventHandlerCallRef nextHandler, EventRef theEvent, void* userData) {
 
