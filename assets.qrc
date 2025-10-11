@@ -11,4 +11,7 @@
   <qresource prefix="/">
     <file>./res/icons/text.svg</file>
   </qresource>
+  <qresource prefix="/">
+    <file>./res/icons/wallpaper.svg</file>
+  </qresource>
 </RCC>

@@ -7,7 +7,7 @@ public:
     AppModeHandler(MainWindow* win);
     ~AppModeHandler() override;
     void load() override;
-    QString handleModeText() override;
+    QString getModeText() override;
     void invokeQuery(const QString& query_) override;
     void freeWidgets() override;
 

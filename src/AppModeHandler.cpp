@@ -11,6 +11,7 @@
 #include <cstdlib>
 #include <optional>
 #include <print>
+#include <unordered_map>
 #include <wordexp.h>
 
 #include <QApplication>
@@ -30,20 +31,44 @@ AppModeHandler::AppModeHandler(MainWindow* win)
     QObject::connect(fs_watcher, &QFileSystemWatcher::directoryChanged, win, [this, win] { reloadEntries(); });
 
     QObject::connect(future_watcher, &QFutureWatcher<QStringList>::finished, win, [this, win]() {
+
+        auto modes_widgets = win->getModesWidgets();
+        std::unordered_map<QString, FuzzyWidget*> phrase_to_widget{};
+        QStringList phrases{};
+        phrases.reserve(modes_widgets.size());
+
+        for (auto* widget : modes_widgets) {
+            widget->setParent(main_widget);
+            phrase_to_widget[widget->getSearchPhrase()] = widget;
+            phrases.push_back(widget->getSearchPhrase());
+        }
+
+        auto modes_results = filter(win->getQuery(), phrases);
+
         if (win->getQuery().isEmpty()) {
+            for (const auto& phrase : modes_results) {
+                widgets.push_back(phrase_to_widget[phrase]);
+            }
+            win->processResults(widgets);
+
             return;
         }
 
         auto results = future_watcher->result();
-
-        std::println("Found {} results", results.size());
         const bool show_icons = win->getConfigManager().get<bool>({"mode", "apps", "show_icons"});
 
+        // Create modes main mode widgets
+
+        // Create widgets and process them
         for (const auto& app_path : results) {
             if (widgets.size() >= 25) {
                 break;
             }
             widgets.push_back(new FileWidget(win, main_widget, app_path, show_icons));
+        }
+
+        for (const auto& phrase : modes_results) {
+            widgets.push_back(phrase_to_widget[phrase]);
         }
 
         win->processResults(widgets);
@@ -58,8 +83,8 @@ void AppModeHandler::reloadEntries() {
     loaded_apps.removeDuplicates();
 }
 
-QString AppModeHandler::handleModeText() {
-    return "";
+QString AppModeHandler::getModeText() {
+    return "FuzzyMac";
 }
 
 void AppModeHandler::createBindings() {
@@ -71,30 +96,15 @@ void AppModeHandler::createBindings() {
         }
 
         int i = std::max(win->getCurrentResultIdx(), 0);
-        qDebug() << i;
-        qDebug() << win->getResultsNum();
         widgets[i]->enterHandler();
     });
 }
 
 void AppModeHandler::load() {
 
-    const auto& new_dirs = win->getConfigManager().getList<std::string>({"mode", "apps", "dirs"});
-    const auto& new_special_apps = win->getConfigManager().getList<std::string>({"mode", "apps", "apps"});
-
-    app_dirs.clear(); // clear old dirs
-    app_dirs.reserve(new_dirs.size());
-
-    // add new dirs to limit search for
-    for (const auto& path : new_dirs) {
-        app_dirs.push_back(QString::fromStdString(path));
-    }
-
-    special_apps.clear();
-    special_apps.reserve(special_apps.size());
-    for (const auto& path : new_special_apps) {
-        special_apps.push_back(QString::fromStdString(path));
-    }
+    // get configs
+    app_dirs = fromQList(win->getConfigManager().getList<std::string>({"mode", "apps", "dirs"}));
+    special_apps = fromQList(win->getConfigManager().getList<std::string>({"mode", "apps", "apps"}));
 
     reloadEntries();
 }
@@ -125,15 +135,10 @@ void AppModeHandler::setupCalcWidget(const QString& query) {
 
 void AppModeHandler::invokeQuery(const QString& query) {
 
-    qDebug() << "Query Invoked";
     freeWidgets();
     setupCalcWidget(query);
 
-    if (query.isEmpty()) {
-        win->processResults({});
-        return;
-    }
-
+    // Cancel current query search
     if (future_watcher->isRunning()) {
         future_watcher->cancel();
     }

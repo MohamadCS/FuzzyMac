@@ -40,6 +40,7 @@ enum class Mode {
     APP,
     FILE,
     CLIP,
+    WALLPAPER,
     COUNT,
 };
 
@@ -49,6 +50,7 @@ struct MainWindow : public QMainWindow {
 public:
     MainWindow(Mode mode = Mode::APP, QWidget* parent = nullptr);
     ~MainWindow();
+
 
     void wakeup();
     void sleep();
@@ -91,6 +93,8 @@ public:
 private slots:
     void onTextChange(const QString& text);
     void onApplicationStateChanged(Qt::ApplicationState state);
+
+    void onResultsListChanged();
 
 
 private:
