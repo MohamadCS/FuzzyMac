@@ -317,7 +317,9 @@ void MainWindow::loadConfig() {
     query_edit->loadConfig();
     results_list->loadConfig();
     loadStyle();
-    mode_handlers[mode]->load();
+    for (auto& [mode, handler] : mode_handlers) {
+        handler->load();
+    }
     onTextChange(query_edit->text());
 }
 

@@ -51,13 +51,6 @@ private:
     int idx;
 };
 
-class ClipboardInfoPanel : public InfoPanelContent {
-    Q_OBJECT;
-
-public:
-    ClipboardInfoPanel(QWidget* parent, MainWindow* win, const ClipboardManager::Entry&);
-};
-
 class ClipModeHandler : public ModeHandler {
 public:
     ClipModeHandler(MainWindow* win);

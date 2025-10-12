@@ -31,7 +31,6 @@ AppModeHandler::AppModeHandler(MainWindow* win)
     QObject::connect(fs_watcher, &QFileSystemWatcher::directoryChanged, win, [this, win] { reloadEntries(); });
 
     QObject::connect(future_watcher, &QFutureWatcher<QStringList>::finished, win, [this, win]() {
-
         auto modes_widgets = win->getModesWidgets();
         std::unordered_map<QString, FuzzyWidget*> phrase_to_widget{};
         QStringList phrases{};
@@ -105,6 +104,8 @@ void AppModeHandler::load() {
     // get configs
     app_dirs = fromQList(win->getConfigManager().getList<std::string>({"mode", "apps", "dirs"}));
     special_apps = fromQList(win->getConfigManager().getList<std::string>({"mode", "apps", "apps"}));
+
+    fs_watcher->addPaths(app_dirs);
 
     reloadEntries();
 }
