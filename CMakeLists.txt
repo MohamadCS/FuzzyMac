@@ -54,7 +54,6 @@ target_link_libraries(FuzzyMac PRIVATE
     Qt6::Svg
     Qt6::Widgets 
     Qt6::Concurrent
-    Qt6::Network
     "-framework Cocoa"
     "-framework QuartzCore"
     "-framework Carbon"
@@ -63,6 +62,7 @@ target_link_libraries(FuzzyMac PRIVATE
     "-framework LocalAuthentication"
     "-framework QuickLookThumbnailing"
     "-framework QuickLookUI"
+    "-framework IOBluetooth"  
 )
 
 set_target_properties(FuzzyMac PROPERTIES

@@ -1,5 +1,6 @@
 #include "FuzzyMac/FuzzyWidget.hpp"
 #include "FuzzyMac/MainWindow.hpp"
+#include "FuzzyMac/NativeMacHandlers.hpp"
 
 #include <QApplication>
 #include <QClipboard>
@@ -118,4 +119,19 @@ std::variant<QListWidgetItem*, FuzzyWidget*> ModeWidget::getItem() {
 
 void ModeWidget::enterHandler() {
     customeEnterHandler();
+}
+
+BluetoothDeviceWidget::BluetoothDeviceWidget(MainWindow* win, QWidget* parent, const QString& mac_addr,
+                                             const QString& name)
+    : FuzzyWidget(win, parent),
+      mac_addr(mac_addr),
+      name(name) {
+}
+
+std::variant<QListWidgetItem*, FuzzyWidget*> BluetoothDeviceWidget::getItem() {
+    return win->createListItem(QString("Connect to %1").arg(name), win->getIcons().at("bluetooth"));
+}
+
+void BluetoothDeviceWidget::enterHandler() {
+    connectToBTDevice(mac_addr);
 }

@@ -14,4 +14,7 @@
   <qresource prefix="/">
     <file>./res/icons/wallpaper.svg</file>
   </qresource>
+  <qresource prefix="/">
+    <file>./res/icons/bluetooth.svg</file>
+  </qresource>
 </RCC>

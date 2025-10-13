@@ -35,3 +35,9 @@ extern "C++" bool authenticateWithTouchID();
 extern "C++" std::string getFrontmostAppName();
 
 extern "C++" void showQuickLookPanel(const QString& filePath);
+
+extern "C++" void connectToBTDevice(const QString &mac_addr);
+
+extern "C++" std::map<QString, QString> getPairedBluetoothDevices();
+
+

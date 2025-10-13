@@ -12,6 +12,7 @@
 #include <QWindow>
 
 #include <algorithm>
+#include <map>
 #include <objc/objc-runtime.h>
 #include <print>
 #include <semaphore>
@@ -20,6 +21,8 @@
 
 #import <AppKit/AppKit.h>
 #include <Cocoa/Cocoa.h>
+#import <Foundation/Foundation.h>
+#import <IOBluetooth/IOBluetooth.h>
 #import <LocalAuthentication/LocalAuthentication.h>
 #import <QuartzCore/QuartzCore.h>
 #include <QuickLook/QuickLook.h>
@@ -282,4 +285,47 @@ extern "C++" QStringList spotlightSearch(const QStringList &dirs,
   }
 
   return results;
+}
+
+extern "C++" void connectToBTDevice(const QString &mac_addr) {
+
+  @autoreleasepool {
+    // Replace with the MAC-like address string of your paired AirPods
+    NSString *addr = mac_addr.toNSString();
+
+    // Try to get the device object for a known address
+    IOBluetoothDevice *device =
+        [IOBluetoothDevice deviceWithAddressString:addr];
+    if (!device) {
+      NSLog(@"Device not found (not in paired list or out of range).");
+    }
+
+    // If device exists and is paired, ask the system to open a connection.
+    // This is a synchronous call in some variants; check docs for your macOS
+    // SDK.
+    IOReturn r = [device openConnection];
+    if (r == kIOReturnSuccess) {
+      NSLog(@"Connection opened to %@ (%@)", device.name, device.addressString);
+    } else {
+      NSLog(@"Failed to open connection: 0x%X", r);
+    }
+
+    // Optionally: close when done
+    // [device closeConnection];
+  }
+}
+
+// Returns a list of (MAC address, Name) pairs for all paired devices
+extern "C++" std::map<QString, QString> getPairedBluetoothDevices() {
+  std::map<QString, QString> devices_list;
+  @autoreleasepool {
+    NSArray *paired_devices = [IOBluetoothDevice pairedDevices];
+    for (IOBluetoothDevice *device in paired_devices) {
+      NSString *name = device.name ?: @"(Unnamed)";
+      NSString *addr = device.addressString ?: @"(Unknown)";
+      devices_list[QString::fromNSString(name)] = QString::fromNSString(addr);
+    }
+  }
+
+  return devices_list;
 }

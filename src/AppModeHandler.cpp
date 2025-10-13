@@ -134,10 +134,24 @@ void AppModeHandler::setupCalcWidget(const QString& query) {
     }
 }
 
+void AppModeHandler::setupBluetoothWidgets(const QString& query) {
+    auto bluetooth_devices = getPairedBluetoothDevices();
+    QStringList bluetooth_names;
+    for (auto& [name, _] : bluetooth_devices) {
+        bluetooth_names.push_back(name);
+    }
+
+    bluetooth_names = filter(query, bluetooth_names);
+    for (const auto& name : bluetooth_names) {
+        widgets.push_back(new BluetoothDeviceWidget(win, main_widget, bluetooth_devices[name], name));
+    }
+}
+
 void AppModeHandler::invokeQuery(const QString& query) {
 
     freeWidgets();
     setupCalcWidget(query);
+    setupBluetoothWidgets(query);
 
     // Cancel current query search
     if (future_watcher->isRunning()) {

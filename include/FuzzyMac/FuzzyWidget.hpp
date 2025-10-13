@@ -83,3 +83,13 @@ public:
     QLabel* title_label;
     QLabel* answer_label;
 };
+
+class BluetoothDeviceWidget : public FuzzyWidget {
+    Q_OBJECT;
+    QString mac_addr;
+    QString name;
+public:
+    BluetoothDeviceWidget(MainWindow* win, QWidget* parent, const QString& mac_addr, const QString& name);
+    void enterHandler() override;
+    std::variant<QListWidgetItem*, FuzzyWidget*> getItem() override;
+};

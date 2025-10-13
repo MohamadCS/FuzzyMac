@@ -22,7 +22,6 @@
 #include <QGuiApplication>
 #include <QKeyEvent>
 #include <QLabel>
-#include <QLocalSocket>
 #include <QMessageBox>
 #include <QPainter>
 #include <QPixmapCache>
@@ -31,9 +30,11 @@
 #include <QStaticText>
 #include <QWindow>
 #include <QtConcurrent>
+#include <ranges>
 #include <algorithm>
 #include <memory>
 #include <variant>
+#include <vector>
 
 const ConfigManager& MainWindow::getConfigManager() const {
     return *config_manager;
@@ -90,6 +91,7 @@ void MainWindow::createWidgets() {
     main_widget->setLayout(layout);
     setCentralWidget(border_widget);
     wakeup();
+
 }
 
 void MainWindow::selectItem(int idx) {
@@ -419,6 +421,10 @@ void MainWindow::loadStyle() {
         {"wallpaper",
          createIcon(
              ":/res/icons/wallpaper.svg",
+             QColor(QString::fromStdString(getConfigManager().get<std::string>({"colors", "results_list", "text"}))))},
+        {"bluetooth",
+         createIcon(
+             ":/res/icons/bluetooth.svg",
              QColor(QString::fromStdString(getConfigManager().get<std::string>({"colors", "results_list", "text"}))))},
 
     };
