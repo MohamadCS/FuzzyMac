@@ -112,8 +112,6 @@ void MainWindow::wakeup() {
         opacityAnimator(this, 0.0, config_manager->get<float>({"opacity"}), 50);
     }
 
-    // setupWindowDecoration(this, config_manager);
-
     show();
     raise();
     activateWindow();
@@ -424,6 +422,10 @@ void MainWindow::loadStyle() {
         {"bluetooth",
          createIcon(
              ":/res/icons/bluetooth.svg",
+             QColor(QString::fromStdString(getConfigManager().get<std::string>({"colors", "results_list", "text"}))))},
+        {"settings",
+         createIcon(
+             ":/res/icons/settings.svg",
              QColor(QString::fromStdString(getConfigManager().get<std::string>({"colors", "results_list", "text"}))))},
 
     };

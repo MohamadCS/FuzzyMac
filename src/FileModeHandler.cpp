@@ -27,21 +27,6 @@ static QString getParentDirPath(const QString& path) {
     return info.dir().absolutePath();
 }
 
-static void loadDirs(const QString& d, QStringList& paths, bool rec = true) {
-
-    QDir dir(d);
-    QFileInfoList entryInfoList = dir.entryInfoList(QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot);
-
-    for (const QFileInfo& entry : entryInfoList) {
-        auto abs_path = entry.absoluteFilePath();
-
-        if (rec && entry.isDir() && !entry.isSymLink()) {
-            loadDirs(abs_path, paths);
-        }
-
-        paths.push_back(abs_path);
-    }
-}
 
 FileModeHandler::FileModeHandler(MainWindow* win)
     : ModeHandler(win) {

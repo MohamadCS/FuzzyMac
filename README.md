@@ -97,7 +97,7 @@ You can configure FuzzyMac by creating a file at:
 
 ~/.config/FuzzyMac/config.toml
 
-If a setting is not provided, it will fall back to the built-in default below.
+If some setting is not provided, it will fall back to the built-in default below.
 
 ## 🔧 Default Config
 

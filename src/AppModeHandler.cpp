@@ -3,6 +3,7 @@
 #include "FuzzyMac/FuzzyWidget.hpp"
 #include "FuzzyMac/NativeMacHandlers.hpp"
 #include "FuzzyMac/Utils.hpp"
+#include "spdlog/spdlog.h"
 
 #include <QDrag>
 #include <QMimeData>
@@ -22,12 +23,26 @@
 
 AppModeHandler::AppModeHandler(MainWindow* win)
     : ModeHandler(win) {
+
+    // Scripts
+    scripts_dir_paths = fromQList(win->getConfigManager().getList<std::string>({"mode", "apps", "script_paths"}));
+    expandPaths(scripts_dir_paths);
+
+    for (auto p : scripts_dir_paths) {
+        spdlog::info("{}, {}", p.toStdString(), QFileInfo(p).exists());
+    }
+
     createBindings();
 
     future_watcher = new QFutureWatcher<QStringList>(win);
     fs_watcher = new QFileSystemWatcher(win);
+    // scripts_dir_watcher = new QFileSystemWatcher(win);
 
     QObject::connect(fs_watcher, &QFileSystemWatcher::directoryChanged, win, [this, win] { reloadEntries(); });
+
+    // QObject::connect(scripts_dir_watcher, &QFileSystemWatcher::directoryChanged, win, [this, win] {
+    //
+    // });
 
     QObject::connect(future_watcher, &QFutureWatcher<QStringList>::finished, win, [this, win]() {
         auto modes_widgets = win->getModesWidgets();
@@ -75,6 +90,13 @@ AppModeHandler::AppModeHandler(MainWindow* win)
 
 AppModeHandler::~AppModeHandler() {};
 
+void AppModeHandler::reloadScripts() {
+    for(const auto& dir : scripts_dir_paths)  {
+        loadDirs(dir, scripts, false);
+    }
+    spdlog::info("Got {} dirs", scripts_dir_paths.size());
+    spdlog::info("Loaded {} scripts", scripts.size());
+}
 void AppModeHandler::reloadEntries() {
     loaded_apps = spotlightSearch(app_dirs, "kMDItemContentType == 'com.apple.application-bundle'");
     loaded_apps += special_apps;
@@ -105,14 +127,27 @@ void AppModeHandler::load() {
     special_apps = fromQList(win->getConfigManager().getList<std::string>({"mode", "apps", "apps"}));
 
     fs_watcher->addPaths(app_dirs);
-
     reloadEntries();
+    reloadScripts();
 }
 
 void AppModeHandler::freeWidgets() {
     main_widget->deleteLater();
     widgets.clear();
     main_widget = new QWidget();
+}
+
+void AppModeHandler::setupActions(const QString& query) {
+    if(query.isEmpty()) {
+        return;
+    }
+
+    auto filtered_scripts =
+        filter(query, scripts, nullptr, [](const QString& path) { return QFileInfo(path).fileName(); });
+
+    for (const auto& script_path : filtered_scripts) {
+        widgets.push_back(new ActionWidget(win, main_widget, QFileInfo(script_path).fileName(), script_path));
+    }
 }
 
 void AppModeHandler::setupCalcWidget(const QString& query) {
@@ -134,6 +169,9 @@ void AppModeHandler::setupCalcWidget(const QString& query) {
 }
 
 void AppModeHandler::setupBluetoothWidgets(const QString& query) {
+    if(query.isEmpty()) {
+        return;
+    }
     auto bluetooth_devices = getPairedBluetoothDevices();
     // Assumes devices have different names
     std::unordered_map<QString, BluetoothDevice> name_to_dev;
@@ -153,8 +191,10 @@ void AppModeHandler::setupBluetoothWidgets(const QString& query) {
 void AppModeHandler::invokeQuery(const QString& query) {
 
     freeWidgets();
+    // TODO: combine filtering using all of the items below.
     setupCalcWidget(query);
     setupBluetoothWidgets(query);
+    setupActions(query);
 
     // Cancel current query search
     if (future_watcher->isRunning()) {

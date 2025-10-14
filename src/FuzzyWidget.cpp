@@ -1,9 +1,11 @@
 #include "FuzzyMac/FuzzyWidget.hpp"
 #include "FuzzyMac/MainWindow.hpp"
 #include "FuzzyMac/NativeMacHandlers.hpp"
+#include "spdlog/spdlog.h"
 
 #include <QApplication>
 #include <QClipboard>
+#include <QtConcurrent>
 #include <unistd.h>
 #include <variant>
 
@@ -132,6 +134,21 @@ std::variant<QListWidgetItem*, FuzzyWidget*> BluetoothDeviceWidget::getItem() {
 }
 
 void BluetoothDeviceWidget::enterHandler() {
-    connectToBTDevice(device.addr, !device.is_connected);
+    auto x = QtConcurrent::run([this]() { connectToBTDevice(device.addr, !device.is_connected); });
     win->sleep();
+}
+
+ActionWidget::ActionWidget(MainWindow* win, QWidget* parent, const QString& desc, const QString& script_path)
+    : FuzzyWidget(win, parent),
+      desc(desc),
+      script_path(script_path) {
+}
+
+void ActionWidget::enterHandler() {
+    QProcess::startDetached(script_path);
+    win->sleep();
+}
+
+std::variant<QListWidgetItem*, FuzzyWidget*> ActionWidget::getItem() {
+    return win->createListItem(desc, win->getIcons().at("settings"));
 }

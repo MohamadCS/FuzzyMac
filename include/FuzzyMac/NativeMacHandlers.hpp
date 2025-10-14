@@ -45,3 +45,4 @@ extern "C++" void showQuickLookPanel(const QString& filePath);
 extern "C++" void connectToBTDevice(const QString& mac_addr, bool connect);
 
 extern "C++" std::vector<BluetoothDevice> getPairedBluetoothDevices();
+
