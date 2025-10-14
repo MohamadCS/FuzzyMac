@@ -2,8 +2,8 @@
 
 #include "FuzzyMac/DefaultConfig.hpp"
 
-#include <toml++/toml.h>
 #include <QObject>
+#include <toml++/toml.h>
 
 #include <initializer_list>
 #include <string>
@@ -22,10 +22,10 @@ public:
     void load();
 
     template <typename T>
-        T get(std::initializer_list<std::string> keys, T fallback = T{}) const;
+    T get(std::initializer_list<std::string> keys, T fallback = T{}) const;
 
     template <typename T>
-        QList<T> getList(std::initializer_list<std::string> keys, QList<T> fallback = {}) const;
+    QList<T> getList(std::initializer_list<std::string> keys, QList<T> fallback = {}) const;
 
 signals:
     void configChange();
@@ -70,7 +70,7 @@ T ConfigManager::get(std::initializer_list<std::string> keys, T fallback) const 
     if (node) {
         if (auto val = node->value<T>())
             return *val;
-    } 
+    }
 
     return fallback; // fallback if nothing found
 }
