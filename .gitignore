@@ -6,5 +6,6 @@ run.sh
 deploy.sh
 log
 FuzzyMac.app
+app.log
 res/app_icon/iconfiles/
 .DS_Store

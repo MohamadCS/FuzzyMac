@@ -23,5 +23,9 @@
 
     <key>LSUIElement</key>
     <true/>
+
+    <key>NSBluetoothAlwaysUsageDescription</key>
+    <string>For fuzzy searching over your devices</string>
+
 </dict>
 </plist>

@@ -12,6 +12,7 @@
 #include <QWindow>
 
 #include <algorithm>
+#include <filesystem>
 #include <map>
 #include <objc/objc-runtime.h>
 #include <print>
@@ -287,7 +288,7 @@ extern "C++" QStringList spotlightSearch(const QStringList &dirs,
   return results;
 }
 
-extern "C++" void connectToBTDevice(const QString &mac_addr) {
+extern "C++" void connectToBTDevice(const QString &mac_addr, bool connect) {
 
   @autoreleasepool {
     // Replace with the MAC-like address string of your paired AirPods
@@ -300,32 +301,33 @@ extern "C++" void connectToBTDevice(const QString &mac_addr) {
       NSLog(@"Device not found (not in paired list or out of range).");
     }
 
-    // If device exists and is paired, ask the system to open a connection.
-    // This is a synchronous call in some variants; check docs for your macOS
-    // SDK.
-    IOReturn r = [device openConnection];
-    if (r == kIOReturnSuccess) {
-      NSLog(@"Connection opened to %@ (%@)", device.name, device.addressString);
+    if (connect) {
+      IOReturn r = [device openConnection];
+      if (r == kIOReturnSuccess) {
+        NSLog(@"Connection opened to %@ (%@)", device.name,
+              device.addressString);
+      } else {
+        NSLog(@"Failed to open connection: 0x%X", r);
+      }
     } else {
-      NSLog(@"Failed to open connection: 0x%X", r);
+      [device closeConnection];
     }
-
-    // Optionally: close when done
-    // [device closeConnection];
   }
 }
 
 // Returns a list of (MAC address, Name) pairs for all paired devices
-extern "C++" std::map<QString, QString> getPairedBluetoothDevices() {
-  std::map<QString, QString> devices_list;
+extern "C++" std::vector<BluetoothDevice> getPairedBluetoothDevices() {
+  std::vector<BluetoothDevice> devices;
   @autoreleasepool {
     NSArray *paired_devices = [IOBluetoothDevice pairedDevices];
     for (IOBluetoothDevice *device in paired_devices) {
       NSString *name = device.name ?: @"(Unnamed)";
       NSString *addr = device.addressString ?: @"(Unknown)";
-      devices_list[QString::fromNSString(name)] = QString::fromNSString(addr);
+      devices.push_back(BluetoothDevice{.addr = QString::fromNSString(addr),
+                                        .name = QString::fromNSString(name),
+                                        .is_connected = device.isConnected});
     }
   }
 
-  return devices_list;
+  return devices;
 }

@@ -121,17 +121,17 @@ void ModeWidget::enterHandler() {
     customeEnterHandler();
 }
 
-BluetoothDeviceWidget::BluetoothDeviceWidget(MainWindow* win, QWidget* parent, const QString& mac_addr,
-                                             const QString& name)
+BluetoothDeviceWidget::BluetoothDeviceWidget(MainWindow* win, QWidget* parent, const BluetoothDevice& device)
     : FuzzyWidget(win, parent),
-      mac_addr(mac_addr),
-      name(name) {
+      device(device) {
 }
 
 std::variant<QListWidgetItem*, FuzzyWidget*> BluetoothDeviceWidget::getItem() {
-    return win->createListItem(QString("Connect to %1").arg(name), win->getIcons().at("bluetooth"));
+    QString conn_prefix = device.is_connected ? "Disconnect from " : "Connect to ";
+    return win->createListItem(conn_prefix + device.name, win->getIcons().at("bluetooth"));
 }
 
 void BluetoothDeviceWidget::enterHandler() {
-    connectToBTDevice(mac_addr);
+    connectToBTDevice(device.addr, !device.is_connected);
+    win->sleep();
 }

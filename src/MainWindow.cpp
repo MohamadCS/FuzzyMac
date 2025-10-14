@@ -4,7 +4,6 @@
 #include "FuzzyMac/FuzzyWidget.hpp"
 #include "FuzzyMac/GlobalShortcut.hpp"
 #include "FuzzyMac/InfoPanel.hpp"
-#include "FuzzyMac/MacGlobShortcuts.hpp"
 #include "FuzzyMac/ModeHandler.hpp"
 #include "FuzzyMac/ModeHandlerFactory.hpp"
 #include "FuzzyMac/NativeMacHandlers.hpp"

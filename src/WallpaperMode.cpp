@@ -23,13 +23,8 @@ WallpaperMode::WallpaperMode(MainWindow* win)
     });
 
     QObject::connect(future_watcher, &QFutureWatcher<QStringList>::finished, [this, win]() {
-        const int MAX_COUNT = 50;
         freeWidgets();
         for (const auto& file_path : future_watcher->result()) {
-            if (widgets.size() > MAX_COUNT) {
-                break;
-            }
-
             auto show_icons = win->getConfigManager().get<bool>({"mode", "wallpaper", "show_icons"});
             spdlog::info(show_icons);
 
@@ -115,7 +110,7 @@ void WallpaperMode::invokeQuery(const QString& query) {
 }
 
 QString WallpaperMode::getModeText() {
-    return "Pick a wallpaper";
+    return QString("Pick a wallpaper (loaded %1)").arg(entries.size());
 }
 
 QString WallpaperMode::getPrefix() const {

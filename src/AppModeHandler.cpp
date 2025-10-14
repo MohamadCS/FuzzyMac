@@ -10,7 +10,6 @@
 #include <algorithm>
 #include <cstdlib>
 #include <optional>
-#include <print>
 #include <unordered_map>
 #include <wordexp.h>
 
@@ -136,14 +135,18 @@ void AppModeHandler::setupCalcWidget(const QString& query) {
 
 void AppModeHandler::setupBluetoothWidgets(const QString& query) {
     auto bluetooth_devices = getPairedBluetoothDevices();
+    // Assumes devices have different names
+    std::unordered_map<QString, BluetoothDevice> name_to_dev;
     QStringList bluetooth_names;
-    for (auto& [name, _] : bluetooth_devices) {
-        bluetooth_names.push_back(name);
+    for (const auto& device : bluetooth_devices) {
+        bluetooth_names.push_back(device.name);
+        name_to_dev.insert_or_assign(device.name, device);
     }
 
     bluetooth_names = filter(query, bluetooth_names);
     for (const auto& name : bluetooth_names) {
-        widgets.push_back(new BluetoothDeviceWidget(win, main_widget, bluetooth_devices[name], name));
+        auto device = name_to_dev[name];
+        widgets.push_back(new BluetoothDeviceWidget(win, main_widget, device));
     }
 }
 
