@@ -4,7 +4,6 @@
 #include "FuzzyMac/FuzzyWidget.hpp"
 #include "FuzzyMac/GlobalShortcut.hpp"
 #include "FuzzyMac/InfoPanel.hpp"
-#include "FuzzyMac/MacGlobShortcuts.hpp"
 #include "FuzzyMac/ModeHandler.hpp"
 #include "FuzzyMac/ModeHandlerFactory.hpp"
 #include "FuzzyMac/NativeMacHandlers.hpp"
@@ -22,7 +21,6 @@
 #include <QGuiApplication>
 #include <QKeyEvent>
 #include <QLabel>
-#include <QLocalSocket>
 #include <QMessageBox>
 #include <QPainter>
 #include <QPixmapCache>
@@ -31,9 +29,11 @@
 #include <QStaticText>
 #include <QWindow>
 #include <QtConcurrent>
+#include <ranges>
 #include <algorithm>
 #include <memory>
 #include <variant>
+#include <vector>
 
 const ConfigManager& MainWindow::getConfigManager() const {
     return *config_manager;
@@ -90,6 +90,7 @@ void MainWindow::createWidgets() {
     main_widget->setLayout(layout);
     setCentralWidget(border_widget);
     wakeup();
+
 }
 
 void MainWindow::selectItem(int idx) {
@@ -317,7 +318,9 @@ void MainWindow::loadConfig() {
     query_edit->loadConfig();
     results_list->loadConfig();
     loadStyle();
-    mode_handlers[mode]->load();
+    for (auto& [mode, handler] : mode_handlers) {
+        handler->load();
+    }
     onTextChange(query_edit->text());
 }
 
@@ -417,6 +420,10 @@ void MainWindow::loadStyle() {
         {"wallpaper",
          createIcon(
              ":/res/icons/wallpaper.svg",
+             QColor(QString::fromStdString(getConfigManager().get<std::string>({"colors", "results_list", "text"}))))},
+        {"bluetooth",
+         createIcon(
+             ":/res/icons/bluetooth.svg",
              QColor(QString::fromStdString(getConfigManager().get<std::string>({"colors", "results_list", "text"}))))},
 
     };

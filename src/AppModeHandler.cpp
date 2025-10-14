@@ -10,7 +10,6 @@
 #include <algorithm>
 #include <cstdlib>
 #include <optional>
-#include <print>
 #include <unordered_map>
 #include <wordexp.h>
 
@@ -31,7 +30,6 @@ AppModeHandler::AppModeHandler(MainWindow* win)
     QObject::connect(fs_watcher, &QFileSystemWatcher::directoryChanged, win, [this, win] { reloadEntries(); });
 
     QObject::connect(future_watcher, &QFutureWatcher<QStringList>::finished, win, [this, win]() {
-
         auto modes_widgets = win->getModesWidgets();
         std::unordered_map<QString, FuzzyWidget*> phrase_to_widget{};
         QStringList phrases{};
@@ -106,6 +104,8 @@ void AppModeHandler::load() {
     app_dirs = fromQList(win->getConfigManager().getList<std::string>({"mode", "apps", "dirs"}));
     special_apps = fromQList(win->getConfigManager().getList<std::string>({"mode", "apps", "apps"}));
 
+    fs_watcher->addPaths(app_dirs);
+
     reloadEntries();
 }
 
@@ -133,10 +133,28 @@ void AppModeHandler::setupCalcWidget(const QString& query) {
     }
 }
 
+void AppModeHandler::setupBluetoothWidgets(const QString& query) {
+    auto bluetooth_devices = getPairedBluetoothDevices();
+    // Assumes devices have different names
+    std::unordered_map<QString, BluetoothDevice> name_to_dev;
+    QStringList bluetooth_names;
+    for (const auto& device : bluetooth_devices) {
+        bluetooth_names.push_back(device.name);
+        name_to_dev.insert_or_assign(device.name, device);
+    }
+
+    bluetooth_names = filter(query, bluetooth_names);
+    for (const auto& name : bluetooth_names) {
+        auto device = name_to_dev[name];
+        widgets.push_back(new BluetoothDeviceWidget(win, main_widget, device));
+    }
+}
+
 void AppModeHandler::invokeQuery(const QString& query) {
 
     freeWidgets();
     setupCalcWidget(query);
+    setupBluetoothWidgets(query);
 
     // Cancel current query search
     if (future_watcher->isRunning()) {

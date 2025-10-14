@@ -1,5 +1,6 @@
 #include "FuzzyMac/FileModeHandler.hpp"
 #include "FuzzyMac/Algorithms.hpp"
+#include "FuzzyMac/FileWatcher.hpp"
 #include "FuzzyMac/FuzzyWidget.hpp"
 #include "FuzzyMac/NativeMacHandlers.hpp"
 #include "FuzzyMac/Utils.hpp"
@@ -47,12 +48,10 @@ FileModeHandler::FileModeHandler(MainWindow* win)
 
     // QObjects
     future_watcher = new QFutureWatcher<QStringList>(win);
-    fs_watcher = new QFileSystemWatcher(win);
+    fs_watcher = new MacFileWatcher(win);
 
     setupKeymaps();
     connectHandlers();
-
-    load();
 }
 
 void FileModeHandler::reloadEntries() {
@@ -88,7 +87,7 @@ void FileModeHandler::setupKeymaps() {
     });
 
     // Do Quicklook
-    keymap.bind(QKeySequence(Qt::MetaModifier | Qt::Key_Return), [this]() {
+    keymap.bind(QKeySequence(Qt::MetaModifier | Qt::Key_Y), [this]() {
         if (win->getResultsNum()) {
             // TODO: Free memory after quiting quicklook, or find why its not crucial to do so.
             showQuickLookPanel(dynamic_cast<FileWidget*>(widgets[win->getCurrentResultIdx()])->getPath());
@@ -120,6 +119,22 @@ void FileModeHandler::setupKeymaps() {
 
         win->clearQuery();
     });
+
+    // open with finder.
+    keymap.bind(QKeySequence(Qt::MetaModifier | Qt::Key_Return), [this]() {
+        if (win->getResultsNum() == 0) {
+            return;
+        }
+
+
+        int i = std::max(win->getCurrentResultIdx(), 0);
+        auto path = dynamic_cast<FileWidget*>(widgets[i])->getPath();
+        QProcess* process = new QProcess(nullptr);
+        QStringList args;
+        args << "-R" << path;
+        process->start("open", args);
+        win->sleep();
+    });
 }
 
 bool FileModeHandler::isRelativeFileSearch() const {
@@ -140,12 +155,24 @@ void FileModeHandler::load() {
         future_watcher->waitForFinished();
     }
 
+    spdlog::debug("Reloading Files mode");
+
     freeWidgets();
 
     auto& cfg = win->getConfigManager();
 
+    const auto old_paths = paths;
+
     paths = fromQList(cfg.getList<std::string>({"mode", "files", "dirs"}));
     expandPaths(paths);
+
+    // there is no reason for a full reloading
+    if (paths == old_paths) {
+        return;
+    }
+
+    fs_watcher->watch(old_paths);
+    fs_watcher->watch(paths);
 
     reloadEntries();
 }
@@ -249,8 +276,7 @@ void FileModeHandler::onModeExit() {
 }
 
 void FileModeHandler::connectHandlers() {
-    QObject::connect(
-        fs_watcher, &QFileSystemWatcher::directoryChanged, win, [this](const QString&) { reloadEntries(); });
+    QObject::connect(fs_watcher, &MacFileWatcher::file_changed, win, [this](const QString& path) { reloadEntries(); });
 
     QObject::connect(future_watcher, &QFutureWatcher<std::vector<QString>>::finished, [this]() {
         if (win->getQuery().isEmpty() && !isRelativeFileSearch()) {

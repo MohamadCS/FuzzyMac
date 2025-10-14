@@ -12,9 +12,7 @@
 #include <QFutureWatcher>
 #include <QGraphicsBlurEffect>
 #include <QLineEdit>
-#include <QLocalSocket>
 #include <QListWidget>
-#include <QLocalServer>
 #include <QMainWindow>
 #include <QMessageBox>
 #include <QPainter>
@@ -52,6 +50,8 @@ public:
     ~MainWindow();
 
 
+
+
     void wakeup();
     void sleep();
 
@@ -85,9 +85,6 @@ public:
     const ModeHandler* getCurrentModeHandler() const;
     const ModeHandler* getModeHandler(Mode mode) const;
     std::vector<FuzzyWidget*> getModesWidgets() const;
-
-
-
     void keyPressEvent(QKeyEvent* ev) override;
 
 private slots:

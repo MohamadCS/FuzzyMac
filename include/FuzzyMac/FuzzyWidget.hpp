@@ -1,5 +1,6 @@
 #pragma once
 #include "FuzzyMac/MainWindow.hpp"
+#include "FuzzyMac/NativeMacHandlers.hpp"
 
 #include <QLabel>
 #include <QWidget>
@@ -82,4 +83,13 @@ public:
     CalculatorWidget(MainWindow* win, QWidget* parent);
     QLabel* title_label;
     QLabel* answer_label;
+};
+
+class BluetoothDeviceWidget : public FuzzyWidget {
+    Q_OBJECT;
+    BluetoothDevice device;
+public:
+    BluetoothDeviceWidget(MainWindow* win, QWidget* parent, const BluetoothDevice& device);
+    void enterHandler() override;
+    std::variant<QListWidgetItem*, FuzzyWidget*> getItem() override;
 };

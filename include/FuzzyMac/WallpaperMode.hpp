@@ -13,8 +13,6 @@ public:
     QString getModeText() override;
     QString getPrefix() const override;
 
-    
-
 private:
     std::vector<FuzzyWidget*> widgets;
     QFileSystemWatcher* fs_watcher;

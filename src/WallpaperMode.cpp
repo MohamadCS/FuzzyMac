@@ -17,23 +17,22 @@ WallpaperMode::WallpaperMode(MainWindow* win)
 
     setupKeymaps();
 
-    QObject::connect(
-        fs_watcher, &QFileSystemWatcher::directoryChanged, win, [this](const auto& p) { reloadEntries(); });
+    QObject::connect(fs_watcher, &QFileSystemWatcher::directoryChanged, win, [this](const auto& p) {
+        spdlog::debug("Directory changed");
+        reloadEntries();
+    });
 
     QObject::connect(future_watcher, &QFutureWatcher<QStringList>::finished, [this, win]() {
-        const int MAX_COUNT = 50;
         freeWidgets();
         for (const auto& file_path : future_watcher->result()) {
-            if (widgets.size() > MAX_COUNT) {
-                break;
-            }
+            auto show_icons = win->getConfigManager().get<bool>({"mode", "wallpaper", "show_icons"});
+            spdlog::info(show_icons);
 
-            widgets.push_back(new FileWidget(win, main_widget, file_path, false));
+            widgets.push_back(new FileWidget(win, main_widget, file_path, show_icons));
         }
 
         win->processResults(widgets);
     });
-    load();
 }
 
 void WallpaperMode::setupKeymaps() {
@@ -81,8 +80,17 @@ void WallpaperMode::reloadEntries() {
 void WallpaperMode::load() {
     freeWidgets();
 
+    const auto old_paths = paths;
     paths = fromQList(win->getConfigManager().getList<std::string>({"mode", "wallpaper", "paths"}));
     expandPaths(paths);
+
+    if (paths == old_paths) {
+        return;
+    }
+
+    fs_watcher->removePaths(old_paths);
+    fs_watcher->addPaths(paths);
+
     reloadEntries();
 }
 
@@ -102,7 +110,7 @@ void WallpaperMode::invokeQuery(const QString& query) {
 }
 
 QString WallpaperMode::getModeText() {
-    return "Pick a wallpaper";
+    return QString("Pick a wallpaper (loaded %1)").arg(entries.size());
 }
 
 QString WallpaperMode::getPrefix() const {

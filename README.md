@@ -1,9 +1,5 @@
 # FuzzyMac
 
-
-**After the recent update of qt6, the app broke, I'm working on a fix**  
-
-
 <p align="center">
 <img src="./res/app_icon/icon-256x256.png" alt="FuzzyMac Icon" width="150">
 </p>

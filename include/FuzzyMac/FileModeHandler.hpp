@@ -4,6 +4,7 @@
 #include "FuzzyMac/InfoPanel.hpp"
 #include "FuzzyMac/MainWindow.hpp"
 #include "FuzzyMac/ModeHandler.hpp"
+#include "FuzzyMac/FileWatcher.hpp"
 
 #include <QDrag>
 #include <QFileIconProvider>
@@ -52,9 +53,9 @@ public:
 private:
     std::vector<FuzzyWidget*> widgets;
     QFutureWatcher<QStringList>* future_watcher;
-    QFileSystemWatcher* fs_watcher;
     QStringList paths;
     QStringList entries;
+    MacFileWatcher* fs_watcher;
     std::optional<QString> curr_path;
 
     void reloadEntries();

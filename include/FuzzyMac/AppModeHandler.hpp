@@ -24,4 +24,5 @@ private:
     void createBindings();
     void reloadEntries();
     void setupCalcWidget(const QString& query);
+    void setupBluetoothWidgets(const QString& query);
 };
