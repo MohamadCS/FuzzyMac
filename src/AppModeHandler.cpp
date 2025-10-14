@@ -25,24 +25,16 @@ AppModeHandler::AppModeHandler(MainWindow* win)
     : ModeHandler(win) {
 
     // Scripts
-    scripts_dir_paths = fromQList(win->getConfigManager().getList<std::string>({"mode", "apps", "script_paths"}));
-    expandPaths(scripts_dir_paths);
-
-    for (auto p : scripts_dir_paths) {
-        spdlog::info("{}, {}", p.toStdString(), QFileInfo(p).exists());
-    }
 
     createBindings();
 
     future_watcher = new QFutureWatcher<QStringList>(win);
     fs_watcher = new QFileSystemWatcher(win);
-    // scripts_dir_watcher = new QFileSystemWatcher(win);
+    scripts_dir_watcher = new QFileSystemWatcher(win);
 
     QObject::connect(fs_watcher, &QFileSystemWatcher::directoryChanged, win, [this, win] { reloadEntries(); });
 
-    // QObject::connect(scripts_dir_watcher, &QFileSystemWatcher::directoryChanged, win, [this, win] {
-    //
-    // });
+    QObject::connect(scripts_dir_watcher, &QFileSystemWatcher::directoryChanged, win, [this, win] { reloadScripts(); });
 
     QObject::connect(future_watcher, &QFutureWatcher<QStringList>::finished, win, [this, win]() {
         auto modes_widgets = win->getModesWidgets();
@@ -86,14 +78,19 @@ AppModeHandler::AppModeHandler(MainWindow* win)
 
         win->processResults(widgets);
     });
+    load();
 }
 
 AppModeHandler::~AppModeHandler() {};
 
 void AppModeHandler::reloadScripts() {
-    for(const auto& dir : scripts_dir_paths)  {
+
+    scripts = {};
+
+    for (const auto& dir : scripts_dir_paths) {
         loadDirs(dir, scripts, false);
     }
+
     spdlog::info("Got {} dirs", scripts_dir_paths.size());
     spdlog::info("Loaded {} scripts", scripts.size());
 }
@@ -123,10 +120,21 @@ void AppModeHandler::createBindings() {
 void AppModeHandler::load() {
 
     // get configs
+    fs_watcher->removePaths(app_dirs);
+    scripts_dir_watcher->removePaths(scripts_dir_paths);
+
     app_dirs = fromQList(win->getConfigManager().getList<std::string>({"mode", "apps", "dirs"}));
+    expandPaths(app_dirs);
+
     special_apps = fromQList(win->getConfigManager().getList<std::string>({"mode", "apps", "apps"}));
+    expandPaths(special_apps);
+
+    scripts_dir_paths = fromQList(win->getConfigManager().getList<std::string>({"mode", "apps", "script_paths"}));
+    expandPaths(scripts_dir_paths);
 
     fs_watcher->addPaths(app_dirs);
+    scripts_dir_watcher->addPaths(scripts_dir_paths);
+
     reloadEntries();
     reloadScripts();
 }
@@ -138,7 +146,7 @@ void AppModeHandler::freeWidgets() {
 }
 
 void AppModeHandler::setupActions(const QString& query) {
-    if(query.isEmpty()) {
+    if (query.isEmpty()) {
         return;
     }
 
@@ -169,7 +177,7 @@ void AppModeHandler::setupCalcWidget(const QString& query) {
 }
 
 void AppModeHandler::setupBluetoothWidgets(const QString& query) {
-    if(query.isEmpty()) {
+    if (query.isEmpty()) {
         return;
     }
     auto bluetooth_devices = getPairedBluetoothDevices();

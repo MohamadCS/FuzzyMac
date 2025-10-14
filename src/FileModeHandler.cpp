@@ -27,7 +27,6 @@ static QString getParentDirPath(const QString& path) {
     return info.dir().absolutePath();
 }
 
-
 FileModeHandler::FileModeHandler(MainWindow* win)
     : ModeHandler(win) {
 
@@ -111,7 +110,6 @@ void FileModeHandler::setupKeymaps() {
             return;
         }
 
-
         int i = std::max(win->getCurrentResultIdx(), 0);
         auto path = dynamic_cast<FileWidget*>(widgets[i])->getPath();
         QProcess* process = new QProcess(nullptr);
@@ -156,7 +154,7 @@ void FileModeHandler::load() {
         return;
     }
 
-    fs_watcher->watch(old_paths);
+    fs_watcher->unwatch(old_paths);
     fs_watcher->watch(paths);
 
     reloadEntries();

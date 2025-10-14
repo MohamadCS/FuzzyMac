@@ -2,6 +2,8 @@
 #include "FuzzyMac/Utils.hpp"
 #include <QLabel>
 #include <QtConcurrent>
+#include <QImageReader>
+
 ImageViewerInfoPanel::ImageViewerInfoPanel(QWidget* parent, MainWindow* win, QString path)
     : InfoPanelContent(parent, win) {
 
@@ -55,12 +57,15 @@ ImageViewerInfoPanel::ImageViewerInfoPanel(QWidget* parent, MainWindow* win, QSt
     });
 
     auto future = QtConcurrent::run([this, path]() -> QPixmap {
-        QPixmap pix(path);
-        if (!pix.isNull()) {
-            QPixmap scaled = pix.scaled(560, 225, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-            return scaled;
-        }
-        return pix;
+        QImageReader reader(path);
+        reader.setAutoTransform(true);         // respects EXIF rotation
+        reader.setScaledSize(QSize(320, 180)); // load small directly
+
+        QImage img = reader.read();
+        if (img.isNull())
+            return QPixmap();
+
+        return QPixmap::fromImage(img, Qt::NoFormatConversion);
     });
 
     image_watcher->setFuture(future);

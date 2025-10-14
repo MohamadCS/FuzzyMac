@@ -29,9 +29,9 @@
 #include <QStaticText>
 #include <QWindow>
 #include <QtConcurrent>
-#include <ranges>
 #include <algorithm>
 #include <memory>
+#include <ranges>
 #include <variant>
 #include <vector>
 
@@ -90,7 +90,6 @@ void MainWindow::createWidgets() {
     main_widget->setLayout(layout);
     setCentralWidget(border_widget);
     wakeup();
-
 }
 
 void MainWindow::selectItem(int idx) {
@@ -270,7 +269,7 @@ void MainWindow::createKeybinds() {
 
     cmd_shift_c->registerHotkey(QKeySequence(Qt::MetaModifier | Qt::ShiftModifier | Qt::Key_C));
 
-    disableCmdQ();
+    // disableCmdQ();
 }
 
 MainWindow::MainWindow(Mode mode, QWidget* parent)
