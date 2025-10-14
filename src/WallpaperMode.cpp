@@ -26,8 +26,6 @@ WallpaperMode::WallpaperMode(MainWindow* win)
         freeWidgets();
         for (const auto& file_path : future_watcher->result()) {
             auto show_icons = win->getConfigManager().get<bool>({"mode", "wallpaper", "show_icons"});
-            spdlog::info(show_icons);
-
             widgets.push_back(new FileWidget(win, main_widget, file_path, show_icons));
         }
 

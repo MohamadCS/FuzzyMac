@@ -28,10 +28,12 @@ public:
 
     QList<Entry>& getEntries();
     const QList<Entry>& getEntries() const;
+    void setLimit(int limit);
 
 private:
     mutable QMutex entries_mutex;
     QList<Entry> entries;
+    int limit;
 };
 
 class ClipboardWidget : public FuzzyWidget {

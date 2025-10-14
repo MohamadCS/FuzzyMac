@@ -3,6 +3,7 @@
 #include "exprtk/exprtk.hpp"
 
 #include <QString>
+#include <QDir>
 #include <QStringList>
 #include <complex>
 #include <iostream>
@@ -80,3 +81,19 @@ QStringList fromQList(const QList<std::string>& vec) {
 }
 
 
+
+void loadDirs(const QString& d, QStringList& paths, bool rec) {
+
+    QDir dir(d);
+    QFileInfoList entryInfoList = dir.entryInfoList(QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot);
+
+    for (const QFileInfo& entry : entryInfoList) {
+        auto abs_path = entry.absoluteFilePath();
+
+        if (rec && entry.isDir() && !entry.isSymLink()) {
+            loadDirs(abs_path, paths);
+        }
+
+        paths.push_back(abs_path);
+    }
+}

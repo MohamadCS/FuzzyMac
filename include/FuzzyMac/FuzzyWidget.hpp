@@ -88,8 +88,20 @@ public:
 class BluetoothDeviceWidget : public FuzzyWidget {
     Q_OBJECT;
     BluetoothDevice device;
+
 public:
     BluetoothDeviceWidget(MainWindow* win, QWidget* parent, const BluetoothDevice& device);
+    void enterHandler() override;
+    std::variant<QListWidgetItem*, FuzzyWidget*> getItem() override;
+};
+
+class ActionWidget : public FuzzyWidget {
+    Q_OBJECT;
+
+    QString desc;
+    QString script_path;
+public:
+    ActionWidget(MainWindow* win, QWidget* parent, const QString& desc,const QString& script_path);
     void enterHandler() override;
     std::variant<QListWidgetItem*, FuzzyWidget*> getItem() override;
 };

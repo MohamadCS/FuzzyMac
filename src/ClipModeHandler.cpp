@@ -1,11 +1,11 @@
 #include "FuzzyMac/ClipModeHandler.hpp"
 #include "FuzzyMac/Algorithms.hpp"
 #include "FuzzyMac/CLIModeHandler.hpp"
+#include "FuzzyMac/ClipInfoPanel.hpp"
 #include "FuzzyMac/FuzzyWidget.hpp"
 #include "FuzzyMac/InfoPanel.hpp"
 #include "FuzzyMac/ModeHandler.hpp"
 #include "FuzzyMac/NativeMacHandlers.hpp"
-#include "FuzzyMac/ClipInfoPanel.hpp"
 
 #include "spdlog/spdlog.h"
 #include <QClipboard>
@@ -122,7 +122,8 @@ ClipModeHandler::ClipModeHandler(MainWindow* win)
         }
         dirty = false;
 
-        spdlog::info("Saved clipboard history to {}", path.toStdString());
+        spdlog::info(
+            "Saved clipboard history to {}({} entries)", path.toStdString(), clipboard_manager.getEntries().size());
     });
 
     timer.start(500);
@@ -134,6 +135,7 @@ ClipModeHandler::ClipModeHandler(MainWindow* win)
 void ClipModeHandler::load() {
     freeWidgets();
     black_list = win->getConfigManager().getList<std::string>({"mode", "clipboard", "blacklist"});
+    clipboard_manager.setLimit(win->getConfigManager().get<int>({"mode","clipboard","limit"}));
     clipboard_manager.loadFromFile(path);
 }
 
@@ -178,6 +180,9 @@ void ClipboardManager::loadFromFile(const QString& path) {
     QMutexLocker locker(&entries_mutex);
     entries.clear();
     for (const QJsonValue& val : arr) {
+        if (entries.count() >= limit) {
+            return;
+        }
         if (val.isObject()) {
             entries.append(Entry::fromJson(val.toObject()));
         }
@@ -249,6 +254,10 @@ ClipboardManager::Entry ClipboardManager::Entry::fromJson(const QJsonObject& obj
 
 void ClipboardManager::addEntry(const Entry::Content& value, const QString& app) {
     QMutexLocker locker(&entries_mutex);
+
+    if (entries.size() >= limit) {
+        entries.pop_front();
+    }
 
     entries.push_back(Entry{
         .value = value,
@@ -361,3 +370,6 @@ InfoPanelContent* ClipModeHandler::getInfoPanelContent() const {
         main_widget, win, entries[dynamic_cast<ClipboardWidget*>(widgets[win->getCurrentResultIdx()])->getIdx()]);
 }
 
+void ClipboardManager::setLimit(int limit) {
+    this->limit = limit;
+}

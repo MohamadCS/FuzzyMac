@@ -17,4 +17,7 @@
   <qresource prefix="/">
     <file>./res/icons/bluetooth.svg</file>
   </qresource>
+  <qresource prefix="/">
+    <file>./res/icons/settings.svg</file>
+  </qresource>
 </RCC>

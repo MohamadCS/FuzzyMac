@@ -29,9 +29,9 @@
 #include <QStaticText>
 #include <QWindow>
 #include <QtConcurrent>
-#include <ranges>
 #include <algorithm>
 #include <memory>
+#include <ranges>
 #include <variant>
 #include <vector>
 
@@ -90,7 +90,6 @@ void MainWindow::createWidgets() {
     main_widget->setLayout(layout);
     setCentralWidget(border_widget);
     wakeup();
-
 }
 
 void MainWindow::selectItem(int idx) {
@@ -111,8 +110,6 @@ void MainWindow::wakeup() {
     if (config_manager->get<bool>({"animations"})) {
         opacityAnimator(this, 0.0, config_manager->get<float>({"opacity"}), 50);
     }
-
-    // setupWindowDecoration(this, config_manager);
 
     show();
     raise();
@@ -272,7 +269,7 @@ void MainWindow::createKeybinds() {
 
     cmd_shift_c->registerHotkey(QKeySequence(Qt::MetaModifier | Qt::ShiftModifier | Qt::Key_C));
 
-    disableCmdQ();
+    // disableCmdQ();
 }
 
 MainWindow::MainWindow(Mode mode, QWidget* parent)
@@ -424,6 +421,10 @@ void MainWindow::loadStyle() {
         {"bluetooth",
          createIcon(
              ":/res/icons/bluetooth.svg",
+             QColor(QString::fromStdString(getConfigManager().get<std::string>({"colors", "results_list", "text"}))))},
+        {"settings",
+         createIcon(
+             ":/res/icons/settings.svg",
              QColor(QString::fromStdString(getConfigManager().get<std::string>({"colors", "results_list", "text"}))))},
 
     };
