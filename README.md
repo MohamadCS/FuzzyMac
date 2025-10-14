@@ -22,7 +22,6 @@ A fuzzy finder GUI for macOS.
 - File preview.
 - Clipboard Manager.
 - (Almost) everything is configurable using a config file.
-- CLI mode: Pipe Resutls > Search > Enter.
 
 
 ## Install 
@@ -40,7 +39,7 @@ brew install --cask MohamadCS/FuzzyMac/fuzzymac
 or by navigating to the releases section.
 #### Damaged Binary ?
 Solution
-```shell
+```bash
 xattr -d com.apple.quarantine /Applications/FuzzyMac.app
 
 ```
@@ -50,7 +49,8 @@ xattr -d com.apple.quarantine /Applications/FuzzyMac.app
 #### ✅ Requirements
 -	macOS with Homebrew
 -	Qt 6 installed via Homebrew:
-```
+
+```bash
 brew install qt@6
 ```
 
@@ -62,18 +62,6 @@ cd build
 cmake -DCMAKE_BUILD_TYPE=Release ..
 cmake --build .
 ```
-
-This builds both the CLI and GUI versions.
-
-
-###  🖥️ CLI Mode
-
-FuzzyMac can be used directly from the command line:
-
-- Generate a list of entries using some command
-- Pip those entries to FuzzyMac
-- FuzzyMac will popup the search window
-- After choosing an entry FuzzyMac prints out the result to stdout.
 
 **Example**
 ```bash
@@ -99,8 +87,8 @@ FuzzyMac runs as a background app, activated by default with ⌘ + Space.
 
 
 ## 🔍 How It Works
-I used a simple custom scoring algorithm.
-(previous versions relied on spotlight's indexing, which was very slow for some reason).
+It uses spotlight indexing to load files, and custom algorithms for more
+accurate filtering.  
 
 ## ⚙️ Configuration
 
@@ -189,35 +177,6 @@ dirs = ["$HOME/Library/Mobile Documents/com~apple~CloudDocs/"]
 ```
 
 
-## Installation
-If you have homebrew installed you can tap
-
-```shell
-brew tap MohamadCS/FuzzyMac https://github.com/MohamadCS/FuzzyMac.git
-brew install --cask MohamadCS/FuzzyMac/fuzzymac
-
-```
-
-
-## 🛠️ Building from Source
-
-### ✅ Requirements
--	macOS with Homebrew
--	Qt 6 installed via Homebrew:
-```
-brew install qt@6
-```
-
-### 🔨 Build with CMake
-
-```
-mkdir build
-cd build
-cmake -DCMAKE_BUILD_TYPE=Release ..
-cmake --build .
-```
-
-This builds both the CLI and GUI versions.
 
 
 ## TODO
@@ -226,5 +185,5 @@ This builds both the CLI and GUI versions.
 - [x] Add configuration support.
 - [x] Watch for changes in configured application directories.
 - [x] Display full file paths in the UI.
-- [ ] Add clipboard history support.
+- [x] Add clipboard history support.
 - [ ] Add quick settings support.
