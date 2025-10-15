@@ -53,6 +53,7 @@ target_link_libraries(FuzzyMac PRIVATE
     Qt6::Gui
     Qt6::Svg
     Qt6::Widgets 
+    Qt6::Network
     Qt6::Concurrent
     "-framework Cocoa"
     "-framework QuartzCore"
@@ -70,4 +71,23 @@ set_target_properties(FuzzyMac PROPERTIES
     INSTALL_RPATH "@executable_path/../Frameworks"
     MACOSX_BUNDLE_INFO_PLIST "${CMAKE_SOURCE_DIR}/res/Info.plist"
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/build/app/"
+)
+
+
+# =========================
+# Client Target (FuzzyMacClient)
+# =========================
+file(GLOB CLI_SRC src/cli/*.cpp)
+
+add_executable(FuzzyMacCLI ${CLI_SRC})
+
+target_link_libraries(FuzzyMacCLI PRIVATE 
+    Qt6::Core
+    Qt6::Network
+    Qt6::Concurrent
+)
+
+set_target_properties(FuzzyMacCLI PROPERTIES
+    MACOSX_BUNDLE FALSE
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/build/client/"
 )

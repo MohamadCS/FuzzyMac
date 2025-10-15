@@ -9,6 +9,7 @@
 #include "FuzzyMac/NativeMacHandlers.hpp"
 #include "FuzzyMac/QueryEdit.hpp"
 #include "FuzzyMac/ResultsPanel.hpp"
+#include "FuzzyMac/Server.hpp"
 
 #include "spdlog/spdlog.h"
 
@@ -278,11 +279,16 @@ MainWindow::MainWindow(Mode mode, QWidget* parent)
       mode_factory(new ModeHandlerFactory),
       config_manager(new ConfigManager) {
 
+    // In your MainWindow or App initialization
+    server = new Server(this);
+    server->startServer("fuzzymac_socket");
+
     const std::vector<Mode> modes = {
         Mode::APP,
         Mode::FILE,
         Mode::WALLPAPER,
         Mode::CLIP,
+        Mode::CLI,
     };
 
     for (auto mode : modes) {
@@ -482,7 +488,6 @@ void MainWindow::changeMode(Mode new_mode) {
     mode_handlers[mode]->onModeExit();
 
     mode = new_mode;
-
     clearQuery();
 }
 
@@ -510,4 +515,16 @@ std::vector<FuzzyWidget*> MainWindow::getModesWidgets() const {
 
 std::map<QString, QIcon> MainWindow::getIcons() {
     return icons;
+}
+
+void MainWindow::handleNewRequest() {
+    wakeup();
+    spdlog::info("Changig mode");
+    changeMode(Mode::CLI);
+    spdlog::info("loading");
+    mode_handlers[Mode::CLI]->load();
+}
+
+Server* MainWindow::getServer() const {
+    return server;
 }

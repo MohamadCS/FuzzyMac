@@ -1,6 +1,7 @@
 
 #include "FuzzyMac/CLIModeHandler.hpp"
 #include "FuzzyMac/Algorithms.hpp"
+#include "spdlog/spdlog.h"
 
 #include <QDrag>
 #include <QMimeData>
@@ -20,7 +21,7 @@
 CLIModeHandler::CLIModeHandler(MainWindow* win)
     : ModeHandler(win) {
 
-        createKeymaps();
+    createKeymaps();
 }
 
 void CLIModeHandler::createKeymaps() {
@@ -30,31 +31,47 @@ void CLIModeHandler::createKeymaps() {
         }
 
         int i = std::max(win->getCurrentResultIdx(), 0);
-        std::cout << widgets[i]->getSearchPhrase().toStdString();
-        exit(0);
+        auto* server = win->getServer();
+        QLocalSocket* client = server->getCurrentClient();
+        if (!client) {
+            return;
+        }
+        client->write(widgets[i]->getSearchPhrase().toLocal8Bit());
+        client->flush();
+        server->dropConnection();
+
+        win->sleep();
     });
 }
 
 void CLIModeHandler::load() {
-    if (loaded) {
+    auto* server = win->getServer();
+
+    if (!server) {
         return;
     }
 
-    loaded = true;
+    QLocalSocket* client = server->getCurrentClient();
 
-    entries = {};
-    std::string line;
-
-    while (std::getline(std::cin, line)) {
-        entries.push_back(line.c_str());
-        widgets.push_back(new TextWidget(win, main_widget, line.c_str()));
+    if (!client) {
+        return;
     }
+
+    spdlog::info("CLI mode is reading");
+
+    QByteArray data = client->readAll();
+    auto str = QString::fromLocal8Bit(data);
+    entries = str.split('\n', Qt::SkipEmptyParts);
 }
 
 void CLIModeHandler::freeWidgets() {
     widgets.clear();
     main_widget->deleteLater();
     main_widget = new QWidget(nullptr);
+}
+
+void CLIModeHandler::onModeExit() {
+    win->getServer()->dropConnection();
 }
 
 void CLIModeHandler::invokeQuery(const QString& query_) {

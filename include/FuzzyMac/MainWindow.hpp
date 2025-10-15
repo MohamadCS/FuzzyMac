@@ -11,6 +11,8 @@
 #include <QFileSystemWatcher>
 #include <QFutureWatcher>
 #include <QGraphicsBlurEffect>
+#include <QLocalSocket>
+#include <QLocalServer>
 #include <QLineEdit>
 #include <QListWidget>
 #include <QMainWindow>
@@ -30,6 +32,7 @@ class ModeHandlerFactory;
 class FuzzyWidget;
 class InfoPanel;
 class InfoPanelContent;
+class Server;
 
 using ResultsVec = std::vector<FuzzyWidget*>;
 
@@ -87,6 +90,11 @@ public:
     std::vector<FuzzyWidget*> getModesWidgets() const;
     void keyPressEvent(QKeyEvent* ev) override;
 
+    void handleNewRequest();
+    Server* getServer() const;
+
+
+
 private slots:
     void onTextChange(const QString& text);
     void onApplicationStateChanged(Qt::ApplicationState state);
@@ -98,6 +106,7 @@ private:
     // for layout
     QWidget* border_widget;
     QWidget* main_widget;
+    Server* server;
     QVBoxLayout* layout;
     Keymap keymap;
 
