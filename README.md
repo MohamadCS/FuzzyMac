@@ -25,6 +25,17 @@ A fuzzy finder GUI for macOS.
 - Quick settings
 - Quick connetion to bluetooth devices.
 
+## CLI Tool
+
+A seperate tool to send commands to the main application
+
+### Usage
+- '--sep' : Seperator used between entries in stdin.
+- '--mode' : "find" or "input": input returns the query input, find is the regular fuzzy find.
+- '--title' : The title of the prompt.
+- '--preview-file' : enable file preview(if the entry is a file and the file format is supported)
+
+**NOTE**: The piped data will be ignored if mode is not "find".
 
 ## Install 
 
