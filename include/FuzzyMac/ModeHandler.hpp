@@ -1,13 +1,13 @@
 #pragma once
 #include "FuzzyMac/FuzzyWidget.hpp"
 #include "FuzzyMac/InfoPanel.hpp"
-#include "FuzzyMac/MainWindow.hpp"
 #include "FuzzyMac/KeyMap.hpp"
+#include "FuzzyMac/MainWindow.hpp"
 
 #include <QDrag>
-#include <QJsonObject>
 #include <QFileIconProvider>
 #include <QFileSystemWatcher>
+#include <QJsonObject>
 #include <QListWidget>
 #include <QMessageBox>
 #include <QProcess>
@@ -40,7 +40,7 @@ public:
     // Called when the text on searchbar changes
     virtual void invokeQuery(const QString& query_) = 0;
 
-    virtual std::vector<FuzzyWidget*> createMainModeWidgets(); 
+    virtual std::vector<FuzzyWidget*> createMainModeWidgets();
 
     virtual void onModeExit();
 

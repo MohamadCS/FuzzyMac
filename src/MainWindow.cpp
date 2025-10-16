@@ -9,6 +9,7 @@
 #include "FuzzyMac/NativeMacHandlers.hpp"
 #include "FuzzyMac/QueryEdit.hpp"
 #include "FuzzyMac/ResultsPanel.hpp"
+#include "FuzzyMac/Server.hpp"
 
 #include "spdlog/spdlog.h"
 
@@ -30,6 +31,7 @@
 #include <QWindow>
 #include <QtConcurrent>
 #include <algorithm>
+#include <filesystem>
 #include <memory>
 #include <ranges>
 #include <variant>
@@ -120,6 +122,8 @@ void MainWindow::wakeup() {
 }
 
 void MainWindow::sleep() {
+
+    spdlog::info("FuzzyMac went to sleep");
 
     auto sleep_ = [this]() {
         deactivateApp();
@@ -243,8 +247,9 @@ void MainWindow::createKeybinds() {
     keymap.bind(
         QKeySequence(Qt::Key_Backspace),
         [this]() {
-            if (getQuery().isEmpty())
+            if (getQuery().isEmpty() && mode != Mode::CLI) {
                 changeMode(Mode::APP);
+            }
         },
         false);
 
@@ -283,6 +288,7 @@ MainWindow::MainWindow(Mode mode, QWidget* parent)
         Mode::FILE,
         Mode::WALLPAPER,
         Mode::CLIP,
+        Mode::CLI,
     };
 
     for (auto mode : modes) {
@@ -482,12 +488,10 @@ void MainWindow::changeMode(Mode new_mode) {
     mode_handlers[mode]->onModeExit();
 
     mode = new_mode;
-
     clearQuery();
 }
 
 void MainWindow::setInfoPanelContent(InfoPanelContent* content) {
-    info_panel->setContent(content);
 
     // if there is no info, hide the panel
     if (content == nullptr) {
@@ -495,6 +499,7 @@ void MainWindow::setInfoPanelContent(InfoPanelContent* content) {
         return;
     }
 
+    info_panel->setContent(content);
     info_panel->show();
 }
 
@@ -510,4 +515,12 @@ std::vector<FuzzyWidget*> MainWindow::getModesWidgets() const {
 
 std::map<QString, QIcon> MainWindow::getIcons() {
     return icons;
+}
+
+void MainWindow::handleNewRequest() {
+    wakeup();
+    spdlog::info("Changig mode");
+    mode_handlers[Mode::CLI]->load();
+    changeMode(Mode::CLI);
+    spdlog::info("loading");
 }

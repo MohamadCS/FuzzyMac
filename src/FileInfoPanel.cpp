@@ -10,6 +10,7 @@
 FileInfoPanel::FileInfoPanel(QWidget* parent, MainWindow* win, QString path)
     : InfoPanelContent(parent, win) {
 
+
     image_watcher = new QFutureWatcher<QImage>(this);
 
     auto& cfg = win->getConfigManager();
@@ -37,6 +38,10 @@ FileInfoPanel::FileInfoPanel(QWidget* parent, MainWindow* win, QString path)
                         .arg(cfg.get<std::string>({"font"}));
 
     QFileInfo info{path};
+
+    if(!info.exists()) {
+        return;
+    }
 
     std::vector<std::pair<QString, QString>> file_info{
         {"File Name", info.fileName()},

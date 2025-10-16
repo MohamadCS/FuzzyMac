@@ -11,6 +11,8 @@
 #include <QFileSystemWatcher>
 #include <QFutureWatcher>
 #include <QGraphicsBlurEffect>
+#include <QLocalSocket>
+#include <QLocalServer>
 #include <QLineEdit>
 #include <QListWidget>
 #include <QMainWindow>
@@ -87,6 +89,9 @@ public:
     std::vector<FuzzyWidget*> getModesWidgets() const;
     void keyPressEvent(QKeyEvent* ev) override;
 
+    void handleNewRequest();
+
+
 private slots:
     void onTextChange(const QString& text);
     void onApplicationStateChanged(Qt::ApplicationState state);
@@ -126,8 +131,6 @@ private:
     void createWidgets();
     // creates the application shortcuts
     void createKeybinds();
-
-    void setupServer();
 
     // reloads the config, and the current mod
     void loadConfig();
