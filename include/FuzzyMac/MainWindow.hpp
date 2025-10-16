@@ -32,7 +32,6 @@ class ModeHandlerFactory;
 class FuzzyWidget;
 class InfoPanel;
 class InfoPanelContent;
-class Server;
 
 using ResultsVec = std::vector<FuzzyWidget*>;
 
@@ -91,8 +90,6 @@ public:
     void keyPressEvent(QKeyEvent* ev) override;
 
     void handleNewRequest();
-    Server* getServer() const;
-
 
 
 private slots:
@@ -106,7 +103,6 @@ private:
     // for layout
     QWidget* border_widget;
     QWidget* main_widget;
-    Server* server;
     QVBoxLayout* layout;
     Keymap keymap;
 
@@ -135,8 +131,6 @@ private:
     void createWidgets();
     // creates the application shortcuts
     void createKeybinds();
-
-    void setupServer();
 
     // reloads the config, and the current mod
     void loadConfig();

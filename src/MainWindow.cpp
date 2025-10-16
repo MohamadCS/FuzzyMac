@@ -31,6 +31,7 @@
 #include <QWindow>
 #include <QtConcurrent>
 #include <algorithm>
+#include <filesystem>
 #include <memory>
 #include <ranges>
 #include <variant>
@@ -121,6 +122,8 @@ void MainWindow::wakeup() {
 }
 
 void MainWindow::sleep() {
+
+    spdlog::info("FuzzyMac went to sleep");
 
     auto sleep_ = [this]() {
         deactivateApp();
@@ -244,8 +247,9 @@ void MainWindow::createKeybinds() {
     keymap.bind(
         QKeySequence(Qt::Key_Backspace),
         [this]() {
-            if (getQuery().isEmpty())
+            if (getQuery().isEmpty() && mode != Mode::CLI) {
                 changeMode(Mode::APP);
+            }
         },
         false);
 
@@ -278,10 +282,6 @@ MainWindow::MainWindow(Mode mode, QWidget* parent)
       mode(mode),
       mode_factory(new ModeHandlerFactory),
       config_manager(new ConfigManager) {
-
-    // In your MainWindow or App initialization
-    server = new Server(this);
-    server->startServer("fuzzymac_socket");
 
     const std::vector<Mode> modes = {
         Mode::APP,
@@ -492,7 +492,6 @@ void MainWindow::changeMode(Mode new_mode) {
 }
 
 void MainWindow::setInfoPanelContent(InfoPanelContent* content) {
-    info_panel->setContent(content);
 
     // if there is no info, hide the panel
     if (content == nullptr) {
@@ -500,6 +499,7 @@ void MainWindow::setInfoPanelContent(InfoPanelContent* content) {
         return;
     }
 
+    info_panel->setContent(content);
     info_panel->show();
 }
 
@@ -520,11 +520,7 @@ std::map<QString, QIcon> MainWindow::getIcons() {
 void MainWindow::handleNewRequest() {
     wakeup();
     spdlog::info("Changig mode");
+    mode_handlers[Mode::CLI]->load();
     changeMode(Mode::CLI);
     spdlog::info("loading");
-    mode_handlers[Mode::CLI]->load();
-}
-
-Server* MainWindow::getServer() const {
-    return server;
 }

@@ -81,12 +81,6 @@ file(GLOB CLI_SRC src/cli/*.cpp)
 
 add_executable(FuzzyMacCLI ${CLI_SRC})
 
-target_link_libraries(FuzzyMacCLI PRIVATE 
-    Qt6::Core
-    Qt6::Network
-    Qt6::Concurrent
-)
-
 set_target_properties(FuzzyMacCLI PROPERTIES
     MACOSX_BUNDLE FALSE
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/build/client/"

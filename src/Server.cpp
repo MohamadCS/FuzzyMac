@@ -1,14 +1,17 @@
 // Server.cpp
 #include "FuzzyMac/Server.hpp"
+#include "FuzzyMac/CLIModeHandler.hpp"
 #include "FuzzyMac/MainWindow.hpp"
 #include "spdlog/spdlog.h"
 #include <QDebug>
+#include <functional>
 
-Server::Server(MainWindow* win)
+Server::Server(MainWindow* win, std::function<void()> diconnectHandler)
     : QObject(win),
       server(new QLocalServer(this)),
       current_client(nullptr), // track the active connection
-      win(win) {
+      win(win),
+      disconnectHandler(diconnectHandler) {
     connect(server, &QLocalServer::newConnection, this, &Server::handleNewConnection);
 }
 
@@ -20,33 +23,38 @@ Server::~Server() {
     server->close();
 }
 
-void Server::startServer(const QString& serverName) {
-    QLocalServer::removeServer(serverName); // remove old socket file if it exists
+void Server::startServer(const QString& server_name) {
+    QLocalServer::removeServer(server_name); // remove old socket file if it exists
 
-    if (!server->listen(serverName)) {
+    if (!server->listen(server_name)) {
         qWarning() << "Unable to start server:" << server->errorString();
     } else {
-        qDebug() << "Server started on" << serverName;
+        qDebug() << "Server started on" << server_name;
     }
 }
 
 void Server::handleNewConnection() {
-    QLocalSocket* client_conn = server->nextPendingConnection();
 
-    // Disconnect old client if exists
     if (current_client) {
-        current_client->disconnectFromServer();
-        current_client->deleteLater();
-        current_client = nullptr;
-        spdlog::warn("Client interrupted, closing connection");
+        current_client->disconnectFromServer(); // triggers old socket disconnected lambda
     }
 
-    current_client = client_conn;
+    QLocalSocket* client_conn = server->nextPendingConnection();
+    auto socket = client_conn;
 
-    connect(client_conn, &QLocalSocket::readyRead, this, &Server::handleReadyRead);
-    connect(client_conn, &QLocalSocket::disconnected, client_conn, &QLocalSocket::deleteLater);
+    current_client = socket;
 
-    spdlog::info("Connected to a new client");
+    connect(socket, &QLocalSocket::readyRead, this, [this, socket]() {
+        win->handleNewRequest(); 
+    });
+
+    connect(socket, &QLocalSocket::disconnected, socket, [this, socket]() {
+        if (current_client == socket) {
+            current_client = nullptr;
+        }
+        disconnectHandler();
+        socket->deleteLater();
+    });
 }
 
 QLocalSocket* Server::getCurrentClient() const {
@@ -54,28 +62,17 @@ QLocalSocket* Server::getCurrentClient() const {
 }
 
 void Server::dropConnection() {
+    spdlog::info("Started dropping connection");
     if (!current_client) {
         return;
     }
 
     // Disconnect all signals from the current client
     disconnect(current_client, nullptr, this, nullptr);
-
     // Close the socket
     current_client->disconnectFromServer();
-
-    // Schedule deletion
-    current_client->deleteLater();
-
-    spdlog::warn("Dropped current client connection");
-
     current_client = nullptr;
 }
 
 void Server::handleReadyRead() {
-    if (!current_client) {
-        return;
-    }
-
-    win->handleNewRequest();
 }
