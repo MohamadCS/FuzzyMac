@@ -20,6 +20,7 @@ struct ClientData {
     QString sep;
     QString title;
     QString mode;
+    QString format;
     bool preview;
 };
 

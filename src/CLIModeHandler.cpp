@@ -102,10 +102,11 @@ void CLIModeHandler::load() {
         .sep = args["separator"].toString(),
         .title = args["title"].toString(),
         .mode = args["mode"].toString(),
+        .format = args["format"].toString(),
         .preview = args["preview"].toBool(),
     };
 
-    spdlog::info("mode = {}", client_data.mode.toStdString());
+    spdlog::info("format  = {}", client_data.format.toStdString());
 
     entries = client_data.std_in.split(client_data.sep);
 }
@@ -131,7 +132,7 @@ void CLIModeHandler::invokeQuery(const QString& query) {
     auto results = query.isEmpty() ? entries : filter(query, entries);
 
     for (auto& entry : results) {
-        widgets.push_back(new TextWidget(win, main_widget, entry));
+        widgets.push_back(new TextWidget(win, main_widget, entry, client_data.format));
     }
 
     win->processResults(widgets);

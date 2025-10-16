@@ -22,6 +22,7 @@ struct Parser {
     std::string sep = "\n";
     std::string title;
     std::string mode;
+    std::string format;
 
     Parser(int argc, char** argv) {
         CLI::App app{"FuzzyMac client"};
@@ -30,6 +31,7 @@ struct Parser {
         app.add_option("--separator", sep, "Character used to separate entries")->default_val("\n");
         app.add_option("--title", title, "Prompt title")->default_val("");
         app.add_option("--mode", mode, "Choose mode: find/input")->default_val("find");
+        app.add_option("--format", format, "Specify the format of the list entries")->default_val("");
 
         try {
             app.parse(argc, argv);
@@ -73,6 +75,7 @@ int main(int argc, char* argv[]) {
     json_file["args"]["title"] = parser->title;
     json_file["args"]["separator"] = parser->sep;
     json_file["args"]["mode"] = parser->mode;
+    json_file["args"]["format"] = parser->format;
 
     std::string json_message = json_file.dump();
 

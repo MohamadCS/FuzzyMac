@@ -27,12 +27,13 @@ class TextWidget : public FuzzyWidget {
     Q_OBJECT;
 
 public:
-    TextWidget(MainWindow* win, QWidget* parent, const QString& value);
+    TextWidget(MainWindow* win, QWidget* parent, const QString& value, const QString& format = "");
 
     std::variant<QListWidgetItem*, FuzzyWidget*> getItem() override;
     QString getSearchPhrase() const override;
 
 private:
+    QString format;
     QLabel* text;
 };
 
@@ -100,8 +101,9 @@ class ActionWidget : public FuzzyWidget {
 
     QString desc;
     QString script_path;
+
 public:
-    ActionWidget(MainWindow* win, QWidget* parent, const QString& desc,const QString& script_path);
+    ActionWidget(MainWindow* win, QWidget* parent, const QString& desc, const QString& script_path);
     void enterHandler() override;
     std::variant<QListWidgetItem*, FuzzyWidget*> getItem() override;
 };

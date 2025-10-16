@@ -6,6 +6,8 @@
 #include <QApplication>
 #include <QClipboard>
 #include <QtConcurrent>
+
+#include <regex>
 #include <unistd.h>
 #include <variant>
 
@@ -14,8 +16,9 @@ FuzzyWidget::FuzzyWidget(MainWindow* win, QWidget* parent)
       win(win) {
 }
 
-TextWidget::TextWidget(MainWindow* win, QWidget* parent, const QString& value)
-    : FuzzyWidget(win, parent) {
+TextWidget::TextWidget(MainWindow* win, QWidget* parent, const QString& value, const QString& format)
+    : FuzzyWidget(win, parent),
+      format(format) {
     text = new QLabel(value);
 }
 
@@ -23,8 +26,31 @@ QString TextWidget::getSearchPhrase() const {
     return text->text();
 }
 
+
+std::string formatRegex(const std::string& entry, const std::string& user_regex) {
+    try {
+        std::regex re(user_regex);
+        std::smatch match;
+
+        if (std::regex_search(entry, match, re)) {
+            // If at least one capture group exists, use the first one
+            if (match.size() > 1 && !match[1].str().empty())
+                return match[1].str();
+            else
+                return match[0].str(); // fallback to the whole match
+        }
+        return entry; // no match → keep original entry
+    } catch (const std::regex_error& e) {
+        return entry; // fallback
+    }
+}
+
 std::variant<QListWidgetItem*, FuzzyWidget*> TextWidget::getItem() {
-    return win->createListItem(text->text());
+    if (format.isEmpty()) {
+        return win->createListItem(text->text());
+    } else {
+        return win->createListItem(formatRegex(text->text().toStdString(), format.toStdString()).c_str());
+    }
 }
 
 QString FileWidget::getPath() const {
