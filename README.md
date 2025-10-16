@@ -27,15 +27,9 @@ A fuzzy finder GUI for macOS.
 
 ## CLI Tool
 
-A seperate tool to send commands to the main application
+A seperate tool to send commands to the main application using the local server
+opened by main application.
 
-### Usage
-- '--sep' : Seperator used between entries in stdin.
-- '--mode' : "find" or "input": input returns the query input, find is the regular fuzzy find.
-- '--title' : The title of the prompt.
-- '--preview-file' : enable file preview(if the entry is a file and the file format is supported)
-
-**NOTE**: The piped data will be ignored if mode is not "find".
 
 ## Install 
 
@@ -76,20 +70,8 @@ cmake -DCMAKE_BUILD_TYPE=Release ..
 cmake --build .
 ```
 
-**Example**
-```bash
 
-app=$(fd --max-depth 1 -e app . /Applications -x realpath | FuzzyMac)
-
-	if [ -z "$app"]; then
-	exit
-	fi
-
-	open -a "$app"
-
-```
-
-### Usage
+### Application Usage
 
 FuzzyMac runs as a background app, activated by default with ⌘ + Space.
 
@@ -102,6 +84,14 @@ FuzzyMac runs as a background app, activated by default with ⌘ + Space.
 *   Quickly switch wallpaper(Can also be triggered by the prefix "ww").
 *   Search clipboard history(Default key is ctrl-⌘-c).
 
+
+### CLI Usage
+- '--seperator' : Seperator used between entries in stdin.
+- '--mode' : "find" or "input": input returns the query input, find is the regular fuzzy find.
+- '--title' : The title of the prompt.
+- '--preview-file' : enable file preview(if the entry is a file and the file format is supported)
+
+**NOTE**: The piped data will be ignored if mode is not "find".
 
 ## How It Works
 It uses spotlight indexing to load files, and custom algorithms for more
