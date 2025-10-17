@@ -85,10 +85,18 @@ AppModeHandler::~AppModeHandler() {};
 
 void AppModeHandler::reloadScripts() {
 
-    scripts = {};
+    scripts.clear();
 
+    QStringList cand_scripts = {};
     for (const auto& dir : scripts_dir_paths) {
-        loadDirs(dir, scripts, false);
+        loadDirs(dir, cand_scripts, false);
+    }
+
+    for (const auto& script_path : cand_scripts) {
+        QFileInfo info(script_path);
+        if (info.isExecutable()) {
+            scripts.push_back(script_path);
+        }
     }
 
     spdlog::info("Got {} dirs", scripts_dir_paths.size());

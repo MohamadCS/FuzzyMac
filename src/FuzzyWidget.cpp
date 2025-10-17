@@ -26,7 +26,6 @@ QString TextWidget::getSearchPhrase() const {
     return text->text();
 }
 
-
 std::string formatRegex(const std::string& entry, const std::string& user_regex) {
     try {
         std::regex re(user_regex);
