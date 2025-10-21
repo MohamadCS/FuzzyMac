@@ -7,18 +7,30 @@
 #include <QClipboard>
 #include <QtConcurrent>
 
-#include <regex>
 #include <unistd.h>
 #include <variant>
+
+CLIWidget::CLIWidget(MainWindow* win, QWidget* parent, const QString& display_value, const QString& value)
+    : FuzzyWidget(win, parent),
+      value(value) {
+    text = new QLabel(display_value);
+}
+
+QString CLIWidget::getSearchPhrase() const {
+    return value;
+}
+
+std::variant<QListWidgetItem*, FuzzyWidget*> CLIWidget::getItem() {
+    return win->createListItem(text->text());
+}
 
 FuzzyWidget::FuzzyWidget(MainWindow* win, QWidget* parent)
     : QWidget(parent),
       win(win) {
 }
 
-TextWidget::TextWidget(MainWindow* win, QWidget* parent, const QString& value, const QString& format)
-    : FuzzyWidget(win, parent),
-      format(format) {
+TextWidget::TextWidget(MainWindow* win, QWidget* parent, const QString& value)
+    : FuzzyWidget(win, parent) {
     text = new QLabel(value);
 }
 
@@ -26,30 +38,8 @@ QString TextWidget::getSearchPhrase() const {
     return text->text();
 }
 
-std::string formatRegex(const std::string& entry, const std::string& user_regex) {
-    try {
-        std::regex re(user_regex);
-        std::smatch match;
-
-        if (std::regex_search(entry, match, re)) {
-            // If at least one capture group exists, use the first one
-            if (match.size() > 1 && !match[1].str().empty())
-                return match[1].str();
-            else
-                return match[0].str(); // fallback to the whole match
-        }
-        return entry; // no match → keep original entry
-    } catch (const std::regex_error& e) {
-        return entry; // fallback
-    }
-}
-
 std::variant<QListWidgetItem*, FuzzyWidget*> TextWidget::getItem() {
-    if (format.isEmpty()) {
-        return win->createListItem(text->text());
-    } else {
-        return win->createListItem(formatRegex(text->text().toStdString(), format.toStdString()).c_str());
-    }
+    return win->createListItem(text->text());
 }
 
 QString FileWidget::getPath() const {
@@ -84,9 +74,39 @@ CalculatorWidget::CalculatorWidget(MainWindow* win, QWidget* parent)
     answer_label = new QLabel(this);
     const auto& config = win->getConfigManager();
     title_label->setAlignment(Qt::AlignVCenter | Qt::AlignCenter);
+
+    title_label->setStyleSheet(QString(R"(
+        QWidget {
+            background: %1;
+        }
+    )")
+                                   .arg(config.get<std::string>({"colors", "mode_label", "background"})));
+
     title_label->setStyleSheet(QString(R"(
         QLabel {
             color : %1;
+            font-weight: 500;
+            font-family: %2;
+            font-size: 20px;
+        }
+    )")
+                                   .arg(config.get<std::string>({"colors", "mode_label", "text"}))
+                                   .arg(config.get<std::string>({"font"})));
+    title_label->setStyleSheet(QString(R"(
+        QLabel {
+            color : %1;
+            margin : 0px;
+            font-weight: 500;
+            font-family: %2;
+            font-size: 20px;
+        }
+    )")
+                                   .arg(config.get<std::string>({"colors", "mode_label", "text"}))
+                                   .arg(config.get<std::string>({"font"})));
+    title_label->setStyleSheet(QString(R"(
+        QLabel {
+            color : %1;
+            margin : 0px;
             font-weight: 500;
             font-family: %2;
             font-size: 20px;
@@ -98,6 +118,7 @@ CalculatorWidget::CalculatorWidget(MainWindow* win, QWidget* parent)
     answer_label->setStyleSheet(QString(R"(
         QLabel {
             color : %1;
+            margin : 0px;
             font-weight: 500;
             font-family: %2;
             font-size: 30px;
@@ -176,4 +197,49 @@ void ActionWidget::enterHandler() {
 
 std::variant<QListWidgetItem*, FuzzyWidget*> ActionWidget::getItem() {
     return win->createListItem(desc, win->getIcons().at("settings"));
+}
+
+ImageWidget::ImageWidget(MainWindow* win, QWidget* parent, const QString& path)
+    : FuzzyWidget(win, parent),
+      path(path) {
+
+    auto& cfg = win->getConfigManager();
+    auto* layout = new QVBoxLayout;
+    auto* img_label = new QLabel(this);
+    img_watcher = new QFutureWatcher<QPixmap>(this);
+
+    img_label->setScaledContents(true);
+    layout->setSpacing(0);
+    layout->setContentsMargins(0, 0, 0, 0);
+
+    layout->addWidget(img_label);
+    img_label->setFixedSize(224 ,126);
+
+    QObject::connect(img_watcher, &QFutureWatcher<QPixmap>::finished, [this, img_label]() {
+        img_label->setPixmap(img_watcher->result());
+    });
+
+    auto future = QtConcurrent::run([this, path]() -> QPixmap {
+        QImage img = getThumbnailImage(path, 224, 126);
+        return QPixmap::fromImage(img);
+    });
+
+    img_watcher->setFuture(future);
+    setLayout(layout);
+}
+
+void ImageWidget::enterHandler() {
+    QProcess* process = new QProcess(nullptr);
+    QStringList args;
+    args << path;
+    process->start("open", args);
+    win->sleep();
+}
+
+std::variant<QListWidgetItem*, FuzzyWidget*> ImageWidget::getItem() {
+    return this;
+}
+
+QString ImageWidget::getPath() const {
+    return path;
 }

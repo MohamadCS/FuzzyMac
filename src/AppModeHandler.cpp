@@ -189,6 +189,7 @@ void AppModeHandler::setupBluetoothWidgets(const QString& query) {
         return;
     }
     auto bluetooth_devices = getPairedBluetoothDevices();
+
     // Assumes devices have different names
     std::unordered_map<QString, BluetoothDevice> name_to_dev;
     QStringList bluetooth_names;

@@ -11,7 +11,10 @@ public:
     InfoPanelContent* getInfoPanelContent() const override;
     std::vector<FuzzyWidget*> createMainModeWidgets() override;
     QString getModeText() override;
+    void onModeExit() override;
+    void onModeEnter() override;
     QString getPrefix() const override;
+
 
 private:
     std::vector<FuzzyWidget*> widgets;

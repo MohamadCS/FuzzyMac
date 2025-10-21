@@ -42,6 +42,8 @@ public:
 
     virtual std::vector<FuzzyWidget*> createMainModeWidgets();
 
+    virtual void onModeEnter();
+
     virtual void onModeExit();
 
     virtual void handleDragAndDrop(QDrag*) const;

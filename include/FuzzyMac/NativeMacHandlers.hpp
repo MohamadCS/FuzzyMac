@@ -46,3 +46,7 @@ extern "C++" void connectToBTDevice(const QString& mac_addr, bool connect);
 
 extern "C++" std::vector<BluetoothDevice> getPairedBluetoothDevices();
 
+extern "C++" void setWallpaperForAllMonitors(const QString &path);
+
+extern "C++" bool askForPremissions();
+

@@ -14,6 +14,7 @@ QString convertToReadableFileSize(qint64 size);
 QStringList fromQList(const QList<std::string>& vec);
 void loggingHandler(QtMsgType type, const QMessageLogContext& context, const QString& msg);
 void loadDirs(const QString& d, QStringList& paths, bool rec = true);
+std::string formatRegex(const std::string& entry, const std::string& user_regex) ;
 
 template <typename T, typename Container>
 QList<T> getKeys(const Container& container) {

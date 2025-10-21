@@ -135,7 +135,7 @@ ClipModeHandler::ClipModeHandler(MainWindow* win)
 void ClipModeHandler::load() {
     freeWidgets();
     black_list = win->getConfigManager().getList<std::string>({"mode", "clipboard", "blacklist"});
-    clipboard_manager.setLimit(win->getConfigManager().get<int>({"mode","clipboard","limit"}));
+    clipboard_manager.setLimit(win->getConfigManager().get<int>({"mode", "clipboard", "limit"}));
     clipboard_manager.loadFromFile(path);
 }
 
@@ -349,7 +349,7 @@ std::vector<FuzzyWidget*> ClipModeHandler::createMainModeWidgets() {
                 clipboard_manager.clear();
                 clipboard_manager.saveToFile(path);
             },
-            icons.at("clear_clipboard")),
+            icons.at("clipboard_clear")),
     };
 }
 

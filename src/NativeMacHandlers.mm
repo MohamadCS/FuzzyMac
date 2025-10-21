@@ -291,10 +291,8 @@ extern "C++" QStringList spotlightSearch(const QStringList &dirs,
 extern "C++" void connectToBTDevice(const QString &mac_addr, bool connect) {
 
   @autoreleasepool {
-    // Replace with the MAC-like address string of your paired AirPods
     NSString *addr = mac_addr.toNSString();
 
-    // Try to get the device object for a known address
     IOBluetoothDevice *device =
         [IOBluetoothDevice deviceWithAddressString:addr];
     if (!device) {
@@ -330,4 +328,17 @@ extern "C++" std::vector<BluetoothDevice> getPairedBluetoothDevices() {
   }
 
   return devices;
+}
+
+extern "C++" void setWallpaperForAllMonitors(const QString &path) {
+  @autoreleasepool {
+    NSURL *url = [NSURL fileURLWithPath:path.toNSString()];
+    for (NSScreen *screen in [NSScreen screens]) {
+      NSError *error = nil;
+      [[NSWorkspace sharedWorkspace] setDesktopImageURL:url
+                                              forScreen:screen
+                                                options:@{}
+                                                  error:&error];
+    }
+  }
 }

@@ -250,7 +250,7 @@ std::vector<FuzzyWidget*> FileModeHandler::createMainModeWidgets() {
             "Files",
             Mode::FILE,
             [this]() { win->changeMode(Mode::FILE); },
-            win->getIcons()["search_files"]),
+            win->getIcons()["file_search"]),
     };
 }
 

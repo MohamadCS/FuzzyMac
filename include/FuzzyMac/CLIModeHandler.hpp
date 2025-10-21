@@ -36,7 +36,7 @@ public:
     InfoPanelContent* getInfoPanelContent() const override;
 
 private:
-    QStringList entries;
+    QMap<QString,QString> entries;
     std::vector<FuzzyWidget*> widgets;
     Server* server;
     ClientData client_data;

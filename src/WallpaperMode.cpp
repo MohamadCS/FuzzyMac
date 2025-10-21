@@ -26,7 +26,7 @@ WallpaperMode::WallpaperMode(MainWindow* win)
         freeWidgets();
         for (const auto& file_path : future_watcher->result()) {
             auto show_icons = win->getConfigManager().get<bool>({"mode", "wallpaper", "show_icons"});
-            widgets.push_back(new FileWidget(win, main_widget, file_path, show_icons));
+            widgets.push_back(new ImageWidget(win, main_widget, file_path));
         }
 
         win->processResults(widgets);
@@ -40,26 +40,17 @@ void WallpaperMode::setupKeymaps() {
         }
 
         int i = std::max(win->getCurrentResultIdx(), 0);
-        auto path = dynamic_cast<FileWidget*>(widgets[win->getCurrentResultIdx()])->getPath();
+        auto path = dynamic_cast<ImageWidget*>(widgets[win->getCurrentResultIdx()])->getPath();
 
-        QString script = QString("tell application \"System Events\"\n"
-                                 "set desktopCount to count of desktops\n"
-                                 "repeat with i from 1 to desktopCount\n"
-                                 "set picture of desktop i to \"%1\"\n"
-                                 "end repeat\n"
-                                 "end tell")
-                             .arg(path);
+        setWallpaperForAllMonitors(path);
 
-        QProcess process;
-        process.start("osascript", QStringList() << "-e" << script);
-        process.waitForFinished();
         win->sleep();
     });
 
     keymap.bind(QKeySequence(Qt::MetaModifier | Qt::Key_Return), [this] {
         if (win->getResultsNum()) {
             // TODO: Free memory after quiting quicklook, or find why its not crucial to do so.
-            showQuickLookPanel(dynamic_cast<FileWidget*>(widgets[win->getCurrentResultIdx()])->getPath());
+            showQuickLookPanel(dynamic_cast<ImageWidget*>(widgets[win->getCurrentResultIdx()])->getPath());
         }
     });
 }
@@ -116,13 +107,14 @@ QString WallpaperMode::getPrefix() const {
 }
 
 InfoPanelContent* WallpaperMode::getInfoPanelContent() const {
-    if (win->getResultsNum() == 0) {
-        return nullptr;
-    }
-
-    int i = std::max(win->getCurrentResultIdx(), 0);
-
-    return new ImageViewerInfoPanel(main_widget, win, dynamic_cast<FileWidget*>(widgets[i])->getPath());
+    return nullptr;
+    // if (win->getResultsNum() == 0) {
+    //     return nullptr;
+    // }
+    //
+    // int i = std::max(win->getCurrentResultIdx(), 0);
+    //
+    // return new ImageViewerInfoPanel(main_widget, win, dynamic_cast<FileWidget*>(widgets[i])->getPath());
 }
 
 std::vector<FuzzyWidget*> WallpaperMode::createMainModeWidgets() {
@@ -135,4 +127,13 @@ std::vector<FuzzyWidget*> WallpaperMode::createMainModeWidgets() {
             [this]() { win->changeMode(Mode::WALLPAPER); },
             win->getIcons()["wallpaper"]),
     };
+}
+
+
+void WallpaperMode::onModeExit() {
+    win->setResultsListView(QListView::ListMode);
+}
+
+void WallpaperMode::onModeEnter() {
+    win->setResultsListView(QListView::IconMode);
 }

@@ -56,3 +56,8 @@ void ModeHandler::onModeExit() {
 const Keymap& ModeHandler::getKeymap() const {
     return keymap;
 }
+
+
+void ModeHandler::onModeEnter() {
+    return; 
+}

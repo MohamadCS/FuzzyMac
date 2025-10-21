@@ -1,15 +1,13 @@
 #include "FuzzyMac/FileInfoPanel.hpp"
-#include "FuzzyMac/Utils.hpp"
 #include "FuzzyMac/NativeMacHandlers.hpp"
+#include "FuzzyMac/Utils.hpp"
 
-#include <QLabel>
 #include <QFuture>
+#include <QLabel>
 #include <QtConcurrent>
-
 
 FileInfoPanel::FileInfoPanel(QWidget* parent, MainWindow* win, QString path)
     : InfoPanelContent(parent, win) {
-
 
     image_watcher = new QFutureWatcher<QImage>(this);
 
@@ -39,7 +37,7 @@ FileInfoPanel::FileInfoPanel(QWidget* parent, MainWindow* win, QString path)
 
     QFileInfo info{path};
 
-    if(!info.exists()) {
+    if (!info.exists()) {
         return;
     }
 

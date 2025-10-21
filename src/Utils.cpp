@@ -2,11 +2,12 @@
 
 #include "exprtk/exprtk.hpp"
 
-#include <QString>
 #include <QDir>
+#include <QString>
 #include <QStringList>
 #include <complex>
 #include <iostream>
+#include <regex>
 #include <wordexp.h>
 
 QString convertToReadableFileSize(qint64 size) {
@@ -80,14 +81,12 @@ QStringList fromQList(const QList<std::string>& vec) {
     return result;
 }
 
-
-
 void loadDirs(const QString& d, QStringList& paths, bool rec) {
 
     QDir dir(d);
-    QFileInfoList entryInfoList = dir.entryInfoList(QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot);
+    QFileInfoList entry_info_list = dir.entryInfoList(QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot);
 
-    for (const QFileInfo& entry : entryInfoList) {
+    for (const QFileInfo& entry : entry_info_list) {
         auto abs_path = entry.absoluteFilePath();
 
         if (rec && entry.isDir() && !entry.isSymLink()) {
@@ -95,5 +94,23 @@ void loadDirs(const QString& d, QStringList& paths, bool rec) {
         }
 
         paths.push_back(abs_path);
+    }
+}
+
+std::string formatRegex(const std::string& entry, const std::string& user_regex) {
+    try {
+        std::regex re(user_regex);
+        std::smatch match;
+
+        if (std::regex_search(entry, match, re)) {
+            // If at least one capture group exists, use the first one
+            if (match.size() > 1 && !match[1].str().empty())
+                return match[1].str();
+            else
+                return match[0].str(); // fallback to the whole match
+        }
+        return entry; // no match → keep original entry
+    } catch (const std::regex_error& e) {
+        return entry; // fallback
     }
 }

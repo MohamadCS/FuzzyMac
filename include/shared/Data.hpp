@@ -2,10 +2,4 @@
 
 #include <string>
 
-struct Args {
-    std::string sep;
-    std::string title;
-    std::string mode;
-    bool preview;
-};
-
+const std::string server_path = "/tmp/fuzzymac_socket";

@@ -23,7 +23,7 @@ void ResultsPanel::startDrag(Qt::DropActions supportedActions) {
 void ResultsPanel::loadConfig() {
     MainWindow* win = qobject_cast<MainWindow*>(window());
     auto& config = win->getConfigManager();
-    setIconSize(QSize(40, 40));
+    setIconSize(QSize(45, 45));
 
     QPalette p = palette();
     p.setColor(QPalette::Text, "#575279");
@@ -51,8 +51,9 @@ void ResultsPanel::loadConfig() {
         }
           QListWidget::item {
                     border: 0px solid #ccc;
-                    border-radius: 10px;      
+                    border-radius: 8px;      
                     font-weight : normal;
+                    padding: 5px;
                     margin: 4px 8px;         
                     background-color: %4;
             }

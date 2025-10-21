@@ -27,13 +27,27 @@ class TextWidget : public FuzzyWidget {
     Q_OBJECT;
 
 public:
-    TextWidget(MainWindow* win, QWidget* parent, const QString& value, const QString& format = "");
+    TextWidget(MainWindow* win, QWidget* parent, const QString& value);
 
     std::variant<QListWidgetItem*, FuzzyWidget*> getItem() override;
     QString getSearchPhrase() const override;
 
 private:
-    QString format;
+    QString path;
+    QLabel* text;
+};
+
+class CLIWidget : public FuzzyWidget {
+    Q_OBJECT;
+
+public:
+    CLIWidget(MainWindow* win, QWidget* parent, const QString& display_value, const QString& value);
+
+    std::variant<QListWidgetItem*, FuzzyWidget*> getItem() override;
+    QString getSearchPhrase() const override;
+
+private:
+    QString value;
     QLabel* text;
 };
 
@@ -106,4 +120,18 @@ public:
     ActionWidget(MainWindow* win, QWidget* parent, const QString& desc, const QString& script_path);
     void enterHandler() override;
     std::variant<QListWidgetItem*, FuzzyWidget*> getItem() override;
+};
+
+
+class ImageWidget : public FuzzyWidget {
+
+    Q_OBJECT;
+    QString path;
+    QFutureWatcher<QPixmap>* img_watcher;
+
+public:
+    ImageWidget(MainWindow* win, QWidget* parent, const QString& path);
+    void enterHandler() override;
+    std::variant<QListWidgetItem*, FuzzyWidget*> getItem() override;
+    QString getPath() const;
 };

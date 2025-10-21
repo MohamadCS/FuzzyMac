@@ -1,10 +1,10 @@
 #pragma once
 #include "FuzzyMac/FileInfoPanel.hpp"
+#include "FuzzyMac/FileWatcher.hpp"
 #include "FuzzyMac/FuzzyWidget.hpp"
 #include "FuzzyMac/InfoPanel.hpp"
 #include "FuzzyMac/MainWindow.hpp"
 #include "FuzzyMac/ModeHandler.hpp"
-#include "FuzzyMac/FileWatcher.hpp"
 
 #include <QDrag>
 #include <QFileIconProvider>

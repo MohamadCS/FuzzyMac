@@ -9,7 +9,6 @@
 #include "FuzzyMac/NativeMacHandlers.hpp"
 #include "FuzzyMac/QueryEdit.hpp"
 #include "FuzzyMac/ResultsPanel.hpp"
-#include "FuzzyMac/Server.hpp"
 
 #include "spdlog/spdlog.h"
 
@@ -31,7 +30,6 @@
 #include <QWindow>
 #include <QtConcurrent>
 #include <algorithm>
-#include <filesystem>
 #include <memory>
 #include <ranges>
 #include <variant>
@@ -66,6 +64,7 @@ void MainWindow::createWidgets() {
 
     QVBoxLayout* border_layout = new QVBoxLayout(border_widget);
     border_widget->setLayout(border_layout);
+
     border_layout->addWidget(main_widget);
     if (!show_info_panel) {
         info_panel->hide();
@@ -255,8 +254,8 @@ void MainWindow::createKeybinds() {
 
     keymap.bind(Qt::Key_Escape, [this]() { this->sleep(); });
 
-    auto* cmd_space = new GlobalHotkeyBridge(this);
-    connect(cmd_space, &GlobalHotkeyBridge::activated, this, [this] {
+    auto* toggle_keymap = new GlobalHotkeyBridge(this);
+    connect(toggle_keymap, &GlobalHotkeyBridge::activated, this, [this] {
         if (isHidden()) { // HIDE
             wakeup();
         } else {
@@ -264,15 +263,20 @@ void MainWindow::createKeybinds() {
         }
     });
 
-    cmd_space->registerHotkey(QKeySequence(Qt::MetaModifier | Qt::Key_Space));
+    toggle_keymap->registerHotkey(QKeySequence(config_manager->get<std::string>({"keys", "toggle_app"}).c_str()));
 
-    auto* cmd_shift_c = new GlobalHotkeyBridge(this);
-    connect(cmd_shift_c, &GlobalHotkeyBridge::activated, this, [this] {
-        wakeup();
-        changeMode(Mode::CLIP);
+    auto* toggle_clipboard = new GlobalHotkeyBridge(this);
+    connect(toggle_clipboard, &GlobalHotkeyBridge::activated, this, [this] {
+        if (isHidden()) { // HIDE
+            wakeup();
+            changeMode(Mode::CLIP);
+        } else {
+            sleep();
+        }
     });
 
-    cmd_shift_c->registerHotkey(QKeySequence(Qt::MetaModifier | Qt::ShiftModifier | Qt::Key_C));
+    toggle_clipboard->registerHotkey(
+        QKeySequence(config_manager->get<std::string>({"keys", "toggle_clipboard"}).c_str()));
 
     // disableCmdQ();
 }
@@ -399,41 +403,18 @@ QString MainWindow::getQuery() const {
 
 void MainWindow::loadStyle() {
 
-    // update icons
-    icons = {
-        {"clipboard",
-         createIcon(
-             ":/res/icons/clipboard.svg",
-             QColor(QString::fromStdString(getConfigManager().get<std::string>({"colors", "results_list", "text"}))))},
+    // load icons
+    QString icons_dir_path = ":res/icons/";
+    QDir icons_dir(icons_dir_path);
+    QStringList entry_info_list = icons_dir.entryList(QDir::Files);
+    QColor icon_color =
+        QColor(QString::fromStdString(getConfigManager().get<std::string>({"colors", "results_list", "text"})));
 
-        {"clear_clipboard",
-         createIcon(
-             ":/res/icons/clipboard_clear.svg",
-             QColor(QString::fromStdString(getConfigManager().get<std::string>({"colors", "results_list", "text"}))))},
-
-        {"search_files",
-         createIcon(
-             ":/res/icons/file_search.svg",
-             QColor(QString::fromStdString(getConfigManager().get<std::string>({"colors", "results_list", "text"}))))},
-
-        {"text",
-         createIcon(
-             ":/res/icons/text.svg",
-             QColor(QString::fromStdString(getConfigManager().get<std::string>({"colors", "results_list", "text"}))))},
-        {"wallpaper",
-         createIcon(
-             ":/res/icons/wallpaper.svg",
-             QColor(QString::fromStdString(getConfigManager().get<std::string>({"colors", "results_list", "text"}))))},
-        {"bluetooth",
-         createIcon(
-             ":/res/icons/bluetooth.svg",
-             QColor(QString::fromStdString(getConfigManager().get<std::string>({"colors", "results_list", "text"}))))},
-        {"settings",
-         createIcon(
-             ":/res/icons/settings.svg",
-             QColor(QString::fromStdString(getConfigManager().get<std::string>({"colors", "results_list", "text"}))))},
-
-    };
+    for (auto& icon : entry_info_list) {
+        QFileInfo icon_info(icon);
+        icons.insert_or_assign(icon_info.completeBaseName(),
+                               createIcon(icons_dir_path + icon_info.baseName(), icon_color));
+    }
 
     setWindowOpacity(config_manager->get<float>({"opacity"}));
     setupWindowDecoration(this, config_manager);
@@ -441,11 +422,6 @@ void MainWindow::loadStyle() {
     // update border color size
     auto border_size = config_manager->get<int>({"border_size"});
     border_widget->layout()->setContentsMargins(border_size, border_size, border_size, border_size);
-
-    //  border_widget->setStyleSheet(QString(R"(
-    //          background: %1;
-    // new-session -ds "Desktop" -c "~/Desktop/"   )")
-    //                                   .arg(config_manager->get<std::string>({"colors", "outer_border"})));
 
     main_widget->setStyleSheet(QString(R"(
             background: %1;
@@ -486,8 +462,8 @@ void MainWindow::changeMode(Mode new_mode) {
     }
 
     mode_handlers[mode]->onModeExit();
-
     mode = new_mode;
+    mode_handlers[new_mode]->onModeEnter();
     clearQuery();
 }
 
@@ -523,4 +499,8 @@ void MainWindow::handleNewRequest() {
     mode_handlers[Mode::CLI]->load();
     changeMode(Mode::CLI);
     spdlog::info("loading");
+}
+
+void MainWindow::setResultsListView(QListView::ViewMode view_mode) {
+    results_list->setViewMode(view_mode);
 }

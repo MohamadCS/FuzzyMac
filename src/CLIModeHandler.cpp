@@ -2,6 +2,10 @@
 #include "FuzzyMac/CLIModeHandler.hpp"
 #include "FuzzyMac/Algorithms.hpp"
 #include "FuzzyMac/FileInfoPanel.hpp"
+#include "FuzzyMac/FuzzyWidget.hpp"
+#include "FuzzyMac/Utils.hpp"
+#include "shared/Data.hpp"
+#include "spdlog/fmt/bundled/format.h"
 #include "spdlog/spdlog.h"
 
 #include <QDrag>
@@ -30,7 +34,7 @@ CLIModeHandler::CLIModeHandler(MainWindow* win)
 
 void CLIModeHandler::setupServer() {
     server = new Server(win, [this]() { win->sleep(); });
-    server->startServer("/tmp/fuzzymac_socket");
+    server->startServer(server_path.c_str());
 }
 
 void CLIModeHandler::createKeymaps() {
@@ -106,9 +110,24 @@ void CLIModeHandler::load() {
         .preview = args["preview"].toBool(),
     };
 
-    spdlog::info("format  = {}", client_data.format.toStdString());
+    spdlog::info("{}", client_data.std_in.toStdString());
 
-    entries = client_data.std_in.split(client_data.sep);
+    entries.clear();
+
+    // PERF:  Use a regular vec if there is no fomratting
+    for (auto raw_value : client_data.std_in.split(client_data.sep, Qt::SkipEmptyParts)) {
+        if (!client_data.format.isEmpty()) {
+            auto formatted =
+                QString::fromStdString(formatRegex(raw_value.toStdString(), client_data.format.toStdString()));
+            entries[formatted] = raw_value;
+        } else {
+            entries[raw_value] = raw_value;
+        }
+    }
+
+    for (auto& k : entries.keys()) {
+        spdlog::info("{} -- {}", k.toStdString(), entries[k].toStdString());
+    }
 }
 
 void CLIModeHandler::freeWidgets() {
@@ -129,10 +148,10 @@ void CLIModeHandler::invokeQuery(const QString& query) {
         return;
     }
 
-    auto results = query.isEmpty() ? entries : filter(query, entries);
+    auto results = query.isEmpty() ? entries.keys() : filter(query, entries.keys());
 
     for (auto& entry : results) {
-        widgets.push_back(new TextWidget(win, main_widget, entry, client_data.format));
+        widgets.push_back(new CLIWidget(win, main_widget, entry, entries[entry]));
     }
 
     win->processResults(widgets);
@@ -152,10 +171,14 @@ InfoPanelContent* CLIModeHandler::getInfoPanelContent() const {
     }
 
     int i = std::max(win->getCurrentResultIdx(), 0);
-    auto path = dynamic_cast<TextWidget*>(widgets[i])->getSearchPhrase();
-    if (!QFileInfo(path).exists()) {
+    auto* widget = dynamic_cast<CLIWidget*>(widgets[i]);
+    if (widget == nullptr) {
         return nullptr;
     }
 
-    return new FileInfoPanel(main_widget, win, dynamic_cast<TextWidget*>(widgets[i])->getSearchPhrase());
+    if (!QFileInfo(widget->getSearchPhrase()).exists()) {
+        return nullptr;
+    }
+
+    return new FileInfoPanel(main_widget, win, widget->getSearchPhrase());
 }

@@ -11,8 +11,6 @@
 #include <QFileSystemWatcher>
 #include <QFutureWatcher>
 #include <QGraphicsBlurEffect>
-#include <QLocalSocket>
-#include <QLocalServer>
 #include <QLineEdit>
 #include <QListWidget>
 #include <QMainWindow>
@@ -62,6 +60,7 @@ public:
     void selectItem(int item);
     QListWidgetItem* createListItem(const QString& name, const std::optional<QIcon>& icon = std::nullopt);
     QListWidgetItem* createListItem(QWidget* widget);
+    void setResultsListView(QListView::ViewMode view_mode); 
     int getCurrentResultIdx() const;
     int getResultsNum() const;
     void processResults(const ResultsVec&);
