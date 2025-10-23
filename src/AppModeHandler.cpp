@@ -21,23 +21,24 @@
 #include <QGuiApplication>
 #include <QLabel>
 
-AppModeHandler::AppModeHandler(MainWindow* win)
-    : ModeHandler(win) {
+AppModeHandler::AppModeHandler(QWidget* parent, API* api)
+    : ModeHandler(parent, api) {
 
     // Scripts
 
     createBindings();
 
-    future_watcher = new QFutureWatcher<QStringList>(win);
-    fs_watcher = new QFileSystemWatcher(win);
-    scripts_dir_watcher = new QFileSystemWatcher(win);
+    future_watcher = new QFutureWatcher<QStringList>(parent);
+    fs_watcher = new QFileSystemWatcher(parent);
+    scripts_dir_watcher = new QFileSystemWatcher(parent);
 
-    QObject::connect(fs_watcher, &QFileSystemWatcher::directoryChanged, win, [this, win] { reloadEntries(); });
+    QObject::connect(fs_watcher, &QFileSystemWatcher::directoryChanged, parent, [this, parent] { reloadEntries(); });
 
-    QObject::connect(scripts_dir_watcher, &QFileSystemWatcher::directoryChanged, win, [this, win] { reloadScripts(); });
+    QObject::connect(
+        scripts_dir_watcher, &QFileSystemWatcher::directoryChanged, parent, [this, parent] { reloadScripts(); });
 
-    QObject::connect(future_watcher, &QFutureWatcher<QStringList>::finished, win, [this, win]() {
-        auto modes_widgets = win->getModesWidgets();
+    QObject::connect(future_watcher, &QFutureWatcher<QStringList>::finished, parent, [this]() {
+        auto modes_widgets = this->api->getModesWidgets();
         std::unordered_map<QString, FuzzyWidget*> phrase_to_widget{};
         QStringList phrases{};
         phrases.reserve(modes_widgets.size());
@@ -48,19 +49,19 @@ AppModeHandler::AppModeHandler(MainWindow* win)
             phrases.push_back(widget->getSearchPhrase());
         }
 
-        auto modes_results = filter(win->getQuery(), phrases);
+        auto modes_results = filter(this->api->getQuery(), phrases);
 
-        if (win->getQuery().isEmpty()) {
+        if (this->api->getQuery().isEmpty()) {
             for (const auto& phrase : modes_results) {
                 widgets.push_back(phrase_to_widget[phrase]);
             }
-            win->processResults(widgets);
+            this->api->processResults(widgets);
 
             return;
         }
 
         auto results = future_watcher->result();
-        const bool show_icons = win->getConfigManager().get<bool>({"mode", "apps", "show_icons"});
+        const bool show_icons = this->api->getConfigManager().get<bool>({"mode", "apps", "show_icons"});
 
         // Create modes main mode widgets
 
@@ -69,14 +70,14 @@ AppModeHandler::AppModeHandler(MainWindow* win)
             if (widgets.size() >= 25) {
                 break;
             }
-            widgets.push_back(new FileWidget(win, main_widget, app_path, show_icons));
+            widgets.push_back(new FileWidget(this->main_widget, this->api, app_path, show_icons));
         }
 
         for (const auto& phrase : modes_results) {
             widgets.push_back(phrase_to_widget[phrase]);
         }
 
-        win->processResults(widgets);
+        this->api->processResults(widgets);
     });
     load();
 }
@@ -116,11 +117,11 @@ void AppModeHandler::createBindings() {
 
     // Calls the enter handler for each widget.
     keymap.bind(QKeySequence(Qt::Key_Return), [this]() {
-        if (win->getResultsNum() == 0 || win->getCurrentResultIdx() < 0) {
+        if (api->getResultsNum() == 0 || api->getCurrentResultIdx() < 0) {
             return;
         }
 
-        int i = std::max(win->getCurrentResultIdx(), 0);
+        int i = std::max(api->getCurrentResultIdx(), 0);
         widgets[i]->enterHandler();
     });
 }
@@ -131,13 +132,13 @@ void AppModeHandler::load() {
     fs_watcher->removePaths(app_dirs);
     scripts_dir_watcher->removePaths(scripts_dir_paths);
 
-    app_dirs = fromQList(win->getConfigManager().getList<std::string>({"mode", "apps", "dirs"}));
+    app_dirs = fromQList(api->getConfigManager().getList<std::string>({"mode", "apps", "dirs"}));
     expandPaths(app_dirs);
 
-    special_apps = fromQList(win->getConfigManager().getList<std::string>({"mode", "apps", "apps"}));
+    special_apps = fromQList(api->getConfigManager().getList<std::string>({"mode", "apps", "apps"}));
     expandPaths(special_apps);
 
-    scripts_dir_paths = fromQList(win->getConfigManager().getList<std::string>({"mode", "apps", "script_paths"}));
+    scripts_dir_paths = fromQList(api->getConfigManager().getList<std::string>({"mode", "apps", "script_paths"}));
     expandPaths(scripts_dir_paths);
 
     fs_watcher->addPaths(app_dirs);
@@ -162,7 +163,7 @@ void AppModeHandler::setupActions(const QString& query) {
         filter(query, scripts, nullptr, [](const QString& path) { return QFileInfo(path).fileName(); });
 
     for (const auto& script_path : filtered_scripts) {
-        widgets.push_back(new ActionWidget(win, main_widget, QFileInfo(script_path).fileName(), script_path));
+        widgets.push_back(new ActionWidget(main_widget, api, QFileInfo(script_path).fileName(), script_path));
     }
 }
 
@@ -176,7 +177,7 @@ void AppModeHandler::setupCalcWidget(const QString& query) {
 
     if (math_mode || exp.has_value()) {
         math_mode = true;
-        auto* calc_widget = new CalculatorWidget(win, main_widget);
+        auto* calc_widget = new CalculatorWidget(main_widget, api);
         if (exp.has_value()) {
             calc_widget->answer_label->setText(std::format("{}", exp.value()).c_str());
         }
@@ -201,7 +202,7 @@ void AppModeHandler::setupBluetoothWidgets(const QString& query) {
     bluetooth_names = filter(query, bluetooth_names);
     for (const auto& name : bluetooth_names) {
         auto device = name_to_dev[name];
-        widgets.push_back(new BluetoothDeviceWidget(win, main_widget, device));
+        widgets.push_back(new BluetoothDeviceWidget(main_widget, api, device));
     }
 }
 

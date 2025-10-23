@@ -19,7 +19,7 @@
 
 class ModeHandler {
 public:
-    ModeHandler(MainWindow* win);
+    ModeHandler(QWidget* parent,API* api);
     virtual ~ModeHandler();
 
     // Called on startup and when config file changes
@@ -51,7 +51,7 @@ public:
     const Keymap& getKeymap() const;
 
 protected:
-    MainWindow* win;
+    API* api;
     QWidget* parent;
     QWidget* main_widget; // used for cleanup
     Keymap keymap;

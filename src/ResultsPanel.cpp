@@ -1,4 +1,5 @@
 #include "FuzzyMac/ResultsPanel.hpp"
+#include "FuzzyMac/MainWindow.hpp"
 #include "FuzzyMac/ModeHandler.hpp"
 
 #include <QDrag>
@@ -11,18 +12,20 @@ ResultsPanel::ResultsPanel(QWidget* parent)
     setDragEnabled(true);
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     setSelectionMode(QAbstractItemView::SingleSelection);
+    setObjectName("ResultList");
 }
 
 void ResultsPanel::startDrag(Qt::DropActions supportedActions) {
     MainWindow* win = qobject_cast<MainWindow*>(window());
-    const ModeHandler* mod_handler = win->getCurrentModeHandler();
+    const ModeHandler* mode_handler = win->getAPI()->getCurrentModeHandler();
     QDrag* drag = new QDrag(this);
-    mod_handler->handleDragAndDrop(drag);
+    mode_handler->handleDragAndDrop(drag);
 }
 
 void ResultsPanel::loadConfig() {
     MainWindow* win = qobject_cast<MainWindow*>(window());
-    auto& config = win->getConfigManager();
+    auto* api = win->getAPI();
+    auto& config = api->getConfigManager();
     setIconSize(QSize(45, 45));
 
     QPalette p = palette();

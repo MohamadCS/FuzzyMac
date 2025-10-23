@@ -66,19 +66,19 @@ static QString applyTextStyleSheet(const ConfigManager& cfg) {
                                             background: transparent;
                                         }
                                     )")
-                             .arg(cfg.get<std::string>({"colors", "query_input", "selection_background"}))
-                             .arg(cfg.get<std::string>({"colors", "query_input", "selection"}))
-                             .arg(cfg.get<std::string>({"colors", "query_input", "text"}))
-                             .arg(cfg.get<std::string>({"colors", "query_input", "background"}))
-                             .arg(cfg.get<std::string>({"font"}))
-                             .arg(cfg.get<std::string>({"colors", "results_list", "scrollbar_color"}))
-                             .arg(cfg.get<std::string>({"colors", "results_list", "scrollbar_hold_color"}));
+        .arg(cfg.get<std::string>({"colors", "query_input", "selection_background"}))
+        .arg(cfg.get<std::string>({"colors", "query_input", "selection"}))
+        .arg(cfg.get<std::string>({"colors", "query_input", "text"}))
+        .arg(cfg.get<std::string>({"colors", "query_input", "background"}))
+        .arg(cfg.get<std::string>({"font"}))
+        .arg(cfg.get<std::string>({"colors", "results_list", "scrollbar_color"}))
+        .arg(cfg.get<std::string>({"colors", "results_list", "scrollbar_hold_color"}));
 }
 
-ClipboardInfoPanel::ClipboardInfoPanel(QWidget* parent, MainWindow* win, const ClipboardManager::Entry& entry)
-    : InfoPanelContent(parent, win) {
+ClipboardInfoPanel::ClipboardInfoPanel(QWidget* parent, API* api, const ClipboardManager::Entry& entry)
+    : InfoPanelContent(parent, api) {
 
-    auto& cfg = win->getConfigManager();
+    auto& cfg = api->getConfigManager();
 
     setAutoFillBackground(true);
     setStyleSheet(QString(R"(
@@ -128,7 +128,7 @@ ClipboardInfoPanel::ClipboardInfoPanel(QWidget* parent, MainWindow* win, const C
     content_text->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     content_text->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
 
-    content_text->setStyleSheet(applyTextStyleSheet(win->getConfigManager()));
+    content_text->setStyleSheet(applyTextStyleSheet(api->getConfigManager()));
     layout->addWidget(content_text, 1);
 
     // creating info widgets

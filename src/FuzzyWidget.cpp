@@ -10,8 +10,8 @@
 #include <unistd.h>
 #include <variant>
 
-CLIWidget::CLIWidget(MainWindow* win, QWidget* parent, const QString& display_value, const QString& value)
-    : FuzzyWidget(win, parent),
+CLIWidget::CLIWidget(QWidget* parent, API* api, const QString& display_value, const QString& value)
+    : FuzzyWidget(parent, api),
       value(value) {
     text = new QLabel(display_value);
 }
@@ -21,16 +21,16 @@ QString CLIWidget::getSearchPhrase() const {
 }
 
 std::variant<QListWidgetItem*, FuzzyWidget*> CLIWidget::getItem() {
-    return win->createListItem(text->text());
+    return api->createListItem(text->text(), std::nullopt);
 }
 
-FuzzyWidget::FuzzyWidget(MainWindow* win, QWidget* parent)
+FuzzyWidget::FuzzyWidget(QWidget* parent, API* api)
     : QWidget(parent),
-      win(win) {
+      api(api) {
 }
 
-TextWidget::TextWidget(MainWindow* win, QWidget* parent, const QString& value)
-    : FuzzyWidget(win, parent) {
+TextWidget::TextWidget(QWidget* parent, API* api, const QString& value)
+    : FuzzyWidget(parent, api) {
     text = new QLabel(value);
 }
 
@@ -39,7 +39,7 @@ QString TextWidget::getSearchPhrase() const {
 }
 
 std::variant<QListWidgetItem*, FuzzyWidget*> TextWidget::getItem() {
-    return win->createListItem(text->text());
+    return api->createListItem(text->text(), std::nullopt);
 }
 
 QString FileWidget::getPath() const {
@@ -51,28 +51,28 @@ void FileWidget::enterHandler() {
     QStringList args;
     args << path;
     process->start("open", args);
-    win->sleep();
+    api->sleep();
 }
 
 std::variant<QListWidgetItem*, FuzzyWidget*> FileWidget::getItem() {
     if (show_icon) {
-        return win->createListItem(QFileInfo(path).fileName(), win->getFileIcon(path));
+        return api->createListItem(QFileInfo(path).fileName(), api->getFileIcon(path));
     } else {
-        return win->createListItem(QFileInfo(path).fileName());
+        return api->createListItem(QFileInfo(path).fileName(), std::nullopt);
     }
 }
 
-FileWidget::FileWidget(MainWindow* win, QWidget* parent, const QString& path, bool show_icon)
-    : FuzzyWidget(win, parent),
+FileWidget::FileWidget(QWidget* parent, API* api, const QString& path, bool show_icon)
+    : FuzzyWidget(parent, api),
       path(path),
       show_icon(show_icon) {
 }
 
-CalculatorWidget::CalculatorWidget(MainWindow* win, QWidget* parent)
-    : FuzzyWidget(win, parent) {
+CalculatorWidget::CalculatorWidget(QWidget* parent, API* api)
+    : FuzzyWidget(parent, api) {
     title_label = new QLabel(this);
     answer_label = new QLabel(this);
-    const auto& config = win->getConfigManager();
+    const auto& config = api->getConfigManager();
     title_label->setAlignment(Qt::AlignVCenter | Qt::AlignCenter);
 
     title_label->setStyleSheet(QString(R"(
@@ -146,12 +146,12 @@ std::variant<QListWidgetItem*, FuzzyWidget*> CalculatorWidget::getItem() {
 void CalculatorWidget::enterHandler() {
     QClipboard* clipboard = QApplication::clipboard();
     clipboard->setText(answer_label->text());
-    win->sleep();
+    api->sleep();
 };
 
-ModeWidget::ModeWidget(MainWindow* win, QWidget* parent, const QString& value, Mode mode, std::function<void()> fn,
+ModeWidget::ModeWidget(QWidget* parent, API* api, const QString& value, Mode mode, std::function<void()> fn,
                        const std::optional<QIcon>& icon)
-    : FuzzyWidget(win, parent),
+    : FuzzyWidget(parent, api),
       name(value),
       mode(mode),
       icon(icon),
@@ -159,9 +159,9 @@ ModeWidget::ModeWidget(MainWindow* win, QWidget* parent, const QString& value, M
 }
 std::variant<QListWidgetItem*, FuzzyWidget*> ModeWidget::getItem() {
     if (icon) {
-        return win->createListItem(name, icon.value());
+        return api->createListItem(name, icon.value());
     } else {
-        return win->createListItem(name);
+        return api->createListItem(name, std::nullopt);
     }
 }
 
@@ -169,41 +169,41 @@ void ModeWidget::enterHandler() {
     customeEnterHandler();
 }
 
-BluetoothDeviceWidget::BluetoothDeviceWidget(MainWindow* win, QWidget* parent, const BluetoothDevice& device)
-    : FuzzyWidget(win, parent),
+BluetoothDeviceWidget::BluetoothDeviceWidget(QWidget* parent, API* api, const BluetoothDevice& device)
+    : FuzzyWidget(parent, api),
       device(device) {
 }
 
 std::variant<QListWidgetItem*, FuzzyWidget*> BluetoothDeviceWidget::getItem() {
     QString conn_prefix = device.is_connected ? "Disconnect from " : "Connect to ";
-    return win->createListItem(conn_prefix + device.name, win->getIcons().at("bluetooth"));
+    return api->createListItem(conn_prefix + device.name, api->getIcons().at("bluetooth"));
 }
 
 void BluetoothDeviceWidget::enterHandler() {
     auto x = QtConcurrent::run([this]() { connectToBTDevice(device.addr, !device.is_connected); });
-    win->sleep();
+    api->sleep();
 }
 
-ActionWidget::ActionWidget(MainWindow* win, QWidget* parent, const QString& desc, const QString& script_path)
-    : FuzzyWidget(win, parent),
+ActionWidget::ActionWidget(QWidget* parent, API* api, const QString& desc, const QString& script_path)
+    : FuzzyWidget(parent, api),
       desc(desc),
       script_path(script_path) {
 }
 
 void ActionWidget::enterHandler() {
     QProcess::startDetached(script_path);
-    win->sleep();
+    api->sleep();
 }
 
 std::variant<QListWidgetItem*, FuzzyWidget*> ActionWidget::getItem() {
-    return win->createListItem(desc, win->getIcons().at("settings"));
+    return api->createListItem(desc, api->getIcons().at("settings"));
 }
 
-ImageWidget::ImageWidget(MainWindow* win, QWidget* parent, const QString& path)
-    : FuzzyWidget(win, parent),
+ImageWidget::ImageWidget(QWidget* parent, API* api, const QString& path)
+    : FuzzyWidget(parent, api),
       path(path) {
 
-    auto& cfg = win->getConfigManager();
+    auto& cfg = api->getConfigManager();
     auto* layout = new QVBoxLayout;
     auto* img_label = new QLabel(this);
     img_watcher = new QFutureWatcher<QPixmap>(this);
@@ -213,7 +213,7 @@ ImageWidget::ImageWidget(MainWindow* win, QWidget* parent, const QString& path)
     layout->setContentsMargins(0, 0, 0, 0);
 
     layout->addWidget(img_label);
-    img_label->setFixedSize(224 ,126);
+    img_label->setFixedSize(224, 126);
 
     QObject::connect(img_watcher, &QFutureWatcher<QPixmap>::finished, [this, img_label]() {
         img_label->setPixmap(img_watcher->result());
@@ -233,7 +233,7 @@ void ImageWidget::enterHandler() {
     QStringList args;
     args << path;
     process->start("open", args);
-    win->sleep();
+    api->sleep();
 }
 
 std::variant<QListWidgetItem*, FuzzyWidget*> ImageWidget::getItem() {

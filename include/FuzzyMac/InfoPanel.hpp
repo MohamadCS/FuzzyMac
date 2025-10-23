@@ -8,13 +8,13 @@ class InfoPanelContent : public QWidget {
 
 public:
     using QWidget::QWidget;
-    InfoPanelContent(QWidget* parent, MainWindow* win)
+    InfoPanelContent(QWidget* parent, API* win)
         : QWidget(parent),
-          win(win) {
+          api(win) {
     }
 
 protected:
-    MainWindow* win;
+    API* api;
 };
 
 class InfoPanel : public QWidget {
@@ -22,12 +22,12 @@ class InfoPanel : public QWidget {
 
 public:
     using QWidget::QWidget;
-    InfoPanel(QWidget* parent, MainWindow* win);
+    InfoPanel(QWidget* parent, API* api);
 
     void setContent(InfoPanelContent* content);
 
 private:
     QHBoxLayout* layout;
-    MainWindow* win;
+    API* api;
     InfoPanelContent* content;
 };

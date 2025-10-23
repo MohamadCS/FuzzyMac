@@ -15,8 +15,9 @@
 #include <QGuiApplication>
 #include <QLabel>
 
-ModeHandler::ModeHandler(MainWindow* win)
-    : win(win),
+ModeHandler::ModeHandler(QWidget* parent, API* api)
+    : api(api),
+      parent(parent),
       main_widget(new QWidget(nullptr)) {
 }
 
@@ -57,7 +58,6 @@ const Keymap& ModeHandler::getKeymap() const {
     return keymap;
 }
 
-
 void ModeHandler::onModeEnter() {
-    return; 
+    return;
 }

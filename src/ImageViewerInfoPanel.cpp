@@ -5,12 +5,12 @@
 #include <QLabel>
 #include <QtConcurrent>
 
-ImageViewerInfoPanel::ImageViewerInfoPanel(QWidget* parent, MainWindow* win, QString path)
-    : InfoPanelContent(parent, win) {
+ImageViewerInfoPanel::ImageViewerInfoPanel(QWidget* parent, API* api, QString path)
+    : InfoPanelContent(parent, api) {
 
     image_watcher = new QFutureWatcher<QPixmap>(this);
 
-    auto& cfg = win->getConfigManager();
+    auto& cfg = api->getConfigManager();
 
     setAutoFillBackground(true);
     setStyleSheet(QString(R"(
@@ -53,7 +53,6 @@ ImageViewerInfoPanel::ImageViewerInfoPanel(QWidget* parent, MainWindow* win, QSt
     auto future = QtConcurrent::run([this, path]() -> QPixmap {
         QImage img = getThumbnailImage(path, 224, 126);
         return QPixmap::fromImage(img.scaled(320, 180, Qt::IgnoreAspectRatio, Qt::SmoothTransformation));
-
     });
 
     image_watcher->setFuture(future);

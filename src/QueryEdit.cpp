@@ -3,12 +3,17 @@
 
 #include <QApplication>
 
+QueryEdit::QueryEdit(QWidget* parent)
+    : QLineEdit(parent) {
+}
+
 void QueryEdit::keyPressEvent(QKeyEvent* event) {
     MainWindow* win = qobject_cast<MainWindow*>(window());
+    setObjectName("QueryInput");
 
-    if (win->keymapDefined(event)) {
+    if (win->getAPI()->keymapDefined(event)) {
         QApplication::sendEvent(win, event);
-        if (win->keymapOverides(event)) {
+        if (win->getAPI()->keymapOverides(event)) {
             return;
         }
     }
@@ -18,7 +23,7 @@ void QueryEdit::keyPressEvent(QKeyEvent* event) {
 
 void QueryEdit::loadConfig() {
     MainWindow* win = qobject_cast<MainWindow*>(window());
-    const auto& config = win->getConfigManager();
+    const auto& config = win->getAPI()->getConfigManager();
     setStyleSheet(QString(R"(
                                     QLineEdit {
                                         margin: 10px;

@@ -10,7 +10,7 @@
 class Server : public QObject {
     Q_OBJECT
 public:
-    Server(MainWindow* win, std::function<void()> disconnectHandler);
+    Server(QWidget* win, API* api, std::function<void()> disconnectHandler);
     ~Server();
 
     void startServer(const QString& serverName);
@@ -27,5 +27,5 @@ private:
     QLocalServer* server;
     QLocalSocket* current_client;
     std::function<void()> disconnectHandler;
-    MainWindow* win;
+    API* api;
 };

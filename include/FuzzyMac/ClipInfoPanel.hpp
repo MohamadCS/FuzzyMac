@@ -6,5 +6,5 @@
 class ClipboardInfoPanel : public InfoPanelContent {
     Q_OBJECT;
 public:
-    ClipboardInfoPanel(QWidget* parent, MainWindow* win, const ClipboardManager::Entry&);
+    ClipboardInfoPanel(QWidget* parent, API* api, const ClipboardManager::Entry&);
 };

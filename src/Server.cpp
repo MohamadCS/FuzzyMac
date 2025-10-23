@@ -6,11 +6,11 @@
 #include <QDebug>
 #include <functional>
 
-Server::Server(MainWindow* win, std::function<void()> diconnectHandler)
+Server::Server(QWidget* win, API* api, std::function<void()> diconnectHandler)
     : QObject(win),
       server(new QLocalServer(this)),
       current_client(nullptr), // track the active connection
-      win(win),
+      api(api),
       disconnectHandler(diconnectHandler) {
     connect(server, &QLocalServer::newConnection, this, &Server::handleNewConnection);
 }
@@ -44,9 +44,7 @@ void Server::handleNewConnection() {
 
     current_client = socket;
 
-    connect(socket, &QLocalSocket::readyRead, this, [this, socket]() {
-        win->handleNewRequest(); 
-    });
+    connect(socket, &QLocalSocket::readyRead, this, [this, socket]() { api->handleNewRequest(); });
 
     connect(socket, &QLocalSocket::disconnected, socket, [this, socket]() {
         if (current_client == socket) {

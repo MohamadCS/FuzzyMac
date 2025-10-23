@@ -1,4 +1,5 @@
 #pragma once
+
 #include "FuzzyMac/MainWindow.hpp"
 #include "FuzzyMac/NativeMacHandlers.hpp"
 
@@ -11,10 +12,10 @@ class FuzzyWidget : public QWidget {
     Q_OBJECT;
 
 protected:
-    MainWindow* win;
+    API* api;
 
 public:
-    FuzzyWidget(MainWindow* win, QWidget* parent);
+    FuzzyWidget(QWidget* parent, API* api);
     virtual ~FuzzyWidget() = default;
     virtual std::variant<QListWidgetItem*, FuzzyWidget*> getItem() = 0;
     virtual QString getSearchPhrase() const {
@@ -27,7 +28,7 @@ class TextWidget : public FuzzyWidget {
     Q_OBJECT;
 
 public:
-    TextWidget(MainWindow* win, QWidget* parent, const QString& value);
+    TextWidget(QWidget* parent, API* api, const QString& value);
 
     std::variant<QListWidgetItem*, FuzzyWidget*> getItem() override;
     QString getSearchPhrase() const override;
@@ -41,7 +42,7 @@ class CLIWidget : public FuzzyWidget {
     Q_OBJECT;
 
 public:
-    CLIWidget(MainWindow* win, QWidget* parent, const QString& display_value, const QString& value);
+    CLIWidget(QWidget* parent, API* api, const QString& display_value, const QString& value);
 
     std::variant<QListWidgetItem*, FuzzyWidget*> getItem() override;
     QString getSearchPhrase() const override;
@@ -55,7 +56,7 @@ class FileWidget : public FuzzyWidget {
     Q_OBJECT;
 
 public:
-    FileWidget(MainWindow* win, QWidget* parent, const QString& path, bool show_icon);
+    FileWidget(QWidget* parent, API* api, const QString& path, bool show_icon);
     void enterHandler() override;
     std::variant<QListWidgetItem*, FuzzyWidget*> getItem() override;
     QString getPath() const;
@@ -71,7 +72,7 @@ class ModeWidget : public FuzzyWidget {
     Q_OBJECT;
 
 public:
-    ModeWidget(MainWindow* win, QWidget* parent, const QString& value, Mode mode, std::function<void()> enter_handler,
+    ModeWidget(QWidget* parent, API* api, const QString& value, Mode mode, std::function<void()> enter_handler,
                const std::optional<QIcon>& icon = std::nullopt);
     std::variant<QListWidgetItem*, FuzzyWidget*> getItem() override;
     void enterHandler() override;
@@ -95,7 +96,7 @@ class CalculatorWidget : public FuzzyWidget {
     std::variant<QListWidgetItem*, FuzzyWidget*> getItem() override;
 
 public:
-    CalculatorWidget(MainWindow* win, QWidget* parent);
+    CalculatorWidget(QWidget* parent, API* api);
     QLabel* title_label;
     QLabel* answer_label;
 };
@@ -105,7 +106,7 @@ class BluetoothDeviceWidget : public FuzzyWidget {
     BluetoothDevice device;
 
 public:
-    BluetoothDeviceWidget(MainWindow* win, QWidget* parent, const BluetoothDevice& device);
+    BluetoothDeviceWidget(QWidget* parent, API* api, const BluetoothDevice& device);
     void enterHandler() override;
     std::variant<QListWidgetItem*, FuzzyWidget*> getItem() override;
 };
@@ -117,11 +118,10 @@ class ActionWidget : public FuzzyWidget {
     QString script_path;
 
 public:
-    ActionWidget(MainWindow* win, QWidget* parent, const QString& desc, const QString& script_path);
+    ActionWidget(QWidget* parent, API* api, const QString& desc, const QString& script_path);
     void enterHandler() override;
     std::variant<QListWidgetItem*, FuzzyWidget*> getItem() override;
 };
-
 
 class ImageWidget : public FuzzyWidget {
 
@@ -130,7 +130,7 @@ class ImageWidget : public FuzzyWidget {
     QFutureWatcher<QPixmap>* img_watcher;
 
 public:
-    ImageWidget(MainWindow* win, QWidget* parent, const QString& path);
+    ImageWidget(QWidget* parent, API* api, const QString& path);
     void enterHandler() override;
     std::variant<QListWidgetItem*, FuzzyWidget*> getItem() override;
     QString getPath() const;

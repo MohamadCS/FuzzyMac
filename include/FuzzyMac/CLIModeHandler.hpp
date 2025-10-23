@@ -26,7 +26,7 @@ struct ClientData {
 
 class CLIModeHandler : public ModeHandler {
 public:
-    CLIModeHandler(MainWindow* win);
+    CLIModeHandler(QWidget* parent,API* api);
     ~CLIModeHandler() override = default;
     void load() override;
     void invokeQuery(const QString& query_) override;

@@ -4,7 +4,7 @@
 class AppModeHandler : public ModeHandler {
 
 public:
-    AppModeHandler(MainWindow* win);
+    AppModeHandler(QWidget* parent, API* api);
     ~AppModeHandler() override;
     void load() override;
     QString getModeText() override;

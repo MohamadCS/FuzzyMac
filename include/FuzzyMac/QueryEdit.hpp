@@ -7,9 +7,9 @@ class QueryEdit : public QLineEdit {
     Q_OBJECT;
 
 public:
-    using QLineEdit::QLineEdit;
-
+    QueryEdit(QWidget* parent);
     void loadConfig();
+
 
 signals:
     void requestAppCopy();

@@ -1,7 +1,6 @@
 #pragma once
 #include <QListWidget>
 
-
 class ResultsPanel : public QListWidget {
     Q_OBJECT
 public:

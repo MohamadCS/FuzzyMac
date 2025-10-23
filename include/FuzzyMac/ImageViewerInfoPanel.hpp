@@ -8,7 +8,7 @@ class ImageViewerInfoPanel : public InfoPanelContent {
     Q_OBJECT;
 
 public:
-    ImageViewerInfoPanel(QWidget* parent, MainWindow* win, QString path);
+    ImageViewerInfoPanel(QWidget* parent, API* api, QString path);
 
 private:
     QFutureWatcher<QPixmap>* image_watcher;

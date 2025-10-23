@@ -48,7 +48,10 @@ void MainWindow::createWidgets() {
     query_edit = new QueryEdit(main_widget);
     results_list = new ResultsPanel(main_widget);
     mode_label = new QLabel(main_widget);
-    info_panel = new InfoPanel(main_widget, this);
+    info_panel = new InfoPanel(main_widget, getAPI());
+
+    mode_label->setObjectName("ModeLabel");
+    info_panel->setObjectName("InfoPanel");
 
     // MainWindow settings
     QApplication::setQuitOnLastWindowClosed(false);
@@ -287,6 +290,8 @@ MainWindow::MainWindow(Mode mode, QWidget* parent)
       mode_factory(new ModeHandlerFactory),
       config_manager(new ConfigManager) {
 
+    createAPI();
+
     const std::vector<Mode> modes = {
         Mode::APP,
         Mode::FILE,
@@ -503,4 +508,53 @@ void MainWindow::handleNewRequest() {
 
 void MainWindow::setResultsListView(QListView::ViewMode view_mode) {
     results_list->setViewMode(view_mode);
+}
+
+void MainWindow::createAPI() {
+    api = std::make_unique<API>();
+
+    api->wakeup = [this]() { this->wakeup(); };
+    api->sleep = [this]() { this->sleep(); };
+
+    api->refreshResults = [this]() { this->refreshResults(); };
+    api->clearResultList = [this]() { this->clearResultList(); };
+    api->selectItem = [this](int idx) { this->selectItem(idx); };
+
+    api->createListItem = [this](const QString& name, const std::optional<QIcon>& icon = std::nullopt) {
+        return this->createListItem(name, icon);
+    };
+
+    api->createListItemWidget = [this](QWidget* w) { return this->createListItem(w); };
+
+    api->setResultsListView = [this](QListView::ViewMode mode) { this->setResultsListView(mode); };
+    api->getCurrentResultIdx = [this]() { return this->getCurrentResultIdx(); };
+    api->getResultsNum = [this]() { return this->getResultsNum(); };
+    api->processResults = [this](const ResultsVec& vec) { this->processResults(vec); };
+
+    api->changeMode = [this](Mode m) { this->changeMode(m); };
+
+    api->setInfoPanelContent = [this](InfoPanelContent* c) { this->setInfoPanelContent(c); };
+    api->toggleInfoPanel = [this]() { this->toggleInfoPanel(); };
+
+    api->getConfigManager = [this]() -> const ConfigManager& { return *config_manager; };
+    api->getQuery = [this]() { return getQuery(); };
+    api->clearQuery = [this]() { clearQuery(); };
+
+    api->getFileIcon = [this](const QString& path) { return getFileIcon(path); };
+    api->createIcon = [this](const QString& path, const QColor& color) { return createIcon(path, color); };
+    api->getIcons = [this]() { return getIcons(); };
+
+    api->keymapDefined = [this](QKeyEvent* ev) { return keymapDefined(ev); };
+    api->keymapOverides = [this](QKeyEvent* ev) { return keymapOverides(ev); };
+
+    api->getCurrentModeHandler = [this]() { return getCurrentModeHandler(); };
+    api->getModeHandler = [this](Mode m) { return getModeHandler(m); };
+    api->getModesWidgets = [this]() { return getModesWidgets(); };
+
+    api->keyPressEvent = [this](QKeyEvent* ev) { keyPressEvent(ev); };
+    api->handleNewRequest = [this]() { handleNewRequest(); };
+}
+
+API* MainWindow::getAPI() const {
+    return api.get();
 }

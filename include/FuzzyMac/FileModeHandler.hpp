@@ -18,9 +18,11 @@
 #include <optional>
 #include <toml++/toml.h>
 
+
+
 class FileModeHandler : public ModeHandler {
 public:
-    FileModeHandler(MainWindow* win);
+    FileModeHandler(QWidget* parent, API* api);
 
     ~FileModeHandler() override;
 

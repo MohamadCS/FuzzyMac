@@ -2,9 +2,9 @@
 
 #include <QStyle>
 
-InfoPanel::InfoPanel(QWidget* parent, MainWindow* win)
+InfoPanel::InfoPanel(QWidget* parent, API* api)
     : QWidget(parent),
-      win(win),
+      api(api),
       content(nullptr) {
     layout = new QHBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
@@ -12,7 +12,7 @@ InfoPanel::InfoPanel(QWidget* parent, MainWindow* win)
 }
 
 void InfoPanel::setContent(InfoPanelContent* new_content) {
-    auto& cfg = win->getConfigManager();
+    auto& cfg = api->getConfigManager();
     QString sheet = QString(R"(
     QWidget {
             color : %1;

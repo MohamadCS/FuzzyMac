@@ -25,15 +25,15 @@
 #include <QGuiApplication>
 #include <QLabel>
 
-CLIModeHandler::CLIModeHandler(MainWindow* win)
-    : ModeHandler(win) {
+CLIModeHandler::CLIModeHandler(QWidget* parent, API* api)
+    : ModeHandler(parent, api) {
 
     setupServer();
     createKeymaps();
 }
 
 void CLIModeHandler::setupServer() {
-    server = new Server(win, [this]() { win->sleep(); });
+    server = new Server(parent, api, [this]() { api->sleep(); });
     server->startServer(server_path.c_str());
 }
 
@@ -46,23 +46,23 @@ void CLIModeHandler::createKeymaps() {
         }
 
         if (client_data.mode == "find") {
-            if (win->getResultsNum() == 0) {
-                win->sleep();
+            if (api->getResultsNum() == 0) {
+                api->sleep();
                 return;
             }
 
-            int i = std::max(win->getCurrentResultIdx(), 0);
+            int i = std::max(api->getCurrentResultIdx(), 0);
             spdlog::info("Currently in find mode");
             client->write(widgets[i]->getSearchPhrase().toLocal8Bit());
         } else {
-            spdlog::info("About to write {}", win->getQuery().toStdString());
-            client->write(win->getQuery().toLocal8Bit());
+            spdlog::info("About to write {}", api->getQuery().toStdString());
+            client->write(api->getQuery().toLocal8Bit());
         }
 
         client->flush();
         spdlog::info("about to drop");
 
-        win->sleep();
+        api->sleep();
     });
 }
 
@@ -144,17 +144,17 @@ void CLIModeHandler::invokeQuery(const QString& query) {
     freeWidgets();
 
     if (client_data.mode != "find") {
-        win->processResults({});
+        api->processResults({});
         return;
     }
 
     auto results = query.isEmpty() ? entries.keys() : filter(query, entries.keys());
 
     for (auto& entry : results) {
-        widgets.push_back(new CLIWidget(win, main_widget, entry, entries[entry]));
+        widgets.push_back(new CLIWidget(main_widget, api, entry, entries[entry]));
     }
 
-    win->processResults(widgets);
+    api->processResults(widgets);
 }
 
 QString CLIModeHandler::getModeText() {
@@ -162,7 +162,7 @@ QString CLIModeHandler::getModeText() {
 }
 
 InfoPanelContent* CLIModeHandler::getInfoPanelContent() const {
-    if (win->getResultsNum() == 0) {
+    if (api->getResultsNum() == 0) {
         return nullptr;
     }
 
@@ -170,7 +170,7 @@ InfoPanelContent* CLIModeHandler::getInfoPanelContent() const {
         return nullptr;
     }
 
-    int i = std::max(win->getCurrentResultIdx(), 0);
+    int i = std::max(api->getCurrentResultIdx(), 0);
     auto* widget = dynamic_cast<CLIWidget*>(widgets[i]);
     if (widget == nullptr) {
         return nullptr;
@@ -180,5 +180,5 @@ InfoPanelContent* CLIModeHandler::getInfoPanelContent() const {
         return nullptr;
     }
 
-    return new FileInfoPanel(main_widget, win, widget->getSearchPhrase());
+    return new FileInfoPanel(main_widget, api, widget->getSearchPhrase());
 }

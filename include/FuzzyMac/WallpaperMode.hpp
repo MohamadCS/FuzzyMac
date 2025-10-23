@@ -5,7 +5,7 @@
 
 class WallpaperMode : public ModeHandler {
 public:
-    WallpaperMode(MainWindow* win);
+    WallpaperMode(QWidget* parent,API* api);
     void invokeQuery(const QString& query_) override;
     void load() override;
     InfoPanelContent* getInfoPanelContent() const override;

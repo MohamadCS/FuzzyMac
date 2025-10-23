@@ -40,7 +40,7 @@ class ClipboardWidget : public FuzzyWidget {
     Q_OBJECT;
 
 public:
-    ClipboardWidget(MainWindow* win, QWidget* parent, ClipboardManager::Entry::Content* value, int idx);
+    ClipboardWidget(QWidget* parent, API* api, ClipboardManager::Entry::Content* value, int idx);
 
     std::variant<QListWidgetItem*, FuzzyWidget*> getItem() override;
     ClipboardManager::Entry::Content& getContent();
@@ -55,7 +55,7 @@ private:
 
 class ClipModeHandler : public ModeHandler {
 public:
-    ClipModeHandler(MainWindow* win);
+    ClipModeHandler(QWidget* parent, API* api);
     void load() override;
     QString getPrefix() const override;
     QString getModeText() override;

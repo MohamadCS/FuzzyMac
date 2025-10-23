@@ -6,12 +6,12 @@
 #include <QLabel>
 #include <QtConcurrent>
 
-FileInfoPanel::FileInfoPanel(QWidget* parent, MainWindow* win, QString path)
-    : InfoPanelContent(parent, win) {
+FileInfoPanel::FileInfoPanel(QWidget* parent, API* api, QString path)
+    : InfoPanelContent(parent, api) {
 
     image_watcher = new QFutureWatcher<QImage>(this);
 
-    auto& cfg = win->getConfigManager();
+    auto& cfg = api->getConfigManager();
 
     setAutoFillBackground(true);
     setStyleSheet(QString(R"(

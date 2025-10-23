@@ -7,12 +7,17 @@ font = "JetBrainsMono Nerd Font"
 
 border_size = 2
 animations = false
-corner_radius = 20
+corner_radius = 0
 info_panel = false
 opacity = 1.00
 
+
+[keys]
+toggle_app = "Meta+Space"
+toggle_clipboard = "Meta+Shift+C"
+
 [colors]
-outer_border = "#4d699b"
+outer_border = "#545464"
 inner_border = "#f2f1ef"
 
 [colors.query_input]
@@ -24,7 +29,7 @@ background = "#f2f1ef"
 
 [colors.results_list]
 selection = "#545464"
-selection_background = "#c7d7e0"
+selection_background = "#dddddb"
 text = "#545464"
 background = "#f2f1ef"
 scrollbar_color = "#4d699b"
@@ -44,7 +49,6 @@ dirs = [
 ]
 show_icons = true
 apps = ["/System/Library/CoreServices/Finder.app"]
-
 script_paths = ["$HOME/.config/FuzzyMac/scripts/"]
 
 [mode.files]
